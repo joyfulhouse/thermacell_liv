@@ -284,6 +284,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [exampleimg]: example.png
 [license-shield]: https://img.shields.io/github/license/joyfulhouse/thermacell_liv.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-%40joyfulhouse-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/joyfulhouse/thermacell_liv.svg?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/v/release/joyfulhouse/thermacell_liv?style=for-the-badge
 [releases]: https://github.com/joyfulhouse/thermacell_liv/releases
 [user_profile]: https://github.com/joyfulhouse
