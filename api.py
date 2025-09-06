@@ -177,6 +177,10 @@ class ThermacellLivAPI:
         """Get status of a specific node."""
         return await self._make_request("GET", f"/user/nodes/status?nodeid={node_id}")
 
+    async def get_node_config(self, node_id: str) -> Optional[Dict[str, Any]]:
+        """Get configuration and device info for a specific node."""
+        return await self._make_request("GET", f"/user/nodes/config?nodeid={node_id}")
+
     async def set_node_params(self, node_id: str, params: Dict[str, Any]) -> bool:
         """Set node parameters."""
         # The correct API structure uses query parameter and direct payload
@@ -218,6 +222,19 @@ class ThermacellLivAPI:
         params = {
             "LIV Hub": {
                 "LED Brightness": brightness
+            }
+        }
+        return await self.set_node_params(node_id, params)
+    
+    async def set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
+        """Set device LED brightness (0-255 range)."""
+        # Convert Home Assistant brightness (0-255) to Thermacell range (0-100)
+        thermacell_brightness = int((brightness / 255) * 100)
+        thermacell_brightness = max(0, min(100, thermacell_brightness))  # Clamp to 0-100
+        
+        params = {
+            "LIV Hub": {
+                "LED Brightness": thermacell_brightness
             }
         }
         return await self.set_node_params(node_id, params)

@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.light import (
+    ATTR_BRIGHTNESS,
     ATTR_RGB_COLOR,
     ColorMode,
     LightEntity,
@@ -63,18 +64,26 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
         self._attr_unique_id = f"{node_id}_{device_name}_light"
         self._attr_color_mode = ColorMode.RGB
         self._attr_supported_color_modes = {ColorMode.RGB}
+        self._attr_supported_features = 0
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
         node_data = self.coordinator.get_node_data(self._node_id)
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._node_id)},
-            name=node_data.get("name", "Thermacell LIV"),
-            manufacturer="Thermacell",
-            model=node_data.get("model", "LIV"),
-            sw_version=node_data.get("fw_version", "Unknown"),
-        )
+        device_info_dict = {
+            "identifiers": {(DOMAIN, self._node_id)},
+            "name": node_data.get("name", "Thermacell LIV"),
+            "manufacturer": "Thermacell",
+            "model": node_data.get("model", "LIV"),
+            "sw_version": node_data.get("fw_version", "Unknown"),
+        }
+        
+        # Add serial number if available
+        hub_serial = node_data.get("hub_serial")
+        if hub_serial:
+            device_info_dict["serial_number"] = hub_serial
+        
+        return DeviceInfo(**device_info_dict)
 
     @property
     def available(self) -> bool:
@@ -91,6 +100,14 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
         return device_data.get("led_power", False) if device_data else False
 
     @property
+    def brightness(self) -> int | None:
+        """Return the brightness of this light between 0..255."""
+        device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
+        if device_data:
+            return device_data.get("led_brightness", 255)
+        return 255
+
+    @property
     def rgb_color(self) -> tuple[int, int, int]:
         """Return the rgb color value."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
@@ -105,6 +122,12 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
             r, g, b = kwargs[ATTR_RGB_COLOR]
             await self.coordinator.async_set_device_led_color(
                 self._node_id, self._device_name, r, g, b
+            )
+        
+        if ATTR_BRIGHTNESS in kwargs:
+            brightness = kwargs[ATTR_BRIGHTNESS]
+            await self.coordinator.async_set_device_led_brightness(
+                self._node_id, self._device_name, brightness
             )
         
         success = await self.coordinator.async_set_device_led_power(
