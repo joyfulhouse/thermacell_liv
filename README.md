@@ -1,4 +1,4 @@
-# <img src="logo_2025.webp" alt="Thermacell" width="150" height="45"> LIV Home Assistant Integration
+# <img src="logo_2025.webp" alt="Thermacell" width="200" height="60"> LIV Home Assistant Integration
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
@@ -8,8 +8,6 @@
 [![Project Maintenance][maintenance-shield]][user_profile]
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
-[![Discord][discord-shield]][discord]
-[![Community Forum][forum-shield]][forum]
 
 A powerful 🏠 Home Assistant integration for controlling and monitoring 🦟 Thermacell LIV mosquito repellers through their cloud API.
 
@@ -283,11 +281,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [commits]: https://github.com/joyfulhouse/thermacell_liv/commits/main
 [hacs]: https://github.com/hacs/integration
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[discord]: https://discord.gg/Qa5fW2R
-[discord-shield]: https://img.shields.io/discord/330944238910963714.svg?style=for-the-badge
 [exampleimg]: example.png
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
-[forum]: https://community.home-assistant.io/
 [license-shield]: https://img.shields.io/github/license/joyfulhouse/thermacell_liv.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-%40joyfulhouse-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/joyfulhouse/thermacell_liv.svg?style=for-the-badge
