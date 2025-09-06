@@ -68,8 +68,8 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
         node_data = coordinator.get_node_data(node_id)
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
-        self._attr_name = f"{node_name} {device_name} Refill Life"
-        self._attr_unique_id = f"{node_id}_{device_name}_refill_life"
+        self._attr_name = f"{DOMAIN}_{device_name}_refill_life"
+        self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_native_unit_of_measurement = "%"
         self._attr_icon = "mdi:battery"
@@ -115,8 +115,8 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
         node_data = coordinator.get_node_data(node_id)
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
-        self._attr_name = f"{node_name} {device_name} System Status"
-        self._attr_unique_id = f"{node_id}_{device_name}_system_status"
+        self._attr_name = f"{DOMAIN}_{device_name}_system_status"
+        self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_status"
         self._attr_icon = "mdi:power"
 
     @property
@@ -174,8 +174,8 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         node_data = coordinator.get_node_data(node_id)
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
-        self._attr_name = f"{node_name} {device_name} System Runtime"
-        self._attr_unique_id = f"{node_id}_{device_name}_system_runtime"
+        self._attr_name = f"{DOMAIN}_{device_name}_system_runtime"
+        self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_runtime"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
         self._attr_suggested_unit_of_measurement = UnitOfTime.HOURS
