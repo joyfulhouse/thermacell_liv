@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import colorsys
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -35,6 +35,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         )
         self.api = api
         self.nodes: Dict[str, Dict[str, Any]] = {}
+        self.last_update_success_time: Optional[datetime] = None
 
     async def _async_update_data(self) -> Dict[str, Any]:
         """Fetch data from API endpoint."""
@@ -162,6 +163,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     updated_data[node_id] = node_info
                     
             self.nodes = updated_data
+            # Update the last successful update timestamp
+            self.last_update_success_time = datetime.now()
             return updated_data
 
         except Exception as err:
