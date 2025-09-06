@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import colorsys
 from datetime import datetime, timedelta
+from homeassistant.util import dt as dt_util
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -163,8 +164,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     updated_data[node_id] = node_info
                     
             self.nodes = updated_data
-            # Update the last successful update timestamp
-            self.last_update_success_time = datetime.now()
+            # Update the last successful update timestamp (timezone-aware)
+            self.last_update_success_time = dt_util.utcnow()
             return updated_data
 
         except Exception as err:
