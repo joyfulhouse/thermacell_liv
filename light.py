@@ -9,6 +9,7 @@ from homeassistant.components.light import (
     ATTR_RGB_COLOR,
     ColorMode,
     LightEntity,
+    LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -64,7 +65,7 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
         self._attr_unique_id = f"{node_id}_{device_name}_light"
         self._attr_color_mode = ColorMode.RGB
         self._attr_supported_color_modes = {ColorMode.RGB}
-        self._attr_supported_features = 0
+        self._attr_supported_features = LightEntityFeature(0)
 
     @property
     def device_info(self) -> DeviceInfo:

@@ -70,10 +70,9 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
         
         self._attr_name = f"{node_name} {device_name} Refill Life"
         self._attr_unique_id = f"{node_id}_{device_name}_refill_life"
-        self._attr_device_class = SensorDeviceClass.DURATION
-        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.TOTAL
         self._attr_native_unit_of_measurement = "%"
-        self._attr_icon = "mdi:timer-outline"
+        self._attr_icon = "mdi:battery"
 
     @property
     def device_info(self) -> DeviceInfo:
