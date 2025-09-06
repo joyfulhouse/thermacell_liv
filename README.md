@@ -1,4 +1,4 @@
-# 🦟 Thermacell LIV Home Assistant Integration
+# <img src="logo_2025.webp" alt="Thermacell" width="150" height="45"> LIV Home Assistant Integration
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
