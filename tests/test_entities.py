@@ -9,12 +9,15 @@ from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
 
-from custom_components.thermacell_liv.const import DOMAIN
-from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
-from custom_components.thermacell_liv.switch import ThermacellLivSwitch
-from custom_components.thermacell_liv.light import ThermacellLivLight
-from custom_components.thermacell_liv.sensor import ThermacellLivRefillSensor
-from custom_components.thermacell_liv.button import ThermacellLivResetButton
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from const import DOMAIN
+from coordinator import ThermacellLivCoordinator
+from switch import ThermacellLivSwitch
+from light import ThermacellLivLight
+from sensor import ThermacellLivRefillSensor
+from button import ThermacellLivResetButton
 
 
 @pytest.fixture
@@ -70,7 +73,7 @@ class TestThermacellLivSwitch:
         assert switch._node_id == "node1"
         assert switch._device_name == "Device1"
         assert switch._attr_name == "Test Node Device1"
-        assert switch._attr_unique_id == "node1_Device1"
+        assert switch._attr_unique_id == "node1_Device1_switch"
 
     def test_device_info(self, mock_coordinator):
         """Test switch device info."""
@@ -124,6 +127,7 @@ class TestThermacellLivSwitch:
         
         assert switch.is_on is False
 
+    @pytest.mark.asyncio
     async def test_async_turn_on_success(self, mock_coordinator):
         """Test turning switch on successfully."""
         mock_coordinator.async_set_device_power = AsyncMock(return_value=True)
@@ -136,6 +140,7 @@ class TestThermacellLivSwitch:
         mock_coordinator.async_set_device_power.assert_called_once_with("node1", "Device1", True)
         mock_coordinator.async_request_refresh.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_async_turn_on_failure(self, mock_coordinator):
         """Test turning switch on with failure."""
         mock_coordinator.async_set_device_power = AsyncMock(return_value=False)
@@ -148,6 +153,7 @@ class TestThermacellLivSwitch:
         mock_coordinator.async_set_device_power.assert_called_once_with("node1", "Device1", True)
         mock_coordinator.async_request_refresh.assert_not_called()
 
+    @pytest.mark.asyncio
     async def test_async_turn_off_success(self, mock_coordinator):
         """Test turning switch off successfully."""
         mock_coordinator.async_set_device_power = AsyncMock(return_value=True)
@@ -171,7 +177,7 @@ class TestThermacellLivLight:
         assert light._node_id == "node1"
         assert light._device_name == "Device1"
         assert light._attr_name == "Test Node Device1 LED"
-        assert light._attr_unique_id == "node1_Device1_led"
+        assert light._attr_unique_id == "node1_Device1_light"
 
     def test_is_on_true(self, mock_coordinator):
         """Test light is_on property (true)."""
@@ -199,6 +205,7 @@ class TestThermacellLivLight:
         
         assert light.rgb_color == (255, 255, 255)  # Default white
 
+    @pytest.mark.asyncio
     async def test_async_turn_on_success(self, mock_coordinator):
         """Test turning light on successfully."""
         mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
@@ -211,6 +218,7 @@ class TestThermacellLivLight:
         mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
         mock_coordinator.async_request_refresh.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_async_turn_on_with_color(self, mock_coordinator):
         """Test turning light on with color change."""
         mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
@@ -225,6 +233,7 @@ class TestThermacellLivLight:
         mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
         mock_coordinator.async_request_refresh.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_async_turn_off_success(self, mock_coordinator):
         """Test turning light off successfully."""
         mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
@@ -285,6 +294,7 @@ class TestThermacellLivResetButton:
         assert button._attr_unique_id == "node1_Device1_reset_refill"
         assert button._attr_icon == "mdi:refresh"
 
+    @pytest.mark.asyncio
     async def test_async_press_success(self, mock_coordinator):
         """Test button press successfully."""
         mock_coordinator.async_reset_refill_life = AsyncMock(return_value=True)
@@ -297,6 +307,7 @@ class TestThermacellLivResetButton:
         mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
         mock_coordinator.async_request_refresh.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_async_press_failure(self, mock_coordinator):
         """Test button press with failure."""
         mock_coordinator.async_reset_refill_life = AsyncMock(return_value=False)
@@ -318,9 +329,10 @@ class TestEntityPlatformSetup:
         """Return a mock add entities callback."""
         return AsyncMock()
 
+    @pytest.mark.asyncio
     async def test_switch_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test switch platform setup."""
-        from custom_components.thermacell_liv.switch import async_setup_entry
+        from switch import async_setup_entry
         
         hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
         
@@ -331,9 +343,10 @@ class TestEntityPlatformSetup:
         assert len(switches) == 1
         assert isinstance(switches[0], ThermacellLivSwitch)
 
+    @pytest.mark.asyncio
     async def test_light_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test light platform setup."""
-        from custom_components.thermacell_liv.light import async_setup_entry
+        from light import async_setup_entry
         
         hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
         
@@ -344,9 +357,10 @@ class TestEntityPlatformSetup:
         assert len(lights) == 1
         assert isinstance(lights[0], ThermacellLivLight)
 
+    @pytest.mark.asyncio
     async def test_sensor_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test sensor platform setup."""
-        from custom_components.thermacell_liv.sensor import async_setup_entry
+        from sensor import async_setup_entry
         
         hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
         
@@ -357,9 +371,10 @@ class TestEntityPlatformSetup:
         assert len(sensors) == 1
         assert isinstance(sensors[0], ThermacellLivRefillSensor)
 
+    @pytest.mark.asyncio
     async def test_button_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test button platform setup."""
-        from custom_components.thermacell_liv.button import async_setup_entry
+        from button import async_setup_entry
         
         hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
         
@@ -370,9 +385,10 @@ class TestEntityPlatformSetup:
         assert len(buttons) == 1
         assert isinstance(buttons[0], ThermacellLivResetButton)
 
+    @pytest.mark.asyncio
     async def test_setup_entry_multiple_devices(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test platform setup with multiple devices."""
-        from custom_components.thermacell_liv.switch import async_setup_entry
+        from switch import async_setup_entry
         
         # Add another device to the coordinator data
         mock_coordinator.data["node1"]["devices"]["Device2"] = {
@@ -389,9 +405,10 @@ class TestEntityPlatformSetup:
         switches = mock_add_entities.call_args[0][0]
         assert len(switches) == 2
 
+    @pytest.mark.asyncio
     async def test_setup_entry_multiple_nodes(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test platform setup with multiple nodes."""
-        from custom_components.thermacell_liv.switch import async_setup_entry
+        from switch import async_setup_entry
         
         # Add another node to the coordinator data
         mock_coordinator.data["node2"] = {

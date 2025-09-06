@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import colorsys
 from datetime import timedelta
 import logging
 from typing import Any, Dict, List
@@ -9,8 +10,12 @@ from typing import Any, Dict, List
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import ThermacellLivAPI
-from .const import DOMAIN
+try:
+    from .api import ThermacellLivAPI
+    from .const import DOMAIN
+except ImportError:
+    from api import ThermacellLivAPI
+    from const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,31 +60,46 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 
                 if status_data:
                     # Extract device information and current state
+                    connectivity = status_data.get("connectivity", {})
                     node_info = {
                         "id": node_id,
                         "name": node_name,
                         "type": node.get("type", "Thermacell LIV"),
                         "fw_version": node.get("fw_version", "Unknown"),
                         "model": node.get("model", "Thermacell LIV"),
-                        "online": status_data.get("node_status", False),
+                        "online": connectivity.get("connected", False),
                         "devices": {},
                     }
                     
-                    # Process device parameters
-                    if "param" in status_data:
-                        for device_name, device_params in status_data["param"].items():
-                            if isinstance(device_params, dict):
-                                node_info["devices"][device_name] = {
-                                    "power": device_params.get("Power", False),
-                                    "led_power": device_params.get("LED", {}).get("Power", False),
-                                    "led_color": {
-                                        "r": device_params.get("LED", {}).get("R", 255),
-                                        "g": device_params.get("LED", {}).get("G", 255),
-                                        "b": device_params.get("LED", {}).get("B", 255),
-                                    },
-                                    "refill_life": device_params.get("RefillLife", 0),
-                                    "last_updated": device_params.get("timestamp", 0),
-                                }
+                    # Process device parameters from the node's params
+                    params = node.get("params", {})
+                    if "LIV Hub" in params:
+                        device_params = params["LIV Hub"]
+                        if isinstance(device_params, dict):
+                            # Create a device entry for the LIV Hub
+                            device_name = device_params.get("Name", "LIV Hub")
+                            
+                            # Convert LED Hue and Brightness to RGB for compatibility
+                            hue = device_params.get("LED Hue", 0)
+                            brightness = device_params.get("LED Brightness", 100)
+                            
+                            # Convert HSV to RGB
+                            h_norm = hue / 360.0 if hue > 0 else 0
+                            s_norm = 1.0  # Assume full saturation
+                            v_norm = brightness / 100.0
+                            r, g, b = colorsys.hsv_to_rgb(h_norm, s_norm, v_norm)
+                            
+                            node_info["devices"][device_name] = {
+                                "power": device_params.get("Enable Repellers", False),
+                                "led_power": brightness > 0,
+                                "led_color": {
+                                    "r": int(r * 255),
+                                    "g": int(g * 255),
+                                    "b": int(b * 255),
+                                },
+                                "refill_life": device_params.get("Refill Life", 0),
+                                "last_updated": connectivity.get("timestamp", 0) // 1000,  # Convert to seconds
+                            }
                     
                     updated_data[node_id] = node_info
                     
