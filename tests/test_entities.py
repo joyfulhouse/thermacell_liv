@@ -16,7 +16,7 @@ from const import DOMAIN
 from coordinator import ThermacellLivCoordinator
 from switch import ThermacellLivSwitch
 from light import ThermacellLivLight
-from sensor import ThermacellLivRefillSensor
+from sensor import ThermacellLivRefillSensor, ThermacellLivSystemStatusSensor
 from button import ThermacellLivResetButton
 
 
@@ -368,7 +368,7 @@ class TestEntityPlatformSetup:
         
         mock_add_entities.assert_called_once()
         sensors = mock_add_entities.call_args[0][0]
-        assert len(sensors) == 1
+        assert len(sensors) == 2  # Refill life + System status sensors
         assert isinstance(sensors[0], ThermacellLivRefillSensor)
 
     @pytest.mark.asyncio
@@ -425,3 +425,94 @@ class TestEntityPlatformSetup:
         
         switches = mock_add_entities.call_args[0][0]
         assert len(switches) == 2  # One device per node
+
+
+class TestThermacellLivSystemStatusSensor:
+    """Test the ThermacellLivSystemStatusSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        assert sensor._node_id == "test_node"
+        assert sensor._device_name == "test_device"
+        assert sensor.unique_id == "test_node_test_device_system_status"
+        assert sensor.name == "Test Node test_device System Status"
+
+    def test_native_value_on(self, mock_coordinator):
+        """Test sensor value when system is on."""
+        mock_coordinator.get_device_data.return_value = {
+            "power": True,
+            "system_status": "On",
+            "system_status_code": 3,
+            "error_code": 0,
+        }
+        
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        assert sensor.native_value == "On"
+
+    def test_native_value_warming_up(self, mock_coordinator):
+        """Test sensor value when system is warming up."""
+        mock_coordinator.get_device_data.return_value = {
+            "power": True,
+            "system_status": "Warming Up",
+            "system_status_code": 2,
+            "error_code": 0,
+        }
+        
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        assert sensor.native_value == "Warming Up"
+
+    def test_native_value_off(self, mock_coordinator):
+        """Test sensor value when system is off."""
+        mock_coordinator.get_device_data.return_value = {
+            "power": False,
+            "system_status": "Off",
+            "system_status_code": 1,
+            "error_code": 0,
+        }
+        
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        assert sensor.native_value == "Off"
+
+    def test_native_value_error(self, mock_coordinator):
+        """Test sensor value when system has error."""
+        mock_coordinator.get_device_data.return_value = {
+            "power": True,
+            "system_status": "Error",
+            "system_status_code": 2,
+            "error_code": 5,
+        }
+        
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        assert sensor.native_value == "Error"
+
+    def test_native_value_no_device_data(self, mock_coordinator):
+        """Test sensor value when no device data is available."""
+        mock_coordinator.get_device_data.return_value = None
+        
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        assert sensor.native_value == "Unknown"
+
+    def test_extra_state_attributes(self, mock_coordinator):
+        """Test extra state attributes."""
+        mock_coordinator.get_device_data.return_value = {
+            "power": True,
+            "system_status": "On",
+            "system_status_code": 3,
+            "error_code": 0,
+        }
+        
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+        
+        attributes = sensor.extra_state_attributes
+        assert attributes == {
+            "system_status_code": 3,
+            "error_code": 0,
+            "enable_repellers": True,
+        }

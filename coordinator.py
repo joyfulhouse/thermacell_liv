@@ -89,6 +89,24 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                             v_norm = brightness / 100.0
                             r, g, b = colorsys.hsv_to_rgb(h_norm, s_norm, v_norm)
                             
+                            # Interpret system status
+                            system_status = device_params.get("System Status", 1)
+                            enable_repellers = device_params.get("Enable Repellers", False)
+                            error = device_params.get("Error", 0)
+                            
+                            if error > 0:
+                                status_text = "Error"
+                            elif not enable_repellers:
+                                status_text = "Off"
+                            elif system_status == 1:
+                                status_text = "Off"
+                            elif system_status == 2:
+                                status_text = "Warming Up"
+                            elif system_status == 3:
+                                status_text = "On"
+                            else:
+                                status_text = "Unknown"
+                            
                             node_info["devices"][device_name] = {
                                 "power": device_params.get("Enable Repellers", False),
                                 "led_power": brightness > 0,
@@ -98,6 +116,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                                     "b": int(b * 255),
                                 },
                                 "refill_life": device_params.get("Refill Life", 0),
+                                "system_status": status_text,
+                                "system_status_code": system_status,
+                                "error_code": error,
                                 "last_updated": connectivity.get("timestamp", 0) // 1000,  # Convert to seconds
                             }
                     

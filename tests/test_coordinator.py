@@ -48,6 +48,8 @@ def sample_nodes_data():
                     "LED Hue": 30,
                     "LED Brightness": 100,
                     "Refill Life": 75,
+                    "System Status": 3,
+                    "Error": 0,
                 }
             }
         },
@@ -62,6 +64,8 @@ def sample_nodes_data():
                     "LED Hue": 120,
                     "LED Brightness": 50,
                     "Refill Life": 25,
+                    "System Status": 1,
+                    "Error": 0,
                 }
             }
         }
@@ -116,6 +120,9 @@ class TestThermacellLivCoordinator:
         assert device1_data["led_power"] is True
         assert device1_data["led_color"] == {"r": 255, "g": 127, "b": 0}  # HSV 30,100 -> RGB
         assert device1_data["refill_life"] == 75
+        assert device1_data["system_status"] == "On"
+        assert device1_data["system_status_code"] == 3
+        assert device1_data["error_code"] == 0
         assert device1_data["last_updated"] == 1234567890
         
         # Verify API calls

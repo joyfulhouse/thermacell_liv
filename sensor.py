@@ -37,8 +37,13 @@ async def async_setup_entry(
     # Create sensor entities for each device in each node
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
+            # Refill life sensor
             sensors.append(
                 ThermacellLivRefillSensor(coordinator, node_id, device_name)
+            )
+            # System status sensor
+            sensors.append(
+                ThermacellLivSystemStatusSensor(coordinator, node_id, device_name)
             )
     
     async_add_entities(sensors, update_before_add=True)
@@ -90,3 +95,62 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
         """Return the state of the sensor."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         return device_data.get("refill_life", 0) if device_data else 0
+
+
+class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
+    """Representation of a Thermacell LIV system status sensor."""
+
+    def __init__(
+        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._node_id = node_id
+        self._device_name = device_name
+        
+        node_data = coordinator.get_node_data(node_id)
+        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
+        
+        self._attr_name = f"{node_name} {device_name} System Status"
+        self._attr_unique_id = f"{node_id}_{device_name}_system_status"
+        self._attr_icon = "mdi:power"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device information."""
+        node_data = self.coordinator.get_node_data(self._node_id)
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._node_id)},
+            name=node_data.get("name", "Thermacell LIV"),
+            manufacturer="Thermacell",
+            model=node_data.get("model", "LIV"),
+            sw_version=node_data.get("fw_version", "Unknown"),
+        )
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return (
+            self.coordinator.last_update_success
+            and self.coordinator.is_node_online(self._node_id)
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the state of the sensor."""
+        device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
+        if device_data:
+            return device_data.get("system_status", "Unknown")
+        return "Unknown"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, any] | None:
+        """Return additional state attributes."""
+        device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
+        if device_data:
+            return {
+                "system_status_code": device_data.get("system_status_code", 0),
+                "error_code": device_data.get("error_code", 0),
+                "enable_repellers": device_data.get("power", False),
+            }
+        return None
