@@ -277,7 +277,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **⚠️ Disclaimer**: This is an unofficial integration. Thermacell® and LIV® are trademarks of Thermacell Repellents, Inc.
 
 <!-- Links -->
-[buymecoffee]: https://www.buymeacoffee.com/joyfulhouse
+[buymecoffee]: https://buymeacoffee.com/btli
 [buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
 [commits-shield]: https://img.shields.io/github/commit-activity/y/joyfulhouse/thermacell_liv.svg?style=for-the-badge
 [commits]: https://github.com/joyfulhouse/thermacell_liv/commits/main
