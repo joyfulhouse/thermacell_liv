@@ -184,70 +184,140 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         return node_data.get("online", False) if node_data else False
 
     async def async_set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
-        """Set device power and update local data."""
+        """Set device power with optimistic update."""
+        # Optimistic update - update UI immediately
+        if self.data and node_id in self.data:
+            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
+            device_data["power"] = power_on
+            
+            # Update LED power state based on hub power and brightness
+            brightness = device_data.get("led_brightness", 0)
+            device_data["led_power"] = power_on and brightness > 0
+            
+            # Immediately notify UI of change
+            self.async_update_listeners()
+        
+        # Make API call in background
         success = await self.api.set_device_power(node_id, device_name, power_on)
-        if success:
-            # Update local cache immediately
+        
+        if not success:
+            # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["power"] = power_on
+                device_data["power"] = not power_on  # Revert
                 
-                # Update LED power state based on hub power and brightness
+                # Revert LED power state
                 brightness = device_data.get("led_brightness", 0)
-                device_data["led_power"] = power_on and brightness > 0
-            
-            # Trigger a refresh to update the UI state
-            await self.async_request_refresh()
+                device_data["led_power"] = (not power_on) and brightness > 0
+                
+                # Notify UI of revert
+                self.async_update_listeners()
+        
         return success
 
     async def async_set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
-        """Set device LED power and update local data."""
+        """Set device LED power with optimistic update."""
+        # Optimistic update - update UI immediately
+        if self.data and node_id in self.data:
+            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
+            
+            # Store original state for potential revert
+            original_led_power = device_data.get("led_power", False)
+            
+            # LED should only be considered "on" if hub is powered AND brightness > 0
+            hub_powered = device_data.get("power", False)
+            brightness = device_data.get("led_brightness", 0)
+            device_data["led_power"] = led_on and hub_powered and brightness > 0
+            
+            # Immediately notify UI of change
+            self.async_update_listeners()
+        
+        # Make API call in background
         success = await self.api.set_device_led_power(node_id, device_name, led_on)
-        if success:
-            # Update local cache immediately
+        
+        if not success:
+            # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
+                device_data["led_power"] = original_led_power  # Revert to original state
                 
-                # LED should only be considered "on" if hub is powered AND brightness > 0
-                hub_powered = device_data.get("power", False)
-                brightness = device_data.get("led_brightness", 0)
-                device_data["led_power"] = led_on and hub_powered and brightness > 0
-            
-            # Trigger a refresh to update the UI state
-            await self.async_request_refresh()
+                # Notify UI of revert
+                self.async_update_listeners()
+        
         return success
 
     async def async_set_device_led_color(
         self, node_id: str, device_name: str, red: int, green: int, blue: int
     ) -> bool:
-        """Set device LED color and update local data."""
+        """Set device LED color with optimistic update."""
+        # Optimistic update - update UI immediately
+        original_color = None
+        if self.data and node_id in self.data:
+            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
+            
+            # Store original color for potential revert
+            original_color = device_data.get("led_color", {"r": 255, "g": 255, "b": 255}).copy()
+            
+            # Update color immediately
+            device_data["led_color"] = {"r": red, "g": green, "b": blue}
+            
+            # Immediately notify UI of change
+            self.async_update_listeners()
+        
+        # Make API call in background
         success = await self.api.set_device_led_color(node_id, device_name, red, green, blue)
-        if success:
-            # Update local cache immediately
+        
+        if not success and original_color:
+            # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["led_color"] = {"r": red, "g": green, "b": blue}
-            
-            # Trigger a refresh to update the UI state
-            await self.async_request_refresh()
+                device_data["led_color"] = original_color  # Revert to original color
+                
+                # Notify UI of revert
+                self.async_update_listeners()
+        
         return success
 
     async def async_set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
-        """Set device LED brightness and update local data."""
+        """Set device LED brightness with optimistic update."""
+        # Optimistic update - update UI immediately
+        original_brightness = None
+        original_brightness_pct = None
+        original_led_power = None
+        
+        if self.data and node_id in self.data:
+            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
+            
+            # Store original values for potential revert
+            original_brightness = device_data.get("led_brightness", 255)
+            original_brightness_pct = device_data.get("led_brightness_pct", 100)
+            original_led_power = device_data.get("led_power", False)
+            
+            # Update brightness immediately
+            device_data["led_brightness"] = brightness  # Already in HA format (0-255)
+            device_data["led_brightness_pct"] = int((brightness / 255) * 100)  # Thermacell format
+            
+            # LED should only be considered "on" if hub is powered AND brightness > 0
+            hub_powered = device_data.get("power", False)
+            device_data["led_power"] = hub_powered and brightness > 0
+            
+            # Immediately notify UI of change
+            self.async_update_listeners()
+        
+        # Make API call in background
         success = await self.api.set_device_led_brightness(node_id, device_name, brightness)
-        if success:
-            # Update local cache immediately
+        
+        if not success and original_brightness is not None:
+            # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["led_brightness"] = brightness  # Already in HA format (0-255)
-                device_data["led_brightness_pct"] = int((brightness / 255) * 100)  # Thermacell format
+                device_data["led_brightness"] = original_brightness
+                device_data["led_brightness_pct"] = original_brightness_pct
+                device_data["led_power"] = original_led_power
                 
-                # LED should only be considered "on" if hub is powered AND brightness > 0
-                hub_powered = device_data.get("power", False)
-                device_data["led_power"] = hub_powered and brightness > 0
-            
-            # Trigger a refresh to update the UI state
-            await self.async_request_refresh()
+                # Notify UI of revert
+                self.async_update_listeners()
+        
         return success
 
     async def async_reset_refill_life(self, node_id: str, device_name: str) -> bool:

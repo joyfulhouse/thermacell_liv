@@ -93,16 +93,12 @@ class ThermacellLivSwitch(CoordinatorEntity[ThermacellLivCoordinator], SwitchEnt
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        success = await self.coordinator.async_set_device_power(
+        await self.coordinator.async_set_device_power(
             self._node_id, self._device_name, True
         )
-        if success:
-            await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        success = await self.coordinator.async_set_device_power(
+        await self.coordinator.async_set_device_power(
             self._node_id, self._device_name, False
         )
-        if success:
-            await self.coordinator.async_request_refresh()
