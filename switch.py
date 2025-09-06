@@ -55,8 +55,10 @@ class ThermacellLivSwitch(CoordinatorEntity[ThermacellLivCoordinator], SwitchEnt
         node_data = coordinator.get_node_data(node_id)
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
-        self._attr_name = f"{DOMAIN}_{device_name}_switch"
+        self._attr_has_entity_name = True
+        self._attr_name = None  # Main switch entity for the device
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
+        self.entity_id = f"switch.{DOMAIN}_{device_name}_switch"
 
     @property
     def device_info(self) -> DeviceInfo:

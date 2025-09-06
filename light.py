@@ -61,8 +61,10 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
         node_data = coordinator.get_node_data(node_id)
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
-        self._attr_name = f"{DOMAIN}_{device_name}_led"
+        self._attr_has_entity_name = True
+        self._attr_name = "LED"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_light"
+        self.entity_id = f"light.{DOMAIN}_{device_name}_led"
         self._attr_color_mode = ColorMode.RGB
         self._attr_supported_color_modes = {ColorMode.RGB}
         self._attr_supported_features = LightEntityFeature(0)
