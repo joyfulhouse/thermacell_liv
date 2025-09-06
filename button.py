@@ -55,7 +55,7 @@ class ThermacellLivResetButton(CoordinatorEntity[ThermacellLivCoordinator], Butt
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
         self._attr_has_entity_name = True
-        self._attr_name = f"{device_name} Reset Refill"
+        self._attr_name = "Reset Refill"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_reset_refill"
         self.entity_id = f"button.{DOMAIN}_{device_name}_reset_refill"
         self._attr_icon = "mdi:refresh"
