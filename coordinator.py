@@ -71,7 +71,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     if config_data and "info" in config_data:
                         info = config_data["info"]
                         fw_version = info.get("fw_version", "Unknown")
-                        model = info.get("model", "thermacell-hub")
+                        raw_model = info.get("model", "thermacell-hub")
+                        # Convert technical model name to user-friendly display name
+                        if raw_model == "thermacell-hub":
+                            model = "Thermacell LIV Hub"
+                        else:
+                            model = raw_model
                     
                     # Get Hub ID (serial) and runtime from params if available
                     params = node.get("params", {})
