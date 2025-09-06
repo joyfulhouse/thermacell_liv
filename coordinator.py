@@ -132,9 +132,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                             # Convert Thermacell brightness (0-100) to Home Assistant (0-255)
                             ha_brightness = int((brightness / 100) * 255) if brightness > 0 else 0
                             
+                            # LED should only be considered "on" if hub is powered AND brightness > 0
+                            hub_powered = device_params.get("Enable Repellers", False)
+                            led_power = hub_powered and brightness > 0
+                            
                             node_info["devices"][device_name] = {
-                                "power": device_params.get("Enable Repellers", False),
-                                "led_power": brightness > 0,
+                                "power": hub_powered,
+                                "led_power": led_power,
                                 "led_brightness": ha_brightness,  # Home Assistant brightness (0-255)
                                 "led_brightness_pct": brightness,  # Thermacell brightness (0-100)
                                 "led_color": {
@@ -182,6 +186,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
                 device_data["power"] = power_on
+                
+                # Update LED power state based on hub power and brightness
+                brightness = device_data.get("led_brightness", 0)
+                device_data["led_power"] = power_on and brightness > 0
+            
+            # Trigger a refresh to update the UI state
+            await self.async_request_refresh()
         return success
 
     async def async_set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
@@ -191,7 +202,14 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             # Update local cache immediately
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["led_power"] = led_on
+                
+                # LED should only be considered "on" if hub is powered AND brightness > 0
+                hub_powered = device_data.get("power", False)
+                brightness = device_data.get("led_brightness", 0)
+                device_data["led_power"] = led_on and hub_powered and brightness > 0
+            
+            # Trigger a refresh to update the UI state
+            await self.async_request_refresh()
         return success
 
     async def async_set_device_led_color(
@@ -204,6 +222,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
                 device_data["led_color"] = {"r": red, "g": green, "b": blue}
+            
+            # Trigger a refresh to update the UI state
+            await self.async_request_refresh()
         return success
 
     async def async_set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
@@ -215,7 +236,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
                 device_data["led_brightness"] = brightness  # Already in HA format (0-255)
                 device_data["led_brightness_pct"] = int((brightness / 255) * 100)  # Thermacell format
-                device_data["led_power"] = brightness > 0
+                
+                # LED should only be considered "on" if hub is powered AND brightness > 0
+                hub_powered = device_data.get("power", False)
+                device_data["led_power"] = hub_powered and brightness > 0
+            
+            # Trigger a refresh to update the UI state
+            await self.async_request_refresh()
         return success
 
     async def async_reset_refill_life(self, node_id: str, device_name: str) -> bool:

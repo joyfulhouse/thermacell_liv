@@ -130,16 +130,12 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
                 self._node_id, self._device_name, brightness
             )
         
-        success = await self.coordinator.async_set_device_led_power(
+        await self.coordinator.async_set_device_led_power(
             self._node_id, self._device_name, True
         )
-        if success:
-            await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
-        success = await self.coordinator.async_set_device_led_power(
+        await self.coordinator.async_set_device_led_power(
             self._node_id, self._device_name, False
         )
-        if success:
-            await self.coordinator.async_request_refresh()
