@@ -8,6 +8,6 @@
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "requirements": ["aiohttp>=3.8.0"],
-  "version": "0.0.1",
+  "version": "0.0.2",
   "icon": "https://raw.githubusercontent.com/joyfulhouse/thermacell_liv/main/icon.png"
 }
