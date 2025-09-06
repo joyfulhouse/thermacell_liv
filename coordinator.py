@@ -121,10 +121,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                             enable_repellers = device_params.get("Enable Repellers", False)
                             error = device_params.get("Error", 0)
                             
-                            # Check connectivity first - this is the most important status
-                            if not connectivity.get("connected", False):
-                                status_text = "Not Connected"
-                            elif error > 0:
+                            # Determine system operational status
+                            if error > 0:
                                 status_text = "Error"
                             elif not enable_repellers:
                                 status_text = "Off"

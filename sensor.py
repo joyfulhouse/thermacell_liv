@@ -317,7 +317,7 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
 
 
 class ThermacellLivLastUpdatedSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
-    """Representation of a Thermacell LIV last updated sensor."""
+    """Representation of a Thermacell LIV last polled sensor."""
 
     def __init__(
         self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
@@ -331,7 +331,7 @@ class ThermacellLivLastUpdatedSensor(CoordinatorEntity[ThermacellLivCoordinator]
         node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
         
         self._attr_has_entity_name = True
-        self._attr_name = "Last Updated"
+        self._attr_name = "Last Polled"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_last_updated"
         self.entity_id = f"sensor.{DOMAIN}_{device_name}_last_updated"
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
@@ -357,12 +357,9 @@ class ThermacellLivLastUpdatedSensor(CoordinatorEntity[ThermacellLivCoordinator]
 
     @property
     def native_value(self) -> datetime | None:
-        """Return the last updated timestamp."""
-        device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
-        if device_data:
-            timestamp = device_data.get("last_updated", 0)
-            if timestamp > 0:
-                return datetime.fromtimestamp(timestamp)
+        """Return the last API poll/refresh timestamp."""
+        if self.coordinator.last_update_success_time:
+            return self.coordinator.last_update_success_time
         return None
 
 
