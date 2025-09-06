@@ -219,6 +219,15 @@ thermacell_liv/
    - ✅ **Mock Data Realism**: Test fixtures matching production API responses
    - ✅ **Import & Syntax**: All code validated, production-ready structure
 
+13. **Critical Bug Fixes** ✅ **(Version 0.0.3)**
+   - ✅ **Coordinator Timestamp Fix**: Added `last_update_success_time` attribute initialization
+   - ✅ **Sensor Availability Fix**: Last Updated sensor always available (coordinator-level data)
+   - ✅ **Timezone Compliance**: Fixed "missing timezone information" error with `dt_util.utcnow()`
+   - ✅ **Button Press Errors**: Resolved refresh button failures due to datetime issues
+   - ✅ **Home Assistant Standards**: Full compliance with HA datetime requirements
+   - ✅ **Comprehensive Test Coverage**: Added 3 timezone-specific test methods
+   - ✅ **Production Stability**: All critical runtime errors resolved
+
 ## Technical Implementation Details
 
 ### Optimistic Updates Architecture
@@ -273,6 +282,18 @@ else:
     status_text = "Unknown"
 ```
 
+### Timezone-Aware DateTime Implementation
+```python
+# Coordinator timestamp update (v0.0.3 fix)
+from homeassistant.util import dt as dt_util
+
+# Before: datetime.now() - naive datetime (caused errors)
+# After: dt_util.utcnow() - timezone-aware datetime
+self.last_update_success_time = dt_util.utcnow()
+
+# Result: "2025-09-06 15:06:59.245883+00:00" (timezone-aware)
+```
+
 ### Performance Metrics
 - **API Call Time**: ~2.5 seconds average
 - **Optimistic Update Time**: ~0.01 seconds
@@ -301,6 +322,18 @@ else:
 ### ✅ UI Responsiveness
 - **Issue**: Integration felt unresponsive waiting for API responses
 - **Resolution**: Implemented comprehensive optimistic updates
+
+### ✅ Missing Coordinator Attribute **(v0.0.3)**
+- **Issue**: `'ThermacellLivCoordinator' object has no attribute 'last_update_success_time'`
+- **Resolution**: Added attribute initialization in `__init__` and timestamp update after successful fetch
+
+### ✅ Last Updated Sensor Unavailable **(v0.0.3)**
+- **Issue**: `thermacell_liv_adu_last_updated` showing as "Unavailable"
+- **Resolution**: Changed availability to always `True` since it shows coordinator-level data, not device-specific
+
+### ✅ Timezone Information Missing **(v0.0.3)**
+- **Issue**: `Invalid datetime: sensor provides state which is missing timezone information`
+- **Resolution**: Replaced `datetime.now()` with `dt_util.utcnow()` for timezone-aware timestamps
 
 ## Testing & Validation
 
