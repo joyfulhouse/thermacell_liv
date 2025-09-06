@@ -179,11 +179,8 @@ class ThermacellLivAPI:
 
     async def set_node_params(self, node_id: str, params: Dict[str, Any]) -> bool:
         """Set node parameters."""
-        data = {
-            "node_id": node_id,
-            "payload": params
-        }
-        response = await self._make_request("PUT", f"/user/nodes/params", data)
+        # The correct API structure uses query parameter and direct payload
+        response = await self._make_request("PUT", f"/user/nodes/params?nodeid={node_id}", params)
         return response is not None
 
     async def set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:

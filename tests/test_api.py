@@ -278,8 +278,8 @@ class TestThermacellLivAPI:
             
             mock_request.assert_called_once_with(
                 "PUT",
-                "/user/nodes/params",
-                {"node_id": "node123", "payload": params}
+                "/user/nodes/params?nodeid=node123",
+                params
             )
             assert result is True
 
