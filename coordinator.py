@@ -121,7 +121,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                             enable_repellers = device_params.get("Enable Repellers", False)
                             error = device_params.get("Error", 0)
                             
-                            if error > 0:
+                            # Check connectivity first - this is the most important status
+                            if not connectivity.get("connected", False):
+                                status_text = "Not Connected"
+                            elif error > 0:
                                 status_text = "Error"
                             elif not enable_repellers:
                                 status_text = "Off"
@@ -187,15 +190,17 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         """Set device power with optimistic update."""
         # Optimistic update - update UI immediately
         if self.data and node_id in self.data:
-            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-            device_data["power"] = power_on
-            
-            # Update LED power state based on hub power and brightness
-            brightness = device_data.get("led_brightness", 0)
-            device_data["led_power"] = power_on and brightness > 0
-            
-            # Immediately notify UI of change
-            self.async_update_listeners()
+            devices = self.data[node_id].get("devices", {})
+            if device_name in devices:
+                device_data = devices[device_name]
+                device_data["power"] = power_on
+                
+                # Update LED power state based on hub power and brightness
+                brightness = device_data.get("led_brightness", 0)
+                device_data["led_power"] = power_on and brightness > 0
+                
+                # Immediately notify UI of change
+                self.async_update_listeners()
         
         # Make API call in background
         success = await self.api.set_device_power(node_id, device_name, power_on)
@@ -203,34 +208,39 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         if not success:
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
-                device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["power"] = not power_on  # Revert
-                
-                # Revert LED power state
-                brightness = device_data.get("led_brightness", 0)
-                device_data["led_power"] = (not power_on) and brightness > 0
-                
-                # Notify UI of revert
-                self.async_update_listeners()
+                devices = self.data[node_id].get("devices", {})
+                if device_name in devices:
+                    device_data = devices[device_name]
+                    device_data["power"] = not power_on  # Revert
+                    
+                    # Revert LED power state
+                    brightness = device_data.get("led_brightness", 0)
+                    device_data["led_power"] = (not power_on) and brightness > 0
+                    
+                    # Notify UI of revert
+                    self.async_update_listeners()
         
         return success
 
     async def async_set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
         """Set device LED power with optimistic update."""
         # Optimistic update - update UI immediately
+        original_led_power = False
         if self.data and node_id in self.data:
-            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-            
-            # Store original state for potential revert
-            original_led_power = device_data.get("led_power", False)
-            
-            # LED should only be considered "on" if hub is powered AND brightness > 0
-            hub_powered = device_data.get("power", False)
-            brightness = device_data.get("led_brightness", 0)
-            device_data["led_power"] = led_on and hub_powered and brightness > 0
-            
-            # Immediately notify UI of change
-            self.async_update_listeners()
+            devices = self.data[node_id].get("devices", {})
+            if device_name in devices:
+                device_data = devices[device_name]
+                
+                # Store original state for potential revert
+                original_led_power = device_data.get("led_power", False)
+                
+                # LED should only be considered "on" if hub is powered AND brightness > 0
+                hub_powered = device_data.get("power", False)
+                brightness = device_data.get("led_brightness", 0)
+                device_data["led_power"] = led_on and hub_powered and brightness > 0
+                
+                # Immediately notify UI of change
+                self.async_update_listeners()
         
         # Make API call in background
         success = await self.api.set_device_led_power(node_id, device_name, led_on)
@@ -238,11 +248,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         if not success:
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
-                device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["led_power"] = original_led_power  # Revert to original state
-                
-                # Notify UI of revert
-                self.async_update_listeners()
+                devices = self.data[node_id].get("devices", {})
+                if device_name in devices:
+                    device_data = devices[device_name]
+                    device_data["led_power"] = original_led_power  # Revert to original state
+                    
+                    # Notify UI of revert
+                    self.async_update_listeners()
         
         return success
 
@@ -253,16 +265,18 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         # Optimistic update - update UI immediately
         original_color = None
         if self.data and node_id in self.data:
-            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-            
-            # Store original color for potential revert
-            original_color = device_data.get("led_color", {"r": 255, "g": 255, "b": 255}).copy()
-            
-            # Update color immediately
-            device_data["led_color"] = {"r": red, "g": green, "b": blue}
-            
-            # Immediately notify UI of change
-            self.async_update_listeners()
+            devices = self.data[node_id].get("devices", {})
+            if device_name in devices:
+                device_data = devices[device_name]
+                
+                # Store original color for potential revert
+                original_color = device_data.get("led_color", {"r": 255, "g": 255, "b": 255}).copy()
+                
+                # Update color immediately
+                device_data["led_color"] = {"r": red, "g": green, "b": blue}
+                
+                # Immediately notify UI of change
+                self.async_update_listeners()
         
         # Make API call in background
         success = await self.api.set_device_led_color(node_id, device_name, red, green, blue)
@@ -270,11 +284,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         if not success and original_color:
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
-                device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["led_color"] = original_color  # Revert to original color
-                
-                # Notify UI of revert
-                self.async_update_listeners()
+                devices = self.data[node_id].get("devices", {})
+                if device_name in devices:
+                    device_data = devices[device_name]
+                    device_data["led_color"] = original_color  # Revert to original color
+                    
+                    # Notify UI of revert
+                    self.async_update_listeners()
         
         return success
 
@@ -286,23 +302,25 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         original_led_power = None
         
         if self.data and node_id in self.data:
-            device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-            
-            # Store original values for potential revert
-            original_brightness = device_data.get("led_brightness", 255)
-            original_brightness_pct = device_data.get("led_brightness_pct", 100)
-            original_led_power = device_data.get("led_power", False)
-            
-            # Update brightness immediately
-            device_data["led_brightness"] = brightness  # Already in HA format (0-255)
-            device_data["led_brightness_pct"] = int((brightness / 255) * 100)  # Thermacell format
-            
-            # LED should only be considered "on" if hub is powered AND brightness > 0
-            hub_powered = device_data.get("power", False)
-            device_data["led_power"] = hub_powered and brightness > 0
-            
-            # Immediately notify UI of change
-            self.async_update_listeners()
+            devices = self.data[node_id].get("devices", {})
+            if device_name in devices:
+                device_data = devices[device_name]
+                
+                # Store original values for potential revert
+                original_brightness = device_data.get("led_brightness", 255)
+                original_brightness_pct = device_data.get("led_brightness_pct", 100)
+                original_led_power = device_data.get("led_power", False)
+                
+                # Update brightness immediately
+                device_data["led_brightness"] = brightness  # Already in HA format (0-255)
+                device_data["led_brightness_pct"] = int((brightness / 255) * 100)  # Thermacell format
+                
+                # LED should only be considered "on" if hub is powered AND brightness > 0
+                hub_powered = device_data.get("power", False)
+                device_data["led_power"] = hub_powered and brightness > 0
+                
+                # Immediately notify UI of change
+                self.async_update_listeners()
         
         # Make API call in background
         success = await self.api.set_device_led_brightness(node_id, device_name, brightness)
@@ -310,13 +328,15 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         if not success and original_brightness is not None:
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
-                device_data = self.data[node_id].get("devices", {}).get(device_name, {})
-                device_data["led_brightness"] = original_brightness
-                device_data["led_brightness_pct"] = original_brightness_pct
-                device_data["led_power"] = original_led_power
-                
-                # Notify UI of revert
-                self.async_update_listeners()
+                devices = self.data[node_id].get("devices", {})
+                if device_name in devices:
+                    device_data = devices[device_name]
+                    device_data["led_brightness"] = original_brightness
+                    device_data["led_brightness_pct"] = original_brightness_pct
+                    device_data["led_power"] = original_led_power
+                    
+                    # Notify UI of revert
+                    self.async_update_listeners()
         
         return success
 
