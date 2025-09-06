@@ -101,8 +101,9 @@ class TestThermacellLivSwitch:
         assert device_info["identifiers"] == {(DOMAIN, "node1")}
         assert device_info["name"] == "Test Node"
         assert device_info["manufacturer"] == "Thermacell"
-        assert device_info["model"] == "LIV"
-        assert device_info["sw_version"] == "1.0.0"
+        assert device_info["model"] == "Thermacell LIV Hub"
+        assert device_info["sw_version"] == "5.3.2"
+        assert device_info["serial_number"] == "ABC123456"
 
     def test_available_true(self, mock_coordinator):
         """Test switch availability (true)."""
@@ -193,8 +194,9 @@ class TestThermacellLivLight:
         
         assert light._node_id == "node1"
         assert light._device_name == "Device1"
-        assert light._attr_name == "Test Node Device1 LED"
-        assert light._attr_unique_id == "node1_Device1_light"
+        assert light._attr_name == "LED"
+        assert light._attr_unique_id == f"{DOMAIN}_node1_Device1_light"
+        assert light.entity_id == f"light.{DOMAIN}_Device1_led"
 
     def test_is_on_true(self, mock_coordinator):
         """Test light is_on property (true)."""
@@ -273,8 +275,9 @@ class TestThermacellLivRefillSensor:
         
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Test Node Device1 Refill Life"
-        assert sensor._attr_unique_id == "node1_Device1_refill_life"
+        assert sensor._attr_name == "Refill Life"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_refill_life"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_refill_life"
         assert sensor._attr_native_unit_of_measurement == "%"
 
     def test_native_value(self, mock_coordinator):
@@ -307,8 +310,9 @@ class TestThermacellLivResetButton:
         
         assert button._node_id == "node1"
         assert button._device_name == "Device1"
-        assert button._attr_name == "Test Node Device1 Reset Refill"
-        assert button._attr_unique_id == "node1_Device1_reset_refill"
+        assert button._attr_name == "Reset Refill"
+        assert button._attr_unique_id == f"{DOMAIN}_node1_Device1_reset_refill"
+        assert button.entity_id == f"button.{DOMAIN}_Device1_reset_refill"
         assert button._attr_icon == "mdi:refresh"
 
     @pytest.mark.asyncio
@@ -385,8 +389,17 @@ class TestEntityPlatformSetup:
         
         mock_add_entities.assert_called_once()
         sensors = mock_add_entities.call_args[0][0]
-        assert len(sensors) == 2  # Refill life + System status sensors
-        assert isinstance(sensors[0], ThermacellLivRefillSensor)
+        assert len(sensors) == 8  # All sensor types
+        # Check we have all sensor types
+        sensor_types = [type(sensor) for sensor in sensors]
+        assert ThermacellLivRefillSensor in sensor_types
+        assert ThermacellLivSystemStatusSensor in sensor_types
+        assert ThermacellLivSystemRuntimeSensor in sensor_types
+        assert ThermacellLivConnectivitySensor in sensor_types
+        assert ThermacellLivLastUpdatedSensor in sensor_types
+        assert ThermacellLivErrorCodeSensor in sensor_types
+        assert ThermacellLivHubIdSensor in sensor_types
+        assert ThermacellLivFirmwareSensor in sensor_types
 
     @pytest.mark.asyncio
     async def test_button_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
@@ -399,8 +412,10 @@ class TestEntityPlatformSetup:
         
         mock_add_entities.assert_called_once()
         buttons = mock_add_entities.call_args[0][0]
-        assert len(buttons) == 1
-        assert isinstance(buttons[0], ThermacellLivResetButton)
+        assert len(buttons) == 2  # Reset refill + Refresh buttons
+        button_types = [type(button) for button in buttons]
+        assert ThermacellLivResetButton in button_types
+        assert ThermacellLivRefreshButton in button_types
 
     @pytest.mark.asyncio
     async def test_setup_entry_multiple_devices(self, hass, config_entry, mock_coordinator, mock_add_entities):
@@ -453,21 +468,21 @@ class TestThermacellLivSystemStatusSensor:
         
         assert sensor._node_id == "test_node"
         assert sensor._device_name == "test_device"
-        assert sensor.unique_id == "test_node_test_device_system_status"
-        assert sensor.name == "Test Node test_device System Status"
+        assert sensor._attr_unique_id == f"{DOMAIN}_test_node_test_device_system_status"
+        assert sensor._attr_name == "System Status"
 
-    def test_native_value_on(self, mock_coordinator):
-        """Test sensor value when system is on."""
+    def test_native_value_protected(self, mock_coordinator):
+        """Test sensor value when system is protected (operational)."""
         mock_coordinator.get_device_data.return_value = {
             "power": True,
-            "system_status": "On",
+            "system_status": "Protected",
             "system_status_code": 3,
             "error_code": 0,
         }
         
         sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
         
-        assert sensor.native_value == "On"
+        assert sensor.native_value == "Protected"
 
     def test_native_value_warming_up(self, mock_coordinator):
         """Test sensor value when system is warming up."""
@@ -531,5 +546,213 @@ class TestThermacellLivSystemStatusSensor:
         assert attributes == {
             "system_status_code": 3,
             "error_code": 0,
-            "enable_repellers": True,
         }
+
+
+class TestThermacellLivSystemRuntimeSensor:
+    """Test the ThermacellLivSystemRuntimeSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "System Runtime"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_system_runtime"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_system_runtime"
+        assert sensor._attr_device_class == "duration"
+        assert sensor._attr_native_unit_of_measurement == "min"
+
+    def test_native_value(self, mock_coordinator):
+        """Test sensor native value."""
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 120  # From mock data
+
+    def test_native_value_no_node_data(self, mock_coordinator):
+        """Test sensor native value with no node data."""
+        mock_coordinator.get_node_data.return_value = None
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 0
+
+
+class TestThermacellLivConnectivitySensor:
+    """Test the ThermacellLivConnectivitySensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "Connectivity"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_connectivity"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_connectivity"
+        assert sensor._attr_entity_category == "diagnostic"
+
+    def test_native_value_online(self, mock_coordinator):
+        """Test sensor value when online."""
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == "Online"
+
+    def test_native_value_offline(self, mock_coordinator):
+        """Test sensor value when offline."""
+        mock_coordinator.get_node_data.return_value = {"online": False}
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == "Offline"
+
+
+class TestThermacellLivLastUpdatedSensor:
+    """Test the ThermacellLivLastUpdatedSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "Last Updated"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_last_updated"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_last_updated"
+        assert sensor._attr_entity_category == "diagnostic"
+        assert sensor._attr_device_class == "timestamp"
+
+    def test_native_value(self, mock_coordinator):
+        """Test sensor native value."""
+        from datetime import datetime
+        test_time = datetime.now()
+        mock_coordinator.last_update_success_time = test_time
+        
+        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == test_time
+
+    def test_native_value_no_time(self, mock_coordinator):
+        """Test sensor native value with no update time."""
+        mock_coordinator.last_update_success_time = None
+        
+        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value is None
+
+
+class TestThermacellLivErrorCodeSensor:
+    """Test the ThermacellLivErrorCodeSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "Error Code"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_error_code"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_error_code"
+        assert sensor._attr_entity_category == "diagnostic"
+
+    def test_native_value_no_error(self, mock_coordinator):
+        """Test sensor value with no error."""
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 0
+
+    def test_native_value_with_error(self, mock_coordinator):
+        """Test sensor value with error."""
+        mock_coordinator.get_device_data.return_value = {"error_code": 5}
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 5
+
+    def test_native_value_no_device_data(self, mock_coordinator):
+        """Test sensor value with no device data."""
+        mock_coordinator.get_device_data.return_value = None
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 0
+
+
+class TestThermacellLivHubIdSensor:
+    """Test the ThermacellLivHubIdSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "Hub ID"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_hub_id"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_hub_id"
+        assert sensor._attr_entity_category == "diagnostic"
+
+    def test_native_value(self, mock_coordinator):
+        """Test sensor native value."""
+        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == "ABC123456"
+
+    def test_native_value_no_node_data(self, mock_coordinator):
+        """Test sensor native value with no node data."""
+        mock_coordinator.get_node_data.return_value = None
+        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == "Unknown"
+
+
+class TestThermacellLivFirmwareSensor:
+    """Test the ThermacellLivFirmwareSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "Firmware Version"
+        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_firmware_version"
+        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_firmware_version"
+        assert sensor._attr_entity_category == "diagnostic"
+
+    def test_native_value(self, mock_coordinator):
+        """Test sensor native value."""
+        sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == "5.3.2"
+
+    def test_native_value_no_node_data(self, mock_coordinator):
+        """Test sensor native value with no node data."""
+        mock_coordinator.get_node_data.return_value = None
+        sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == "Unknown"
+
+
+class TestThermacellLivRefreshButton:
+    """Test the ThermacellLivRefreshButton class."""
+
+    def test_init(self, mock_coordinator):
+        """Test button initialization."""
+        button = ThermacellLivRefreshButton(mock_coordinator, "node1", "Device1")
+        
+        assert button._node_id == "node1"
+        assert button._device_name == "Device1"
+        assert button._attr_name == "Refresh"
+        assert button._attr_unique_id == f"{DOMAIN}_node1_Device1_refresh"
+        assert button.entity_id == f"button.{DOMAIN}_Device1_refresh"
+        assert button._attr_icon == "mdi:refresh"
+        assert button._attr_entity_category == "diagnostic"
+
+    @pytest.mark.asyncio
+    async def test_async_press(self, mock_coordinator):
+        """Test button press."""
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        button = ThermacellLivRefreshButton(mock_coordinator, "node1", "Device1")
+        
+        await button.async_press()
+        
+        mock_coordinator.async_request_refresh.assert_called_once()
