@@ -130,7 +130,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                             elif system_status == 2:
                                 status_text = "Warming Up"
                             elif system_status == 3:
-                                status_text = "On"
+                                status_text = "Protected"
                             else:
                                 status_text = "Unknown"
                             
