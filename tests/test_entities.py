@@ -1,0 +1,410 @@
+"""Tests for Thermacell LIV entity classes."""
+from unittest.mock import AsyncMock, MagicMock
+import pytest
+
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
+
+from custom_components.thermacell_liv.const import DOMAIN
+from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.switch import ThermacellLivSwitch
+from custom_components.thermacell_liv.light import ThermacellLivLight
+from custom_components.thermacell_liv.sensor import ThermacellLivRefillSensor
+from custom_components.thermacell_liv.button import ThermacellLivResetButton
+
+
+@pytest.fixture
+def hass():
+    """Return a mock Home Assistant instance."""
+    return MagicMock(spec=HomeAssistant)
+
+
+@pytest.fixture
+def config_entry():
+    """Return a mock config entry."""
+    entry = MagicMock(spec=ConfigEntry)
+    entry.entry_id = "test_entry"
+    return entry
+
+
+@pytest.fixture
+def mock_coordinator():
+    """Return a mock coordinator."""
+    coordinator = MagicMock(spec=ThermacellLivCoordinator)
+    coordinator.last_update_success = True
+    coordinator.data = {
+        "node1": {
+            "id": "node1",
+            "name": "Test Node",
+            "model": "LIV",
+            "fw_version": "1.0.0",
+            "online": True,
+            "devices": {
+                "Device1": {
+                    "power": True,
+                    "led_power": True,
+                    "led_color": {"r": 255, "g": 128, "b": 0},
+                    "refill_life": 75,
+                    "last_updated": 1234567890
+                }
+            }
+        }
+    }
+    coordinator.get_node_data.return_value = coordinator.data["node1"]
+    coordinator.get_device_data.return_value = coordinator.data["node1"]["devices"]["Device1"]
+    coordinator.is_node_online.return_value = True
+    return coordinator
+
+
+class TestThermacellLivSwitch:
+    """Test the ThermacellLivSwitch class."""
+
+    def test_init(self, mock_coordinator):
+        """Test switch initialization."""
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch._node_id == "node1"
+        assert switch._device_name == "Device1"
+        assert switch._attr_name == "Test Node Device1"
+        assert switch._attr_unique_id == "node1_Device1"
+
+    def test_device_info(self, mock_coordinator):
+        """Test switch device info."""
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        device_info = switch.device_info
+        
+        assert device_info["identifiers"] == {(DOMAIN, "node1")}
+        assert device_info["name"] == "Test Node"
+        assert device_info["manufacturer"] == "Thermacell"
+        assert device_info["model"] == "LIV"
+        assert device_info["sw_version"] == "1.0.0"
+
+    def test_available_true(self, mock_coordinator):
+        """Test switch availability (true)."""
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch.available is True
+
+    def test_available_false_coordinator_failed(self, mock_coordinator):
+        """Test switch availability (false due to coordinator failure)."""
+        mock_coordinator.last_update_success = False
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch.available is False
+
+    def test_available_false_node_offline(self, mock_coordinator):
+        """Test switch availability (false due to node offline)."""
+        mock_coordinator.is_node_online.return_value = False
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch.available is False
+
+    def test_is_on_true(self, mock_coordinator):
+        """Test switch is_on property (true)."""
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch.is_on is True
+
+    def test_is_on_false(self, mock_coordinator):
+        """Test switch is_on property (false)."""
+        mock_coordinator.get_device_data.return_value = {"power": False}
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch.is_on is False
+
+    def test_is_on_no_device_data(self, mock_coordinator):
+        """Test switch is_on property (no device data)."""
+        mock_coordinator.get_device_data.return_value = None
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        assert switch.is_on is False
+
+    async def test_async_turn_on_success(self, mock_coordinator):
+        """Test turning switch on successfully."""
+        mock_coordinator.async_set_device_power = AsyncMock(return_value=True)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        await switch.async_turn_on()
+        
+        mock_coordinator.async_set_device_power.assert_called_once_with("node1", "Device1", True)
+        mock_coordinator.async_request_refresh.assert_called_once()
+
+    async def test_async_turn_on_failure(self, mock_coordinator):
+        """Test turning switch on with failure."""
+        mock_coordinator.async_set_device_power = AsyncMock(return_value=False)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        await switch.async_turn_on()
+        
+        mock_coordinator.async_set_device_power.assert_called_once_with("node1", "Device1", True)
+        mock_coordinator.async_request_refresh.assert_not_called()
+
+    async def test_async_turn_off_success(self, mock_coordinator):
+        """Test turning switch off successfully."""
+        mock_coordinator.async_set_device_power = AsyncMock(return_value=True)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+        
+        await switch.async_turn_off()
+        
+        mock_coordinator.async_set_device_power.assert_called_once_with("node1", "Device1", False)
+        mock_coordinator.async_request_refresh.assert_called_once()
+
+
+class TestThermacellLivLight:
+    """Test the ThermacellLivLight class."""
+
+    def test_init(self, mock_coordinator):
+        """Test light initialization."""
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        assert light._node_id == "node1"
+        assert light._device_name == "Device1"
+        assert light._attr_name == "Test Node Device1 LED"
+        assert light._attr_unique_id == "node1_Device1_led"
+
+    def test_is_on_true(self, mock_coordinator):
+        """Test light is_on property (true)."""
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        assert light.is_on is True
+
+    def test_is_on_false(self, mock_coordinator):
+        """Test light is_on property (false)."""
+        mock_coordinator.get_device_data.return_value = {"led_power": False}
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        assert light.is_on is False
+
+    def test_rgb_color(self, mock_coordinator):
+        """Test light RGB color property."""
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        assert light.rgb_color == (255, 128, 0)
+
+    def test_rgb_color_no_device_data(self, mock_coordinator):
+        """Test light RGB color property with no device data."""
+        mock_coordinator.get_device_data.return_value = None
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        assert light.rgb_color == (255, 255, 255)  # Default white
+
+    async def test_async_turn_on_success(self, mock_coordinator):
+        """Test turning light on successfully."""
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        await light.async_turn_on()
+        
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
+        mock_coordinator.async_request_refresh.assert_called_once()
+
+    async def test_async_turn_on_with_color(self, mock_coordinator):
+        """Test turning light on with color change."""
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
+        mock_coordinator.async_set_device_led_color = AsyncMock(return_value=True)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        await light.async_turn_on(rgb_color=(255, 0, 128))
+        
+        mock_coordinator.async_set_device_led_color.assert_called_once_with("node1", "Device1", 255, 0, 128)
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
+        mock_coordinator.async_request_refresh.assert_called_once()
+
+    async def test_async_turn_off_success(self, mock_coordinator):
+        """Test turning light off successfully."""
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+        
+        await light.async_turn_off()
+        
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", False)
+        mock_coordinator.async_request_refresh.assert_called_once()
+
+
+class TestThermacellLivRefillSensor:
+    """Test the ThermacellLivRefillSensor class."""
+
+    def test_init(self, mock_coordinator):
+        """Test sensor initialization."""
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor._node_id == "node1"
+        assert sensor._device_name == "Device1"
+        assert sensor._attr_name == "Test Node Device1 Refill Life"
+        assert sensor._attr_unique_id == "node1_Device1_refill_life"
+        assert sensor._attr_native_unit_of_measurement == "%"
+
+    def test_native_value(self, mock_coordinator):
+        """Test sensor native value."""
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 75
+
+    def test_native_value_no_device_data(self, mock_coordinator):
+        """Test sensor native value with no device data."""
+        mock_coordinator.get_device_data.return_value = None
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 0
+
+    def test_native_value_missing_refill_life(self, mock_coordinator):
+        """Test sensor native value with missing refill_life."""
+        mock_coordinator.get_device_data.return_value = {"power": True}  # Missing refill_life
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+        
+        assert sensor.native_value == 0
+
+
+class TestThermacellLivResetButton:
+    """Test the ThermacellLivResetButton class."""
+
+    def test_init(self, mock_coordinator):
+        """Test button initialization."""
+        button = ThermacellLivResetButton(mock_coordinator, "node1", "Device1")
+        
+        assert button._node_id == "node1"
+        assert button._device_name == "Device1"
+        assert button._attr_name == "Test Node Device1 Reset Refill"
+        assert button._attr_unique_id == "node1_Device1_reset_refill"
+        assert button._attr_icon == "mdi:refresh"
+
+    async def test_async_press_success(self, mock_coordinator):
+        """Test button press successfully."""
+        mock_coordinator.async_reset_refill_life = AsyncMock(return_value=True)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        button = ThermacellLivResetButton(mock_coordinator, "node1", "Device1")
+        
+        await button.async_press()
+        
+        mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
+        mock_coordinator.async_request_refresh.assert_called_once()
+
+    async def test_async_press_failure(self, mock_coordinator):
+        """Test button press with failure."""
+        mock_coordinator.async_reset_refill_life = AsyncMock(return_value=False)
+        mock_coordinator.async_request_refresh = AsyncMock()
+        
+        button = ThermacellLivResetButton(mock_coordinator, "node1", "Device1")
+        
+        await button.async_press()
+        
+        mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
+        mock_coordinator.async_request_refresh.assert_not_called()
+
+
+class TestEntityPlatformSetup:
+    """Test entity platform setup functions."""
+
+    @pytest.fixture
+    def mock_add_entities(self):
+        """Return a mock add entities callback."""
+        return AsyncMock()
+
+    async def test_switch_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
+        """Test switch platform setup."""
+        from custom_components.thermacell_liv.switch import async_setup_entry
+        
+        hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
+        
+        await async_setup_entry(hass, config_entry, mock_add_entities)
+        
+        mock_add_entities.assert_called_once()
+        switches = mock_add_entities.call_args[0][0]
+        assert len(switches) == 1
+        assert isinstance(switches[0], ThermacellLivSwitch)
+
+    async def test_light_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
+        """Test light platform setup."""
+        from custom_components.thermacell_liv.light import async_setup_entry
+        
+        hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
+        
+        await async_setup_entry(hass, config_entry, mock_add_entities)
+        
+        mock_add_entities.assert_called_once()
+        lights = mock_add_entities.call_args[0][0]
+        assert len(lights) == 1
+        assert isinstance(lights[0], ThermacellLivLight)
+
+    async def test_sensor_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
+        """Test sensor platform setup."""
+        from custom_components.thermacell_liv.sensor import async_setup_entry
+        
+        hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
+        
+        await async_setup_entry(hass, config_entry, mock_add_entities)
+        
+        mock_add_entities.assert_called_once()
+        sensors = mock_add_entities.call_args[0][0]
+        assert len(sensors) == 1
+        assert isinstance(sensors[0], ThermacellLivRefillSensor)
+
+    async def test_button_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
+        """Test button platform setup."""
+        from custom_components.thermacell_liv.button import async_setup_entry
+        
+        hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
+        
+        await async_setup_entry(hass, config_entry, mock_add_entities)
+        
+        mock_add_entities.assert_called_once()
+        buttons = mock_add_entities.call_args[0][0]
+        assert len(buttons) == 1
+        assert isinstance(buttons[0], ThermacellLivResetButton)
+
+    async def test_setup_entry_multiple_devices(self, hass, config_entry, mock_coordinator, mock_add_entities):
+        """Test platform setup with multiple devices."""
+        from custom_components.thermacell_liv.switch import async_setup_entry
+        
+        # Add another device to the coordinator data
+        mock_coordinator.data["node1"]["devices"]["Device2"] = {
+            "power": False,
+            "led_power": False,
+            "led_color": {"r": 0, "g": 255, "b": 0},
+            "refill_life": 50,
+        }
+        
+        hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
+        
+        await async_setup_entry(hass, config_entry, mock_add_entities)
+        
+        switches = mock_add_entities.call_args[0][0]
+        assert len(switches) == 2
+
+    async def test_setup_entry_multiple_nodes(self, hass, config_entry, mock_coordinator, mock_add_entities):
+        """Test platform setup with multiple nodes."""
+        from custom_components.thermacell_liv.switch import async_setup_entry
+        
+        # Add another node to the coordinator data
+        mock_coordinator.data["node2"] = {
+            "id": "node2",
+            "name": "Patio Node",
+            "devices": {
+                "Device1": {"power": False, "refill_life": 25}
+            }
+        }
+        
+        hass.data = {DOMAIN: {config_entry.entry_id: mock_coordinator}}
+        
+        await async_setup_entry(hass, config_entry, mock_add_entities)
+        
+        switches = mock_add_entities.call_args[0][0]
+        assert len(switches) == 2  # One device per node
