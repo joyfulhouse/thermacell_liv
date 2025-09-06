@@ -8,8 +8,10 @@ This is a **production-ready** Home Assistant custom component for integrating T
 - 🔄 **Real-time State Management**: Automatic reversion on API failures
 - 🌈 **Full LED Control**: RGB color, brightness, and power management
 - 📊 **Comprehensive Monitoring**: System status, refill life, runtime tracking
+- 🔧 **Complete Diagnostics**: Connectivity, error codes, firmware, timestamps, device IDs
 - 🔗 **Multi-device Support**: Single integration manages multiple hubs
 - 📱 **HACS Compatible**: Easy installation via Home Assistant Community Store
+- ✨ **Professional Entity Naming**: Clean display names following HA conventions
 
 ## Component Structure
 
@@ -39,32 +41,64 @@ This is a **production-ready** Home Assistant custom component for integrating T
 ### Supported Platforms
 Each Thermacell LIV hub supports the following entities:
 
-1. **Switch** (`switch.py`)
-   - Controls the on/off state of the mosquito repeller
-   - **Optimistic updates**: Instant toggle response
+#### 1. **Switch** (`switch.py`)
+   - **Function**: Controls the on/off state of the mosquito repeller
+   - **Display Name**: "{Device Name}" (main device entity)
+   - **Entity ID**: `switch.thermacell_liv_{device_name}_switch`
+   - **Features**: Optimistic updates for instant toggle response
    - **LED State Logic**: LED automatically reflects hub power + brightness state
-   - Entity ID format: `switch.thermacell_liv_{device_name}`
 
-2. **Light** (`light.py`) 
-   - Controls the color LED on the device
-   - **RGB Color Support**: Full spectrum color control with HSV conversion
-   - **Brightness Control**: HA format (0-255) ↔ Thermacell format (0-100)
-   - **Smart Power Logic**: LED only "on" when hub powered AND brightness > 0
-   - **Optimistic updates**: Instant color/brightness response
-   - Entity ID format: `light.thermacell_liv_{device_name}_led`
+#### 2. **Light** (`light.py`) 
+   - **Function**: Controls the color LED on the device
+   - **Display Name**: "{Device Name} LED"
+   - **Entity ID**: `light.thermacell_liv_{device_name}_led`
+   - **Features**: 
+     - RGB Color Support with full spectrum control and HSV conversion
+     - Brightness Control: HA format (0-255) ↔ Thermacell format (0-100)
+     - Smart Power Logic: LED only "on" when hub powered AND brightness > 0
+     - Optimistic updates for instant color/brightness response
 
-3. **Sensor** (`sensor.py`)
-   - **Refill Life**: Remaining cartridge life (hours)
-   - **System Status**: Real-time operational state ("Protected", "Warming Up", "Off", "Error")
-   - **System Runtime**: Current session runtime with human-readable format
-   - **Firmware Version**: Device firmware info (e.g., "5.3.2")
-   - Device classes: Duration, diagnostic sensors
-   - Entity ID formats: `sensor.thermacell_liv_{device_name}_{sensor_type}`
+#### 3. **Sensors** (`sensor.py`)
 
-4. **Button** (`button.py`)
-   - Resets the refill life counter to 100%
-   - **Optimistic updates**: Immediate state refresh
-   - Entity ID format: `button.thermacell_liv_{device_name}_reset_refill`
+**Regular Sensors:**
+   - **Refill Life**: `sensor.thermacell_liv_{device_name}_refill_life`
+     - Display: "{Device Name} Refill Life"
+     - Remaining cartridge life percentage with battery icon
+
+**Diagnostic Sensors (under Diagnostics tab):**
+   - **System Status**: `sensor.thermacell_liv_{device_name}_system_status` 
+     - Display: "{Device Name} System Status"
+     - Values: "Protected", "Warming Up", "Off", "Error"
+   - **System Runtime**: `sensor.thermacell_liv_{device_name}_system_runtime`
+     - Display: "{Device Name} System Runtime" 
+     - Current session runtime with human-readable format and attributes
+   - **Connectivity**: `sensor.thermacell_liv_{device_name}_connectivity`
+     - Display: "{Device Name} Connectivity"
+     - Values: "Connected" / "Disconnected"
+   - **Last Updated**: `sensor.thermacell_liv_{device_name}_last_updated`
+     - Display: "{Device Name} Last Updated"
+     - Timestamp sensor showing last device communication
+   - **Error Code**: `sensor.thermacell_liv_{device_name}_error_code`
+     - Display: "{Device Name} Error Code"
+     - Numeric error codes with has_error/status attributes
+   - **Hub ID**: `sensor.thermacell_liv_{device_name}_hub_id`
+     - Display: "{Device Name} Hub ID"
+     - Device serial number for identification
+   - **Firmware Version**: `sensor.thermacell_liv_{device_name}_firmware`
+     - Display: "{Device Name} Firmware Version"
+     - Current firmware version (e.g., "5.3.2")
+
+#### 4. **Buttons** (`button.py`)
+
+**Regular Button:**
+   - **Reset Refill**: `button.thermacell_liv_{device_name}_reset_refill`
+     - Display: "{Device Name} Reset Refill"
+     - Resets the refill life counter to 100%
+
+**Diagnostic Button (under Diagnostics tab):**
+   - **Refresh**: `button.thermacell_liv_{device_name}_refresh`
+     - Display: "{Device Name} Refresh"
+     - Manual data refresh from API
 
 ### Multi-Device Support
 - Single integration instance can manage multiple Thermacell LIV hubs
@@ -73,11 +107,15 @@ Each Thermacell LIV hub supports the following entities:
 - **Device Info**: Includes model ("Thermacell LIV Hub"), serial number, firmware version
 
 ### Advanced Features
+- **Entity Naming Standards**: Full Home Assistant convention compliance with `has_entity_name`
+- **Professional Display Names**: Clean titles like "ADU LED", "ADU System Status"
+- **Comprehensive Diagnostics**: All technical data organized in Diagnostics section
 - **System Status Mapping**: Accurate status display ("Protected" when operational)
 - **Runtime Tracking**: Current session runtime (API accurate vs mobile app lifetime)
 - **Error Handling**: Comprehensive error states with user-friendly messages
 - **LED State Logic**: Complex power/brightness/hub state interactions
 - **Color Space Conversion**: HSV ↔ RGB for accurate LED color control
+- **Manual Data Refresh**: User-controlled refresh button for immediate updates
 
 ### Files Structure
 ```
@@ -89,8 +127,8 @@ thermacell_liv/
 ├── const.py             # Constants and configuration keys
 ├── switch.py            # Switch platform with instant response
 ├── light.py             # Light platform with RGB/brightness control
-├── sensor.py            # Multi-sensor platform (refill, status, runtime)
-├── button.py            # Button platform for refill reset
+├── sensor.py            # Multi-sensor platform (refill, diagnostics)
+├── button.py            # Button platform (refill reset, manual refresh)
 ├── manifest.json        # Component metadata with GitHub icon URL
 ├── README.md            # User documentation with HACS support
 └── CLAUDE.md           # This specification file
@@ -132,26 +170,41 @@ thermacell_liv/
    - ✅ **Status sensor**: Real-time operational state monitoring
    - ✅ **Error code handling**: Proper error state detection and display
 
-6. **Integration Polish** ✅
+6. **Entity Naming & Display** ✅ **(Version 0.0.2)**
+   - ✅ **Home Assistant Standards**: Implemented `has_entity_name` pattern
+   - ✅ **Professional Display Names**: Clean titles with device name inclusion
+   - ✅ **Proper Entity IDs**: Domain-prefixed format `thermacell_liv_{device}_{type}`
+   - ✅ **Title Case Names**: Consistent capitalization across all entities
+
+7. **Comprehensive Diagnostics** ✅ **(Major Enhancement)**
+   - ✅ **Connectivity Status**: Real-time connection monitoring
+   - ✅ **Last Updated**: Timestamp tracking for device communication
+   - ✅ **Error Code**: Detailed error state reporting with attributes
+   - ✅ **Hub ID**: Device serial number for identification and support
+   - ✅ **Firmware Version**: Current firmware display for troubleshooting
+   - ✅ **Manual Refresh**: User-controlled data refresh button
+   - ✅ **Diagnostic Organization**: All technical data properly categorized
+
+8. **Integration Polish** ✅
    - ✅ **GitHub icon fix**: Updated manifest.json with raw GitHub URL
    - ✅ **HACS compatibility**: Professional README with installation guide
    - ✅ **Repository branding**: Logo integration and documentation
    - ✅ **Buy me a coffee**: Updated support links
 
-7. **Data Coordinator** ✅
+9. **Data Coordinator** ✅
    - ✅ Created `coordinator.py` with ThermacellLivCoordinator
    - ✅ **Optimistic updates**: All async_set_* methods with instant UI feedback
    - ✅ Efficient polling with 60-second intervals
    - ✅ Multi-device support with proper state management
    - ✅ **Complex state interactions**: Hub power affects LED state logic
 
-8. **Entity Implementation** ✅
+10. **Entity Implementation** ✅
    - ✅ All entity classes with full API integration
    - ✅ **Enhanced device info**: Model, firmware, serial number display
    - ✅ CoordinatorEntity pattern with optimistic updates support
    - ✅ **Availability logic**: Node online status + coordinator success
 
-9. **Configuration & Validation** ✅
+11. **Configuration & Validation** ✅
    - ✅ Enhanced config flow with real API authentication testing
    - ✅ Connection validation with actual ESP Rainmaker endpoints
    - ✅ **Manifest improvements**: GitHub icon URL, proper dependencies
