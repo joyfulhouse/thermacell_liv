@@ -90,12 +90,12 @@ Each Thermacell LIV hub supports the following entities:
 
 #### 4. **Buttons** (`button.py`)
 
-**Regular Button:**
+**Regular Buttons:**
    - **Reset Refill**: `button.thermacell_liv_{device_name}_reset_refill`
      - Display: "{Device Name} Reset Refill"
      - Resets the refill life counter to 100%
 
-**Diagnostic Button (under Diagnostics tab):**
+**Diagnostic Buttons (under Diagnostics tab):**
    - **Refresh**: `button.thermacell_liv_{device_name}_refresh`
      - Display: "{Device Name} Refresh"
      - Manual data refresh from API

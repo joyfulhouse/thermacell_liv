@@ -16,8 +16,17 @@ from const import DOMAIN
 from coordinator import ThermacellLivCoordinator
 from switch import ThermacellLivSwitch
 from light import ThermacellLivLight
-from sensor import ThermacellLivRefillSensor, ThermacellLivSystemStatusSensor
-from button import ThermacellLivResetButton
+from sensor import (
+    ThermacellLivRefillSensor, 
+    ThermacellLivSystemStatusSensor,
+    ThermacellLivSystemRuntimeSensor,
+    ThermacellLivConnectivitySensor,
+    ThermacellLivLastUpdatedSensor,
+    ThermacellLivErrorCodeSensor,
+    ThermacellLivHubIdSensor,
+    ThermacellLivFirmwareSensor
+)
+from button import ThermacellLivResetButton, ThermacellLivRefreshButton
 
 
 @pytest.fixture
@@ -37,14 +46,18 @@ def config_entry():
 @pytest.fixture
 def mock_coordinator():
     """Return a mock coordinator."""
+    from datetime import datetime
     coordinator = MagicMock(spec=ThermacellLivCoordinator)
     coordinator.last_update_success = True
+    coordinator.last_update_success_time = datetime.now()
     coordinator.data = {
         "node1": {
             "id": "node1",
             "name": "Test Node",
-            "model": "LIV",
-            "fw_version": "1.0.0",
+            "model": "Thermacell LIV Hub",
+            "fw_version": "5.3.2",
+            "hub_serial": "ABC123456",
+            "system_runtime": 120,  # minutes
             "online": True,
             "devices": {
                 "Device1": {
@@ -52,6 +65,9 @@ def mock_coordinator():
                     "led_power": True,
                     "led_color": {"r": 255, "g": 128, "b": 0},
                     "refill_life": 75,
+                    "system_status": "Protected",
+                    "system_status_code": 3,
+                    "error_code": 0,
                     "last_updated": 1234567890
                 }
             }
@@ -72,8 +88,9 @@ class TestThermacellLivSwitch:
         
         assert switch._node_id == "node1"
         assert switch._device_name == "Device1"
-        assert switch._attr_name == "Test Node Device1"
-        assert switch._attr_unique_id == "node1_Device1_switch"
+        assert switch._attr_name is None  # Main device entity has no name
+        assert switch._attr_unique_id == f"{DOMAIN}_node1_Device1_switch"
+        assert switch.entity_id == f"switch.{DOMAIN}_Device1_switch"
 
     def test_device_info(self, mock_coordinator):
         """Test switch device info."""
