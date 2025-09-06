@@ -353,7 +353,8 @@ class ThermacellLivLastUpdatedSensor(CoordinatorEntity[ThermacellLivCoordinator]
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return self.coordinator.last_update_success
+        # Always available since it shows coordinator-level timestamp, not device-specific data
+        return True
 
     @property
     def native_value(self) -> datetime | None:
