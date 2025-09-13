@@ -29,7 +29,7 @@ async def test_led_state_management(session):
     print("✅ Authentication successful")
     
     # Test 1: Check current state
-    print(f"\n📊 Test 1: Current Device State")
+    print("\n📊 Test 1: Current Device State")
     nodes = await api.get_user_nodes()
     if nodes:
         for node in nodes:
@@ -44,7 +44,7 @@ async def test_led_state_management(session):
                 break
     
     # Test 2: Set brightness while hub is off (should not turn on LED)
-    print(f"\n🔧 Test 2: Set brightness to 50% while hub is off")
+    print("\n🔧 Test 2: Set brightness to 50% while hub is off")
     
     # First ensure hub is off
     await api.set_device_power(node_id, device_name, False)
@@ -76,7 +76,7 @@ async def test_led_state_management(session):
                 break
     
     # Test 3: Turn hub on (should turn on LED if brightness > 0)
-    print(f"\n🔧 Test 3: Turn hub on (should activate LED with existing brightness)")
+    print("\n🔧 Test 3: Turn hub on (should activate LED with existing brightness)")
     
     success = await api.set_device_power(node_id, device_name, True)
     
@@ -104,7 +104,7 @@ async def test_led_state_management(session):
                 break
     
     # Test 4: Set brightness to 0 while hub is on (should turn off LED)
-    print(f"\n🔧 Test 4: Set brightness to 0% while hub is on")
+    print("\n🔧 Test 4: Set brightness to 0% while hub is on")
     
     success = await api.set_device_led_brightness(node_id, device_name, 0)
     
@@ -130,7 +130,7 @@ async def test_led_state_management(session):
                 break
     
     # Test 5: Set brightness back to 56% while hub is on (should turn on LED)
-    print(f"\n🔧 Test 5: Set brightness to 56% while hub is on")
+    print("\n🔧 Test 5: Set brightness to 56% while hub is on")
     
     success = await api.set_device_led_brightness(node_id, device_name, 143)  # 56% in HA format
     
@@ -155,12 +155,12 @@ async def test_led_state_management(session):
                     print(f"⚠️  Unexpected state: hub={hub_power}, brightness={brightness}")
                 break
     
-    print(f"\n🎯 LED State Management Test Summary:")
-    print(f"   ✅ Brightness changes are applied correctly")
-    print(f"   ✅ LED state logic: ON only when (hub_power AND brightness > 0)")
-    print(f"   ✅ State updates should now trigger UI refresh in Home Assistant")
-    print(f"   ✅ LED properly turns off when hub is powered off")
-    print(f"   ✅ LED properly turns on when hub is powered on (if brightness > 0)")
+    print("\n🎯 LED State Management Test Summary:")
+    print("   ✅ Brightness changes are applied correctly")
+    print("   ✅ LED state logic: ON only when (hub_power AND brightness > 0)")
+    print("   ✅ State updates should now trigger UI refresh in Home Assistant")
+    print("   ✅ LED properly turns off when hub is powered off")
+    print("   ✅ LED properly turns on when hub is powered on (if brightness > 0)")
 
 
 async def main():

@@ -38,7 +38,7 @@ async def investigate_total_runtime_sources(session):
             if node["id"] == node_id:
                 params = node.get("params", {}).get("LIV Hub", {})
                 
-                print(f"\n🔍 Comprehensive Runtime Analysis:")
+                print("\n🔍 Comprehensive Runtime Analysis:")
                 
                 # Collect all runtime-related values
                 runtime_values = {}
@@ -56,7 +56,7 @@ async def investigate_total_runtime_sources(session):
                     if key in params:
                         runtime_values[key] = params[key]
                 
-                print(f"📊 Hub Runtime Values:")
+                print("📊 Hub Runtime Values:")
                 total_hub_runtime = 0
                 for key, value in runtime_values.items():
                     print(f"   {key}: {value} minutes")
@@ -66,7 +66,7 @@ async def investigate_total_runtime_sources(session):
                 print(f"   Hub Runtime Total: {total_hub_runtime} minutes")
                 
                 # Check individual repellers
-                print(f"\n🔍 Individual Repeller Analysis:")
+                print("\n🔍 Individual Repeller Analysis:")
                 active_repellers = []
                 repeller_total_runtime = 0
                 
@@ -100,7 +100,7 @@ async def investigate_total_runtime_sources(session):
                     print(f"\n   Total repeller runtime (cart_life sum): {repeller_total_runtime}")
                 
                 # Total runtime calculations
-                print(f"\n🧮 Runtime Calculation Attempts:")
+                print("\n🧮 Runtime Calculation Attempts:")
                 
                 calculations = {
                     "Hub Runtime Only": total_hub_runtime,
@@ -134,27 +134,27 @@ async def investigate_total_runtime_sources(session):
                             best_match = (calc_name, calc_value)
                         
                         if diff < 100:  # Within ~1.5 hours
-                            print(f"      ✅ CLOSE MATCH!")
+                            print("      ✅ CLOSE MATCH!")
                 
                 if best_match:
                     print(f"\n🎯 Best Match: {best_match[0]} = {best_match[1]} minutes")
                     print(f"   Difference: {best_diff} minutes")
                     
                     if best_diff > 500:  # More than 8 hours off
-                        print(f"   ⚠️  Still significantly different from mobile app")
-                        print(f"   💡 Possible reasons:")
-                        print(f"      - Mobile app includes historical data not in current API")
-                        print(f"      - Different time units or calculation method")
-                        print(f"      - API resets runtime periodically")
+                        print("   ⚠️  Still significantly different from mobile app")
+                        print("   💡 Possible reasons:")
+                        print("      - Mobile app includes historical data not in current API")
+                        print("      - Different time units or calculation method")
+                        print("      - API resets runtime periodically")
                 else:
-                    print(f"\n❌ No close matches found")
+                    print("\n❌ No close matches found")
                 
                 # Manual investigation suggestions
-                print(f"\n💡 Investigation Recommendations:")
-                print(f"   1. Check if mobile app runtime resets daily/weekly/monthly")
-                print(f"   2. Verify if API 'System Runtime' is current session only") 
-                print(f"   3. Check if there's a separate 'Total Runtime' parameter")
-                print(f"   4. Consider if cart_life values need different unit conversion")
+                print("\n💡 Investigation Recommendations:")
+                print("   1. Check if mobile app runtime resets daily/weekly/monthly")
+                print("   2. Verify if API 'System Runtime' is current session only") 
+                print("   3. Check if there's a separate 'Total Runtime' parameter")
+                print("   4. Consider if cart_life values need different unit conversion")
                 
                 break
 

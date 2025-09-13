@@ -39,7 +39,7 @@ async def investigate_device_info(session):
                 print(json.dumps(node, indent=2))
                 
                 # Look specifically for firmware info
-                print(f"\n🔍 Searching for firmware version...")
+                print("\n🔍 Searching for firmware version...")
                 for key, value in node.items():
                     if "fw" in key.lower() or "firmware" in key.lower() or "version" in key.lower():
                         print(f"   {key}: {value}")
@@ -48,7 +48,7 @@ async def investigate_device_info(session):
                 params = node.get("params", {})
                 if "LIV Hub" in params:
                     liv_params = params["LIV Hub"]
-                    print(f"\n🔍 LIV Hub Parameters:")
+                    print("\n🔍 LIV Hub Parameters:")
                     
                     # Look for runtime, serial, system ID
                     runtime_keys = []
@@ -69,7 +69,7 @@ async def investigate_device_info(session):
                         elif any(term in key_lower for term in ['version', 'fw', 'firmware', 'ver']):
                             version_keys.append((key, value))
                     
-                    print(f"\n📊 POTENTIAL MATCHES:")
+                    print("\n📊 POTENTIAL MATCHES:")
                     if version_keys:
                         print(f"   Firmware/Version keys: {version_keys}")
                     if runtime_keys:
@@ -81,7 +81,7 @@ async def investigate_device_info(session):
                 break
     
     # Get node status (might contain additional info)
-    print(f"\n📊 Getting node status...")
+    print("\n📊 Getting node status...")
     status = await api.get_node_status(node_id)
     
     if status:
@@ -89,7 +89,7 @@ async def investigate_device_info(session):
         print(json.dumps(status, indent=2))
         
         # Look for firmware info in status
-        print(f"\n🔍 Searching status for firmware/device info...")
+        print("\n🔍 Searching status for firmware/device info...")
         
         def search_nested(data, path=""):
             for key, value in data.items() if isinstance(data, dict) else []:
@@ -105,13 +105,13 @@ async def investigate_device_info(session):
         search_nested(status)
     
     # Try to get additional device endpoints
-    print(f"\n🔍 Trying additional API endpoints...")
+    print("\n🔍 Trying additional API endpoints...")
     
     # Try device info endpoint
     try:
         device_info_response = await api._make_request("GET", f"/user/nodes/info?nodeid={node_id}")
         if device_info_response:
-            print(f"\n📊 DEVICE INFO ENDPOINT:")
+            print("\n📊 DEVICE INFO ENDPOINT:")
             print(json.dumps(device_info_response, indent=2))
     except:
         print("   No /user/nodes/info endpoint")
@@ -120,7 +120,7 @@ async def investigate_device_info(session):
     try:
         config_response = await api._make_request("GET", f"/user/nodes/config?nodeid={node_id}")
         if config_response:
-            print(f"\n📊 DEVICE CONFIG ENDPOINT:")
+            print("\n📊 DEVICE CONFIG ENDPOINT:")
             print(json.dumps(config_response, indent=2))
     except:
         print("   No /user/nodes/config endpoint")

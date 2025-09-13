@@ -232,7 +232,7 @@ class SetParamsMethodTester:
         """Test based on ESP Rainmaker API documentation patterns."""
         headers = {"Authorization": self.access_token}
         
-        print(f"\n📖 Testing ESP Rainmaker documented patterns...")
+        print("\n📖 Testing ESP Rainmaker documented patterns...")
         
         # According to ESP Rainmaker docs, try these patterns:
         rainmaker_tests = [
@@ -328,12 +328,12 @@ async def main():
                 successful_method = await tester.test_esp_rainmaker_docs(test_node_id)
             
             if successful_method:
-                print(f"\n🎉 Found working method!")
+                print("\n🎉 Found working method!")
                 print(f"   Method: {successful_method['method']}")
                 print(f"   URL: {successful_method['url']}")
                 print(f"   Payload: {json.dumps(successful_method['payload'], indent=2)}")
             else:
-                print(f"\n❌ No working method found. All requests returned errors.")
+                print("\n❌ No working method found. All requests returned errors.")
         else:
             print("   ❌ Authentication failed")
     

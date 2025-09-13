@@ -77,19 +77,19 @@ async def test_brightness_api(session):
                         # Calculate expected Thermacell value
                         expected_thermacell = int((ha_brightness / 255) * 100)
                         
-                        print(f"📊 Result:")
+                        print("📊 Result:")
                         print(f"   Expected (Thermacell %): {expected_thermacell}")
                         print(f"   Actual (Thermacell %): {actual_brightness}")
                         
                         if abs(actual_brightness - expected_thermacell) <= 1:
                             print("✅ Brightness set correctly!")
                         else:
-                            print(f"⚠️  Brightness mismatch")
+                            print("⚠️  Brightness mismatch")
                         break
         else:
             print("❌ API call failed")
     
-    print(f"\n🎯 Final verification - setting back to 56%...")
+    print("\n🎯 Final verification - setting back to 56%...")
     final_success = await api.set_device_led_brightness(node_id, device_name, 143)
     
     if final_success:

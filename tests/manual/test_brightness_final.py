@@ -53,7 +53,7 @@ class BrightnessIntegrationTest:
             print(f"❌ No device data found for {device_name}")
             return
         
-        print(f"📊 Current device state:")
+        print("📊 Current device state:")
         print(f"   LED Power: {device_data.get('led_power', 'Unknown')}")
         print(f"   LED Brightness (HA format 0-255): {device_data.get('led_brightness', 'Unknown')}")
         print(f"   LED Brightness (Thermacell %): {device_data.get('led_brightness_pct', 'Unknown')}")
@@ -83,7 +83,7 @@ class BrightnessIntegrationTest:
                 if updated_data:
                     actual_brightness = updated_data.get('led_brightness', 0)
                     actual_pct = updated_data.get('led_brightness_pct', 0)
-                    print(f"📊 Updated state:")
+                    print("📊 Updated state:")
                     print(f"   LED Brightness (HA): {actual_brightness}")
                     print(f"   LED Brightness (%): {actual_pct}")
                     
@@ -98,7 +98,7 @@ class BrightnessIntegrationTest:
                 print("❌ API call failed")
         
         # Test the specific 56% case the user mentioned
-        print(f"\n🎯 Testing specific 56% brightness case...")
+        print("\n🎯 Testing specific 56% brightness case...")
         target_56_percent = int(0.56 * 255)  # Should be 143
         print(f"   56% = {target_56_percent} in HA format")
         
@@ -115,7 +115,7 @@ class BrightnessIntegrationTest:
                 final_brightness = final_data.get('led_brightness', 0)
                 final_pct = final_data.get('led_brightness_pct', 0)
                 
-                print(f"📊 Final 56% test result:")
+                print("📊 Final 56% test result:")
                 print(f"   LED Brightness (HA): {final_brightness}")
                 print(f"   LED Brightness (%): {final_pct}")
                 

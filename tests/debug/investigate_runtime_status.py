@@ -36,7 +36,7 @@ async def investigate_runtime_and_status(session):
             if node["id"] == node_id:
                 params = node.get("params", {}).get("LIV Hub", {})
                 
-                print(f"\n🔍 ALL LIV Hub Parameters:")
+                print("\n🔍 ALL LIV Hub Parameters:")
                 print("=" * 50)
                 
                 # Look for all time/runtime related parameters
@@ -55,7 +55,7 @@ async def investigate_runtime_and_status(session):
                     elif isinstance(value, (int, float)) and value > 0:
                         numeric_params[key] = value
                 
-                print(f"⏰ TIME/RUNTIME Parameters:")
+                print("⏰ TIME/RUNTIME Parameters:")
                 for key, value in time_params.items():
                     print(f"   {key}: {value}")
                     
@@ -67,11 +67,11 @@ async def investigate_runtime_and_status(session):
                         minutes = total_minutes % 60
                         print(f"      → As time: {days} days, {hours} hours, {minutes} minutes")
                 
-                print(f"\n📊 STATUS/STATE Parameters:")
+                print("\n📊 STATUS/STATE Parameters:")
                 for key, value in status_params.items():
                     print(f"   {key}: {value}")
                 
-                print(f"\n🔢 NUMERIC Parameters (potential runtime candidates):")
+                print("\n🔢 NUMERIC Parameters (potential runtime candidates):")
                 for key, value in sorted(numeric_params.items()):
                     if key not in time_params:  # Don't duplicate
                         print(f"   {key}: {value}")
@@ -90,7 +90,7 @@ async def investigate_runtime_and_status(session):
                                 print(f"      ✅ POTENTIAL MATCH for ~3d 3h 24m (expected ~{expected_total} min)")
                 
                 # Look specifically for system status values
-                print(f"\n🎯 CURRENT VALUES vs EXPECTED:")
+                print("\n🎯 CURRENT VALUES vs EXPECTED:")
                 current_runtime = params.get("System Runtime", 0)
                 current_status = params.get("System Status", 1)
                 
@@ -102,8 +102,8 @@ async def investigate_runtime_and_status(session):
                     print(f"      → Time: {days} days, {hours} hours, {mins} minutes")
                 
                 print(f"   Current 'System Status': {current_status}")
-                print(f"   Expected Runtime: ~3 days, 3 hours, 24 minutes (~4524 minutes)")
-                print(f"   Expected Status: 'Protected' when operational")
+                print("   Expected Runtime: ~3 days, 3 hours, 24 minutes (~4524 minutes)")
+                print("   Expected Status: 'Protected' when operational")
                 
                 # Check alternative runtime parameters
                 alt_candidates = []
@@ -112,7 +112,7 @@ async def investigate_runtime_and_status(session):
                         alt_candidates.append((key, value))
                 
                 if alt_candidates:
-                    print(f"\n🎯 ALTERNATIVE RUNTIME CANDIDATES (4000-5000 range):")
+                    print("\n🎯 ALTERNATIVE RUNTIME CANDIDATES (4000-5000 range):")
                     for key, value in alt_candidates:
                         days = int(value) // (24 * 60)
                         hours = (int(value) % (24 * 60)) // 60
@@ -121,10 +121,10 @@ async def investigate_runtime_and_status(session):
                 
                 break
     
-    print(f"\n📋 INVESTIGATION SUMMARY:")
-    print(f"   🔍 Need to find parameter showing ~3d 3h 24m (~4524 minutes)")
-    print(f"   🔍 Need to map system status codes to 'Protected' state")
-    print(f"   💡 Check all numeric parameters in 4000-5000 range")
+    print("\n📋 INVESTIGATION SUMMARY:")
+    print("   🔍 Need to find parameter showing ~3d 3h 24m (~4524 minutes)")
+    print("   🔍 Need to map system status codes to 'Protected' state")
+    print("   💡 Check all numeric parameters in 4000-5000 range")
 
 
 async def main():

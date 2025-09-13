@@ -46,8 +46,8 @@ async def test_fixed_api():
         # Try endpoint variations manually to find the working one
         endpoints_to_try = [
             f"/v1/user/nodes?user_id={api.user_id}",
-            f"/v1/user/nodes", 
-            f"/v1/user2/nodes",
+            "/v1/user/nodes", 
+            "/v1/user2/nodes",
             f"/v1/user2/nodes?user_id={api.user_id}",
             "/v1/nodes",
             "/user/nodes",

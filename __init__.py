@@ -20,29 +20,29 @@ PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.LIGHT, Platform.SENSOR, P
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Thermacell LIV from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-    
+
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
-    
+
     # Initialize API client
     api = ThermacellLivAPI(hass, username, password)
-    
+
     # Test authentication
     if not await api.authenticate():
         raise ConfigEntryNotReady("Failed to authenticate with Thermacell API")
-    
+
     # Initialize coordinator
     coordinator = ThermacellLivCoordinator(hass, api)
-    
+
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
-    
+
     # Store coordinator
     hass.data[DOMAIN][entry.entry_id] = coordinator
-    
+
     # Forward to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+
     return True
 
 

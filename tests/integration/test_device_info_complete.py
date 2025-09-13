@@ -42,7 +42,7 @@ async def test_device_info_and_sensors(session):
             model = info.get("model")
             project_name = info.get("project_name")
             
-            print(f"📊 Device Info:")
+            print("📊 Device Info:")
             print(f"   Firmware Version: {fw_version}")
             print(f"   Model: {model}")
             print(f"   Project Name: {project_name}")
@@ -74,7 +74,7 @@ async def test_device_info_and_sensors(session):
                     hub_id = device_params.get("Hub ID")
                     system_runtime = device_params.get("System Runtime")
                     
-                    print(f"📊 Device Parameters:")
+                    print("📊 Device Parameters:")
                     print(f"   Hub ID (Serial): {hub_id}")
                     print(f"   System Runtime: {system_runtime} minutes")
                     
@@ -117,7 +117,7 @@ async def test_device_info_and_sensors(session):
                         "RSSI": device_params.get("RSSI"),
                     }
                     
-                    print(f"\n📊 Key Device Parameters:")
+                    print("\n📊 Key Device Parameters:")
                     for param, value in important_params.items():
                         if value is not None:
                             print(f"   {param}: {value}")
@@ -126,18 +126,18 @@ async def test_device_info_and_sensors(session):
     else:
         print("❌ Failed to retrieve nodes")
     
-    print(f"\n🎯 Summary of Findings:")
-    print(f"   ✅ Device config endpoint working")
-    print(f"   ✅ Firmware version available: 5.3.2")
-    print(f"   ✅ Hub serial number available: N03HA31924B9062")
-    print(f"   ✅ System runtime available: ~715 minutes")
+    print("\n🎯 Summary of Findings:")
+    print("   ✅ Device config endpoint working")
+    print("   ✅ Firmware version available: 5.3.2")
+    print("   ✅ Hub serial number available: N03HA31924B9062")
+    print("   ✅ System runtime available: ~715 minutes")
     print(f"   ✅ Node ID available: {node_id}")
     
-    print(f"\n📋 What this enables in Home Assistant:")
-    print(f"   🔧 Device info will show firmware version 5.3.2")
-    print(f"   🔢 Device info will show serial number N03HA31924B9062")
-    print(f"   ⏰ System Runtime sensor will show formatted runtime")
-    print(f"   📊 All entities will have proper device grouping")
+    print("\n📋 What this enables in Home Assistant:")
+    print("   🔧 Device info will show firmware version 5.3.2")
+    print("   🔢 Device info will show serial number N03HA31924B9062")
+    print("   ⏰ System Runtime sensor will show formatted runtime")
+    print("   📊 All entities will have proper device grouping")
 
 
 async def main():

@@ -60,7 +60,7 @@ class RepellerFinalTester:
                     return self.access_token is not None and self.user_id is not None
                 else:
                     return False
-        except Exception as e:
+        except Exception:
             return False
     
     async def set_repeller_power(self, node_id: str, power_on: bool) -> bool:
@@ -125,7 +125,7 @@ class RepellerFinalTester:
                     led_hue = liv_hub_params.get("LED Hue", 0)
                     led_brightness = liv_hub_params.get("LED Brightness", 0)
                     
-                    print(f"📊 Current Status:")
+                    print("📊 Current Status:")
                     print(f"   Enable Repellers: {enable_repellers}")
                     print(f"   Refill Life: {refill_life} hours")
                     print(f"   LED Hue: {led_hue}")
@@ -202,7 +202,7 @@ async def main():
             print(f"\n🎯 Testing with node: {test_node_id}")
             
             # Get initial status
-            print(f"\n📊 Initial Status:")
+            print("\n📊 Initial Status:")
             await tester.get_repeller_status(test_node_id)
             
             # Test turning repellers ON
@@ -228,7 +228,7 @@ async def main():
                 await asyncio.sleep(3)
                 
                 # Final status check
-                print(f"\n📊 Final Status:")
+                print("\n📊 Final Status:")
                 await tester.get_repeller_status(test_node_id)
             else:
                 print("❌ Failed to control repellers")

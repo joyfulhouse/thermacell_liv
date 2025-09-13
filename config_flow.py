@@ -30,7 +30,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     if not await api.authenticate():
         raise InvalidAuth
-    
+
     # Test connection by trying to fetch user nodes
     if not await api.test_connection():
         raise CannotConnect

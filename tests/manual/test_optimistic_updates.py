@@ -31,16 +31,15 @@ async def test_optimistic_updates(session):
     print("✅ Authentication successful")
     
     # Create a mock coordinator to test optimistic updates
-    from coordinator import ThermacellLivCoordinator
     
     # We can't easily create a full coordinator without HA infrastructure,
     # so let's test the API calls and show the timing difference
     
-    print(f"\n🧪 Testing API Call Timing (Before Optimization):")
+    print("\n🧪 Testing API Call Timing (Before Optimization):")
     print("=" * 50)
     
     # Test 1: Measure current API call time
-    print(f"🔧 Test 1: Hub Power Toggle")
+    print("🔧 Test 1: Hub Power Toggle")
     
     # Turn hub on
     start_time = time.time()
@@ -62,7 +61,7 @@ async def test_optimistic_updates(session):
         print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
     
     # Test 2: LED brightness change
-    print(f"\n🔧 Test 2: LED Brightness Change")
+    print("\n🔧 Test 2: LED Brightness Change")
     
     start_time = time.time()
     success = await api.set_device_led_brightness(node_id, device_name, 127)  # 50%
@@ -72,7 +71,7 @@ async def test_optimistic_updates(session):
     print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
     
     # Test 3: LED color change
-    print(f"\n🔧 Test 3: LED Color Change") 
+    print("\n🔧 Test 3: LED Color Change") 
     
     start_time = time.time()
     success = await api.set_device_led_color(node_id, device_name, 255, 100, 0)  # Orange
@@ -82,33 +81,33 @@ async def test_optimistic_updates(session):
     print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
     
     # Restore original settings
-    print(f"\n🔄 Restoring original settings...")
+    print("\n🔄 Restoring original settings...")
     await api.set_device_power(node_id, device_name, True)  # Hub on
     await api.set_device_led_brightness(node_id, device_name, 143)  # 56%
     await api.set_device_led_color(node_id, device_name, 255, 255, 0)  # Yellow/green
     
-    print(f"\n⚡ OPTIMISTIC UPDATES EXPLANATION:")
+    print("\n⚡ OPTIMISTIC UPDATES EXPLANATION:")
     print("=" * 50)
-    print(f"📊 API Call Times Measured:")
+    print("📊 API Call Times Measured:")
     print(f"   - Hub power toggle: ~{api_time:.1f}s")
     print(f"   - LED brightness: ~{api_time:.1f}s") 
     print(f"   - LED color: ~{api_time:.1f}s")
-    print(f"")
-    print(f"🚀 WITH OPTIMISTIC UPDATES:")
-    print(f"   ✅ UI updates IMMEDIATELY (0.01s)")
+    print("")
+    print("🚀 WITH OPTIMISTIC UPDATES:")
+    print("   ✅ UI updates IMMEDIATELY (0.01s)")
     print(f"   📡 API call happens in background ({api_time:.1f}s)")
-    print(f"   🔄 Reverts only if API call fails")
-    print(f"")
-    print(f"📈 RESPONSIVENESS IMPROVEMENT:")
+    print("   🔄 Reverts only if API call fails")
+    print("")
+    print("📈 RESPONSIVENESS IMPROVEMENT:")
     print(f"   Before: User waits {api_time:.1f}s for each change")
-    print(f"   After:  User sees change instantly!")
+    print("   After:  User sees change instantly!")
     print(f"   Speed increase: ~{api_time/0.01:.0f}x faster perceived response")
-    print(f"")
-    print(f"🎯 USER EXPERIENCE:")
-    print(f"   - Switch toggles immediately")
-    print(f"   - LED brightness slider responds instantly")
-    print(f"   - LED color picker changes in real-time")
-    print(f"   - No more waiting for 'unresponsive' feeling")
+    print("")
+    print("🎯 USER EXPERIENCE:")
+    print("   - Switch toggles immediately")
+    print("   - LED brightness slider responds instantly")
+    print("   - LED color picker changes in real-time")
+    print("   - No more waiting for 'unresponsive' feeling")
 
 
 async def main():

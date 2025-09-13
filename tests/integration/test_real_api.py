@@ -4,7 +4,6 @@ Test script to validate Thermacell LIV API endpoints with real credentials.
 This script will test the actual API calls and verify request/response formats.
 """
 import asyncio
-import json
 from unittest.mock import MagicMock
 
 from secrets import THERMACELL_USERNAME, THERMACELL_PASSWORD, THERMACELL_API_BASE_URL

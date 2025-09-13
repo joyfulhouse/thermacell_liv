@@ -11,7 +11,6 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
-from datetime import datetime
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -33,9 +32,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up the sensor platform."""
     coordinator: ThermacellLivCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    
+
     sensors = []
-    
+
     # Create sensor entities for each device in each node
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
@@ -55,10 +54,6 @@ async def async_setup_entry(
             sensors.append(
                 ThermacellLivConnectivitySensor(coordinator, node_id, device_name)
             )
-            # Last updated sensor
-            sensors.append(
-                ThermacellLivLastUpdatedSensor(coordinator, node_id, device_name)
-            )
             # Error code sensor
             sensors.append(
                 ThermacellLivErrorCodeSensor(coordinator, node_id, device_name)
@@ -71,7 +66,7 @@ async def async_setup_entry(
             sensors.append(
                 ThermacellLivFirmwareSensor(coordinator, node_id, device_name)
             )
-    
+
     async_add_entities(sensors, update_before_add=True)
 
 
@@ -85,10 +80,8 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "Refill Life"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
@@ -134,10 +127,8 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "System Status"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_status"
@@ -196,10 +187,8 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "System Runtime"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_runtime"
@@ -249,7 +238,7 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
                 days = runtime_minutes // (24 * 60)
                 hours = (runtime_minutes % (24 * 60)) // 60
                 minutes = runtime_minutes % 60
-                
+
                 runtime_str = []
                 if days > 0:
                     runtime_str.append(f"{days} day{'s' if days != 1 else ''}")
@@ -257,9 +246,9 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
                     runtime_str.append(f"{hours} hour{'s' if hours != 1 else ''}")
                 if minutes > 0:
                     runtime_str.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
-                
+
                 formatted_runtime = ", ".join(runtime_str) if runtime_str else "0 minutes"
-                
+
                 return {
                     "formatted_runtime": formatted_runtime,
                     "total_minutes": runtime_minutes,
@@ -279,10 +268,8 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "Connectivity"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_connectivity"
@@ -316,54 +303,6 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
         return "Unknown"
 
 
-class ThermacellLivLastUpdatedSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
-    """Representation of a Thermacell LIV last polled sensor."""
-
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._node_id = node_id
-        self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
-        self._attr_has_entity_name = True
-        self._attr_name = "Last Polled"
-        self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_last_updated"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_last_updated"
-        self._attr_device_class = SensorDeviceClass.TIMESTAMP
-        self._attr_icon = "mdi:clock-outline"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        node_data = self.coordinator.get_node_data(self._node_id)
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._node_id)},
-            name=node_data.get("name", "Thermacell LIV"),
-            manufacturer="Thermacell",
-            model=node_data.get("model", "LIV"),
-            sw_version=node_data.get("fw_version", "Unknown"),
-        )
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        # Always available since it shows coordinator-level timestamp, not device-specific data
-        return True
-
-    @property
-    def native_value(self) -> datetime | None:
-        """Return the last API poll/refresh timestamp."""
-        if self.coordinator.last_update_success_time:
-            return self.coordinator.last_update_success_time
-        return None
-
-
 class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV error code sensor."""
 
@@ -374,10 +313,8 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "Error Code"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_error_code"
@@ -434,10 +371,8 @@ class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], Sens
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "Hub ID"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_hub_id"
@@ -482,10 +417,8 @@ class ThermacellLivFirmwareSensor(CoordinatorEntity[ThermacellLivCoordinator], S
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = "Firmware Version"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_firmware"

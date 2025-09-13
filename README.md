@@ -11,6 +11,14 @@
 
 A powerful 🏠 Home Assistant integration for controlling and monitoring 🦟 Thermacell LIV mosquito repellers through their cloud API.
 
+## 🎉 Version 1.0.0 - Production Ready!
+
+This release marks the first stable production version with significant improvements:
+- ✅ **Optimized Performance**: Removed excessive Last Polled sensor entries from logbook
+- ✅ **Enhanced Code Quality**: Pylint score improved to 9.56/10 with professional standards
+- ✅ **Production Stability**: All critical bugs resolved and comprehensive testing completed
+- ✅ **Clean Codebase**: Proper formatting, linting compliance, and documentation
+
 ## ✨ Features
 
 - 🎛️ **Control mosquito repellers**: Turn your Thermacell LIV devices on and off

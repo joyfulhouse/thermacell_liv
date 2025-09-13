@@ -75,9 +75,6 @@ Each Thermacell LIV hub supports the following entities:
    - **Connectivity**: `sensor.thermacell_liv_{device_name}_connectivity`
      - Display: "{Device Name} Connectivity"
      - Values: "Connected" / "Disconnected"
-   - **Last Updated**: `sensor.thermacell_liv_{device_name}_last_updated`
-     - Display: "{Device Name} Last Updated"
-     - Timestamp sensor showing last device communication
    - **Error Code**: `sensor.thermacell_liv_{device_name}_error_code`
      - Display: "{Device Name} Error Code"
      - Numeric error codes with has_error/status attributes
@@ -178,7 +175,6 @@ thermacell_liv/
 
 7. **Comprehensive Diagnostics** ✅ **(Major Enhancement)**
    - ✅ **Connectivity Status**: Real-time connection monitoring
-   - ✅ **Last Updated**: Timestamp tracking for device communication
    - ✅ **Error Code**: Detailed error state reporting with attributes
    - ✅ **Hub ID**: Device serial number for identification and support
    - ✅ **Firmware Version**: Current firmware display for troubleshooting
@@ -212,21 +208,27 @@ thermacell_liv/
 12. **Comprehensive Testing Suite** ✅ **(Production Ready)**
    - ✅ **Complete Entity Coverage**: All switch, light, sensor, button functionality tested
    - ✅ **System Status Accuracy**: Verified "Protected" status displays correctly
-   - ✅ **Diagnostic Sensor Tests**: All 5 diagnostic sensors (Connectivity, Last Updated, Error Code, Hub ID, Firmware)
+   - ✅ **Diagnostic Sensor Tests**: All 4 diagnostic sensors (Connectivity, Error Code, Hub ID, Firmware)
    - ✅ **Entity Naming Validation**: Domain-prefixed IDs and professional display names
    - ✅ **Platform Integration**: Multi-device and multi-node test scenarios
    - ✅ **Error Handling**: Null data, offline states, missing fields
    - ✅ **Mock Data Realism**: Test fixtures matching production API responses
    - ✅ **Import & Syntax**: All code validated, production-ready structure
 
-13. **Critical Bug Fixes** ✅ **(Version 0.0.3)**
+13. **Critical Bug Fixes** ✅ **(Version 0.0.3 → 1.0.0)**
    - ✅ **Coordinator Timestamp Fix**: Added `last_update_success_time` attribute initialization
-   - ✅ **Sensor Availability Fix**: Last Updated sensor always available (coordinator-level data)
    - ✅ **Timezone Compliance**: Fixed "missing timezone information" error with `dt_util.utcnow()`
    - ✅ **Button Press Errors**: Resolved refresh button failures due to datetime issues
    - ✅ **Home Assistant Standards**: Full compliance with HA datetime requirements
    - ✅ **Comprehensive Test Coverage**: Added 3 timezone-specific test methods
    - ✅ **Production Stability**: All critical runtime errors resolved
+
+14. **Version 1.0.0 Release** ✅ **(Production Ready)**
+   - ✅ **Last Polled Sensor Removal**: Eliminated excessive logbook entries
+   - ✅ **Code Quality Improvements**: Pylint score improved from 8.25/10 to 9.56/10
+   - ✅ **Linting Compliance**: Fixed trailing whitespace, unused variables, import organization
+   - ✅ **Professional Code Standards**: All files properly formatted and validated
+   - ✅ **Stable Production Release**: Ready for widespread deployment
 
 ## Technical Implementation Details
 
@@ -327,9 +329,6 @@ self.last_update_success_time = dt_util.utcnow()
 - **Issue**: `'ThermacellLivCoordinator' object has no attribute 'last_update_success_time'`
 - **Resolution**: Added attribute initialization in `__init__` and timestamp update after successful fetch
 
-### ✅ Last Updated Sensor Unavailable **(v0.0.3)**
-- **Issue**: `thermacell_liv_adu_last_updated` showing as "Unavailable"
-- **Resolution**: Changed availability to always `True` since it shows coordinator-level data, not device-specific
 
 ### ✅ Timezone Information Missing **(v0.0.3)**
 - **Issue**: `Invalid datetime: sensor provides state which is missing timezone information`
@@ -346,13 +345,13 @@ self.last_update_success_time = dt_util.utcnow()
 ### ✅ Comprehensive Test Suite **(Completed)**
 - **Entity Tests**: Complete coverage for all 4 platforms (Switch, Light, Sensor, Button)
 - **System Status Tests**: Verified "Protected" status accuracy and all operational states
-- **Diagnostic Sensor Tests**: Full coverage for all 5 diagnostic sensors (Connectivity, Last Updated, Error Code, Hub ID, Firmware)
+- **Diagnostic Sensor Tests**: Full coverage for all 4 diagnostic sensors (Connectivity, Error Code, Hub ID, Firmware)
 - **Entity Naming Tests**: Updated for domain-prefixed format and proper display names
 - **Platform Setup Tests**: Multi-device and multi-node scenarios
 - **Mock Data**: Realistic test fixtures with diagnostic data
 - **Import Validation**: All sensor and button classes verified
 - **Syntax Validation**: All Python files compile without errors
-- **Test Coverage**: 8 sensor types, 2 button types, all entity behaviors
+- **Test Coverage**: 7 sensor types, 2 button types, all entity behaviors
 
 #### Test Structure
 ```

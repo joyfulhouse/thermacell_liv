@@ -28,16 +28,16 @@ async def async_setup_entry(
 ) -> None:
     """Set up the switch platform."""
     coordinator: ThermacellLivCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    
+
     switches = []
-    
+
     # Create switch entities for each device in each node
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
             switches.append(
                 ThermacellLivSwitch(coordinator, node_id, device_name)
             )
-    
+
     async_add_entities(switches, update_before_add=True)
 
 
@@ -51,10 +51,8 @@ class ThermacellLivSwitch(CoordinatorEntity[ThermacellLivCoordinator], SwitchEnt
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-        
-        node_data = coordinator.get_node_data(node_id)
-        node_name = node_data.get("name", "Unknown") if node_data else "Unknown"
-        
+
+
         self._attr_has_entity_name = True
         self._attr_name = None  # Main switch entity for the device
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
@@ -71,12 +69,12 @@ class ThermacellLivSwitch(CoordinatorEntity[ThermacellLivCoordinator], SwitchEnt
             "model": node_data.get("model", "LIV"),
             "sw_version": node_data.get("fw_version", "Unknown"),
         }
-        
+
         # Add serial number if available
         hub_serial = node_data.get("hub_serial")
         if hub_serial:
             device_info_dict["serial_number"] = hub_serial
-        
+
         return DeviceInfo(**device_info_dict)
 
     @property

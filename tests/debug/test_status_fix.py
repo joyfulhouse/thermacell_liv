@@ -28,7 +28,7 @@ async def test_status_fix(session):
     print("✅ Authentication successful")
     
     # Get current device status
-    print(f"\n📊 Current Device Status:")
+    print("\n📊 Current Device Status:")
     nodes = await api.get_user_nodes()
     if nodes:
         for node in nodes:
@@ -59,12 +59,12 @@ async def test_status_fix(session):
                 else:
                     status_text = "Unknown"
                 
-                print(f"\n🎯 Status Interpretation:")
+                print("\n🎯 Status Interpretation:")
                 print(f"   OLD: System Status {system_status} → 'On'")
                 print(f"   NEW: System Status {system_status} → '{status_text}'")
                 
                 if status_text == "Protected":
-                    print(f"   ✅ SUCCESS: Status now shows 'Protected' when operational")
+                    print("   ✅ SUCCESS: Status now shows 'Protected' when operational")
                 else:
                     print(f"   ⚠️  Current state: '{status_text}'")
                 
@@ -73,7 +73,7 @@ async def test_status_fix(session):
                 daily_runtime = params.get("Daily Runtime", 0)
                 system_runtime = params.get("System Runtime", 0)
                 
-                print(f"\n📊 Runtime Information:")
+                print("\n📊 Runtime Information:")
                 print(f"   Current Runtime: {current_runtime} minutes")
                 print(f"   Daily Runtime: {daily_runtime} minutes")
                 print(f"   System Runtime: {system_runtime} minutes")
@@ -85,25 +85,25 @@ async def test_status_fix(session):
                     mins = system_runtime % 60
                     
                     print(f"   System Runtime (formatted): {days} days, {hours} hours, {mins} minutes")
-                    print(f"   Expected: 3 days, 3 hours, 24 minutes")
+                    print("   Expected: 3 days, 3 hours, 24 minutes")
                     
                     expected_total = (3 * 24 * 60) + (3 * 60) + 24  # 4524 minutes
                     diff = abs(system_runtime - expected_total)
                     print(f"   Difference from expected: {diff} minutes")
                     
                     if diff < 60:  # Within 1 hour
-                        print(f"   ✅ Runtime matches expected value!")
+                        print("   ✅ Runtime matches expected value!")
                     elif system_runtime < expected_total:
                         print(f"   ⚠️  Runtime is {diff} minutes LESS than expected")
-                        print(f"       This might be current session or recent period runtime")
+                        print("       This might be current session or recent period runtime")
                     else:
                         print(f"   ⚠️  Runtime is {diff} minutes MORE than expected")
                 
                 break
     
-    print(f"\n🎯 Fix Summary:")
-    print(f"   ✅ System Status mapping: Status 3 now shows 'Protected'")
-    print(f"   📊 Runtime investigation: Need clarification on expected source")
+    print("\n🎯 Fix Summary:")
+    print("   ✅ System Status mapping: Status 3 now shows 'Protected'")
+    print("   📊 Runtime investigation: Need clarification on expected source")
 
 
 async def main():

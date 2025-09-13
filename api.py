@@ -8,7 +8,6 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-import aiohttp
 from aiohttp import ClientSession, ClientTimeout
 
 from homeassistant.core import HomeAssistant
@@ -60,17 +59,17 @@ class ThermacellLivAPI:
                 async with self.session.post(url, json=data, timeout=timeout) as response:
                     if response.status == 200:
                         auth_data = await response.json()
-                        
+
                         # Extract access token
                         self.access_token = auth_data.get("accesstoken")
-                        
+
                         # Extract user ID from ID token
                         id_token = auth_data.get("idtoken")
                         if id_token:
                             id_payload = self._decode_jwt_payload(id_token)
                             if id_payload:
                                 self.user_id = id_payload.get("custom:user_id")
-                        
+
                         _LOGGER.debug("Authentication successful")
                         return self.access_token is not None and self.user_id is not None
                     else:
@@ -91,12 +90,12 @@ class ThermacellLivAPI:
             parts = jwt_token.split('.')
             if len(parts) != 3:
                 return {}
-            
+
             payload = parts[1]
             padding = 4 - len(payload) % 4
             if padding != 4:
                 payload += '=' * padding
-            
+
             decoded_bytes = base64.urlsafe_b64decode(payload)
             return json.loads(decoded_bytes.decode('utf-8'))
         except Exception as e:
@@ -206,7 +205,7 @@ class ThermacellLivAPI:
         h, s, v = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
         hue = int(h * 360)
         brightness = int(v * 100)
-        
+
         params = {
             "LIV Hub": {
                 "LED Hue": hue,
@@ -225,13 +224,13 @@ class ThermacellLivAPI:
             }
         }
         return await self.set_node_params(node_id, params)
-    
+
     async def set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
         """Set device LED brightness (0-255 range)."""
         # Convert Home Assistant brightness (0-255) to Thermacell range (0-100)
         thermacell_brightness = int((brightness / 255) * 100)
         thermacell_brightness = max(0, min(100, thermacell_brightness))  # Clamp to 0-100
-        
+
         params = {
             "LIV Hub": {
                 "LED Brightness": thermacell_brightness

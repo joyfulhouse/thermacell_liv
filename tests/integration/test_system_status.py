@@ -84,7 +84,7 @@ class SystemStatusTester:
                 warming_timeout = liv_hub_params.get("Warming Timeout", None)
                 current_runtime = liv_hub_params.get("Current Runtime", None)
                 
-                print(f"📊 Status Parameters:")
+                print("📊 Status Parameters:")
                 print(f"   System Status: {system_status}")
                 print(f"   System State: {system_state}")
                 print(f"   Enable Repellers: {enable_repellers}")
@@ -109,52 +109,52 @@ class SystemStatusTester:
     
     def interpret_status(self, system_status: int, system_state: int, enable_repellers: bool, error: int):
         """Try to interpret what the status values mean."""
-        print(f"\n🧠 Status Interpretation:")
+        print("\n🧠 Status Interpretation:")
         
         # Try to guess based on common patterns
         if error and error > 0:
             print(f"   🚨 Error state detected (Error: {error})")
         elif not enable_repellers:
-            print(f"   ⭕ System appears to be OFF (Enable Repellers: False)")
+            print("   ⭕ System appears to be OFF (Enable Repellers: False)")
         elif enable_repellers and system_status == 3 and system_state == 3:
-            print(f"   ✅ System appears to be ON and READY")
+            print("   ✅ System appears to be ON and READY")
         elif enable_repellers and system_status != system_state:
-            print(f"   🔄 System may be WARMING UP or transitioning")
+            print("   🔄 System may be WARMING UP or transitioning")
         else:
-            print(f"   ❓ Unknown state - need more data points")
+            print("   ❓ Unknown state - need more data points")
     
     async def test_different_states(self, node_id: str):
         """Test system in different states to understand status codes."""
-        print(f"\n🧪 Testing different system states...")
+        print("\n🧪 Testing different system states...")
         
         # Get initial state
-        print(f"\n1️⃣ Initial State:")
+        print("\n1️⃣ Initial State:")
         initial = await self.analyze_system_status(node_id)
         
         # Turn system ON and check status during warmup
-        print(f"\n2️⃣ Turning System ON:")
+        print("\n2️⃣ Turning System ON:")
         await self.set_repeller_power(node_id, True)
         
         # Check status immediately after turning on (might be warming up)
-        print(f"\n3️⃣ Status immediately after turning ON:")
+        print("\n3️⃣ Status immediately after turning ON:")
         warmup = await self.analyze_system_status(node_id)
         
         # Wait a bit and check again
-        print(f"\n⏳ Waiting 10 seconds...")
+        print("\n⏳ Waiting 10 seconds...")
         await asyncio.sleep(10)
         
-        print(f"\n4️⃣ Status after 10 seconds:")
+        print("\n4️⃣ Status after 10 seconds:")
         running = await self.analyze_system_status(node_id)
         
         # Turn system OFF
-        print(f"\n5️⃣ Turning System OFF:")
+        print("\n5️⃣ Turning System OFF:")
         await self.set_repeller_power(node_id, False)
         
-        print(f"\n6️⃣ Status after turning OFF:")
+        print("\n6️⃣ Status after turning OFF:")
         final = await self.analyze_system_status(node_id)
         
         # Summarize findings
-        print(f"\n📝 Summary of Status Codes:")
+        print("\n📝 Summary of Status Codes:")
         print(f"   OFF State:      System Status = {final.get('system_status')}, System State = {final.get('system_state')}")
         print(f"   ON (Initial):   System Status = {warmup.get('system_status')}, System State = {warmup.get('system_state')}")
         print(f"   ON (Running):   System Status = {running.get('system_status')}, System State = {running.get('system_state')}")

@@ -102,7 +102,7 @@ async def investigate_extended_runtime(session):
                                 repeller_runtimes.append((f"{key}.{rep_key}", rep_value))
                 
                 if repeller_runtimes:
-                    print(f"\n   Repeller runtime data found:")
+                    print("\n   Repeller runtime data found:")
                     for path, value in repeller_runtimes:
                         print(f"      {path}: {value}")
                 
@@ -111,7 +111,7 @@ async def investigate_extended_runtime(session):
                 daily_runtime = params.get("Daily Runtime", 0) 
                 system_runtime = params.get("System Runtime", 0)
                 
-                print(f"\n📊 Runtime Component Analysis:")
+                print("\n📊 Runtime Component Analysis:")
                 print(f"   Current Runtime: {current_runtime} minutes")
                 print(f"   Daily Runtime: {daily_runtime} minutes") 
                 print(f"   System Runtime: {system_runtime} minutes")
@@ -139,21 +139,21 @@ async def investigate_extended_runtime(session):
                         
                         print(f"   {name}: {value} min ({days}d {hours}h {mins}m) - diff: {diff}")
                         if diff < 500:  # Within 8 hours
-                            print(f"      ✅ CLOSE MATCH!")
+                            print("      ✅ CLOSE MATCH!")
                 
                 break
     
     # 4. Manual calculation suggestion
-    print(f"\n💡 MANUAL INVESTIGATION NEEDED:")
-    print(f"   Expected total runtime: 3 days, 3 hours, 24 minutes = 4524 minutes")
-    print(f"   Current 'System Runtime': 715 minutes (11h 55m)")
+    print("\n💡 MANUAL INVESTIGATION NEEDED:")
+    print("   Expected total runtime: 3 days, 3 hours, 24 minutes = 4524 minutes")
+    print("   Current 'System Runtime': 715 minutes (11h 55m)")
     print(f"   Difference: {4524 - 715} = 3809 minutes missing")
-    print(f"")
-    print(f"   Possible explanations:")
-    print(f"   1. 'System Runtime' is current session, not total lifetime")
-    print(f"   2. Total runtime might be stored in a different parameter")
-    print(f"   3. Need to check device settings or different API endpoint")
-    print(f"   4. Runtime might reset periodically (daily/weekly)")
+    print("")
+    print("   Possible explanations:")
+    print("   1. 'System Runtime' is current session, not total lifetime")
+    print("   2. Total runtime might be stored in a different parameter")
+    print("   3. Need to check device settings or different API endpoint")
+    print("   4. Runtime might reset periodically (daily/weekly)")
 
 
 async def main():

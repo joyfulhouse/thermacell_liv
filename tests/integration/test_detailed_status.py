@@ -151,7 +151,7 @@ class DetailedStatusTester:
                     print(f"   ✅ Repeller turned {action}")
                     return True
                 else:
-                    print(f"   ❌ Failed to set power")
+                    print("   ❌ Failed to set power")
                     return False
         except Exception as e:
             print(f"   ❌ Exception: {e}")
@@ -159,32 +159,32 @@ class DetailedStatusTester:
     
     async def comprehensive_status_test(self, node_id: str):
         """Comprehensive test to understand all status codes."""
-        print(f"🔬 Comprehensive Status Test")
+        print("🔬 Comprehensive Status Test")
         print("=" * 60)
         
         # Start with system OFF
-        print(f"\n1️⃣ Ensuring system is OFF...")
+        print("\n1️⃣ Ensuring system is OFF...")
         await self.set_repeller_power(node_id, False)
         await asyncio.sleep(5)
         
-        print(f"\n📊 OFF State monitoring:")
+        print("\n📊 OFF State monitoring:")
         await self.monitor_status_changes(node_id, 10)
         
         # Turn system ON and monitor warmup
-        print(f"\n2️⃣ Turning system ON and monitoring warmup...")
+        print("\n2️⃣ Turning system ON and monitoring warmup...")
         await self.set_repeller_power(node_id, True)
         
-        print(f"\n📊 Warmup and Running State monitoring:")
+        print("\n📊 Warmup and Running State monitoring:")
         await self.monitor_status_changes(node_id, 60)  # Monitor for 1 minute
         
         # Turn system OFF
-        print(f"\n3️⃣ Turning system OFF...")
+        print("\n3️⃣ Turning system OFF...")
         await self.set_repeller_power(node_id, False)
         
-        print(f"\n📊 Shutdown monitoring:")
+        print("\n📊 Shutdown monitoring:")
         await self.monitor_status_changes(node_id, 15)
         
-        print(f"\n✅ Comprehensive test completed!")
+        print("\n✅ Comprehensive test completed!")
 
 
 async def main():

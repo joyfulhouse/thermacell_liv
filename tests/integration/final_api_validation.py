@@ -81,8 +81,8 @@ class ThermacellAPITester:
         # Test node endpoints
         node_endpoints = [
             f"/v1/user/nodes?user_id={self.user_id}",
-            f"/v1/user/nodes",
-            f"/v1/user2/nodes",
+            "/v1/user/nodes",
+            "/v1/user2/nodes",
             f"/v1/user2/nodes?user_id={self.user_id}",
             "/v1/nodes",
         ]
@@ -116,7 +116,7 @@ class ThermacellAPITester:
                 if response.status == 200:
                     try:
                         data = await response.json()
-                        print(f"     ✅ SUCCESS!")
+                        print("     ✅ SUCCESS!")
                         print(f"     Response type: {type(data)}")
                         if isinstance(data, dict):
                             print(f"     Keys: {list(data.keys())}")
@@ -134,7 +134,7 @@ class ThermacellAPITester:
                                     print(f"     First item keys: {list(data[0].keys())}")
                     except json.JSONDecodeError:
                         text = await response.text()
-                        print(f"     ✅ SUCCESS! (non-JSON)")
+                        print("     ✅ SUCCESS! (non-JSON)")
                         print(f"     Response: {text[:200]}...")
                         
                 elif response.status in [400, 401, 403, 404, 405]:
@@ -145,10 +145,10 @@ class ThermacellAPITester:
                         error_text = await response.text()
                         print(f"     ❌ Error: {error_text}")
                 else:
-                    print(f"     ⚠️ Unexpected status")
+                    print("     ⚠️ Unexpected status")
                     
         except asyncio.TimeoutError:
-            print(f"     ⏱️ Timeout")
+            print("     ⏱️ Timeout")
         except Exception as e:
             print(f"     ❌ Exception: {e}")
 
@@ -170,7 +170,7 @@ async def main():
         auth_success = await tester.authenticate()
         
         if auth_success:
-            print(f"   ✅ Authentication successful!")
+            print("   ✅ Authentication successful!")
             print(f"   Access token: {tester.access_token[:30]}...")
             print(f"   User ID: {tester.user_id}")
             print()

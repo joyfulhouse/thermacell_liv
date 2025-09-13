@@ -4,10 +4,6 @@ import pytest
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
-from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
-from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
 
 import sys
 import os
@@ -21,7 +17,6 @@ from sensor import (
     ThermacellLivSystemStatusSensor,
     ThermacellLivSystemRuntimeSensor,
     ThermacellLivConnectivitySensor,
-    ThermacellLivLastUpdatedSensor,
     ThermacellLivErrorCodeSensor,
     ThermacellLivHubIdSensor,
     ThermacellLivFirmwareSensor
@@ -396,7 +391,6 @@ class TestEntityPlatformSetup:
         assert ThermacellLivSystemStatusSensor in sensor_types
         assert ThermacellLivSystemRuntimeSensor in sensor_types
         assert ThermacellLivConnectivitySensor in sensor_types
-        assert ThermacellLivLastUpdatedSensor in sensor_types
         assert ThermacellLivErrorCodeSensor in sensor_types
         assert ThermacellLivHubIdSensor in sensor_types
         assert ThermacellLivFirmwareSensor in sensor_types
@@ -605,73 +599,6 @@ class TestThermacellLivConnectivitySensor:
         
         assert sensor.native_value == "Offline"
 
-
-class TestThermacellLivLastUpdatedSensor:
-    """Test the ThermacellLivLastUpdatedSensor class."""
-
-    def test_init(self, mock_coordinator):
-        """Test sensor initialization."""
-        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
-        
-        assert sensor._node_id == "node1"
-        assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Last Updated"
-        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_last_updated"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_last_updated"
-        assert sensor._attr_entity_category == "diagnostic"
-        assert sensor._attr_device_class == "timestamp"
-
-    def test_native_value(self, mock_coordinator):
-        """Test sensor native value."""
-        from datetime import datetime, timezone
-        test_time = datetime.now(timezone.utc)  # Timezone-aware datetime
-        mock_coordinator.last_update_success_time = test_time
-        
-        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
-        
-        assert sensor.native_value == test_time
-
-    def test_native_value_no_time(self, mock_coordinator):
-        """Test sensor native value with no update time."""
-        mock_coordinator.last_update_success_time = None
-        
-        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
-        
-        assert sensor.native_value is None
-
-    def test_native_value_timezone_aware(self, mock_coordinator):
-        """Test sensor native value is timezone-aware."""
-        from datetime import datetime, timezone
-        
-        # Test with UTC timezone
-        utc_time = datetime.now(timezone.utc)
-        mock_coordinator.last_update_success_time = utc_time
-        
-        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
-        result = sensor.native_value
-        
-        # Verify it's timezone-aware
-        assert result is not None
-        assert result.tzinfo is not None
-        assert result == utc_time
-        
-    def test_native_value_prevents_naive_datetime_error(self, mock_coordinator):
-        """Test that timezone-aware datetime prevents HA errors."""
-        from datetime import datetime, timezone
-        
-        # Create timezone-aware datetime (what our fix provides)
-        aware_time = datetime(2025, 9, 6, 15, 6, 59, 245883, timezone.utc)
-        mock_coordinator.last_update_success_time = aware_time
-        
-        sensor = ThermacellLivLastUpdatedSensor(mock_coordinator, "node1", "Device1")
-        result = sensor.native_value
-        
-        # Should not be None and should have timezone info
-        assert result is not None
-        assert result.tzinfo is not None
-        # Should be the exact same timezone-aware datetime
-        assert result == aware_time
-        assert str(result) == "2025-09-06 15:06:59.245883+00:00"
 
 
 class TestThermacellLivErrorCodeSensor:

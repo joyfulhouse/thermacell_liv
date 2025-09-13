@@ -63,20 +63,20 @@ async def test_device_model_display(session):
                     else:
                         final_model = raw_model
                     
-                    print(f"\n📊 Coordinator Would Set:")
+                    print("\n📊 Coordinator Would Set:")
                     print(f"   Firmware Version: {fw_version}")
                     print(f"   Model: {final_model}")
                     
                     if final_model == "Thermacell LIV Hub":
-                        print(f"   ✅ SUCCESS: Model will display as 'Thermacell LIV Hub'")
+                        print("   ✅ SUCCESS: Model will display as 'Thermacell LIV Hub'")
                     else:
                         print(f"   ❌ ISSUE: Model would display as '{final_model}'")
                 break
     
-    print(f"\n🎯 Device Info Display:")
-    print(f"   Before Fix: 'thermacell-hub' (technical name)")
-    print(f"   After Fix:  'Thermacell LIV Hub' (user-friendly name)")
-    print(f"   ✅ Home Assistant device info will now show proper model name")
+    print("\n🎯 Device Info Display:")
+    print("   Before Fix: 'thermacell-hub' (technical name)")
+    print("   After Fix:  'Thermacell LIV Hub' (user-friendly name)")
+    print("   ✅ Home Assistant device info will now show proper model name")
 
 
 async def main():

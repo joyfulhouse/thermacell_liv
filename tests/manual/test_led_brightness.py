@@ -85,15 +85,15 @@ class LEDBrightnessTester:
                     elif "bright" in key.lower():
                         brightness_params[key] = value
                 
-                print(f"📊 LED Parameters Found:")
+                print("📊 LED Parameters Found:")
                 for key, value in led_params.items():
                     print(f"   {key}: {value}")
                 
-                print(f"📊 Brightness Parameters Found:")
+                print("📊 Brightness Parameters Found:")
                 for key, value in brightness_params.items():
                     print(f"   {key}: {value}")
                 
-                print(f"📊 All Parameters (searching for brightness clues):")
+                print("📊 All Parameters (searching for brightness clues):")
                 for key, value in liv_hub_params.items():
                     if any(term in key.lower() for term in ['bright', 'led', 'light', 'intensity', 'level', 'dim']):
                         print(f"   {key}: {value}")
@@ -105,10 +105,10 @@ class LEDBrightnessTester:
         """Test different brightness control approaches."""
         headers = {"Authorization": self.access_token}
         
-        print(f"\n🧪 Testing brightness control approaches...")
+        print("\n🧪 Testing brightness control approaches...")
         
         # Get current state first
-        print(f"📊 Current LED state:")
+        print("📊 Current LED state:")
         current_params = await self.get_all_led_params(node_id)
         
         # Test different brightness parameter names and values
@@ -172,7 +172,7 @@ class LEDBrightnessTester:
                         
                         # Wait and check the actual result
                         await asyncio.sleep(3)
-                        print(f"   📊 Checking result...")
+                        print("   📊 Checking result...")
                         await self.get_all_led_params(node_id)
                         
                     else:
@@ -190,7 +190,7 @@ class LEDBrightnessTester:
     
     async def test_current_vs_expected(self, node_id: str):
         """Compare current API reading vs expected 56% brightness."""
-        print(f"\n🔍 Current vs Expected Analysis")
+        print("\n🔍 Current vs Expected Analysis")
         print("=" * 50)
         
         params = await self.get_all_led_params(node_id)
@@ -199,25 +199,25 @@ class LEDBrightnessTester:
         led_brightness = params.get("LED Brightness", None)
         led_hue = params.get("LED Hue", None)
         
-        print(f"📊 Current API Values:")
+        print("📊 Current API Values:")
         print(f"   LED Brightness: {led_brightness}")
         print(f"   LED Hue: {led_hue}")
-        print(f"   Expected: 56% brightness")
+        print("   Expected: 56% brightness")
         
         if led_brightness is not None:
             if led_brightness == 56:
-                print(f"   ✅ LED Brightness matches expected 56%")
+                print("   ✅ LED Brightness matches expected 56%")
             elif led_brightness == 0:
-                print(f"   ❌ LED appears OFF (brightness = 0)")
+                print("   ❌ LED appears OFF (brightness = 0)")
             elif led_brightness == 100:
-                print(f"   ❌ LED appears at full brightness (not 56%)")
+                print("   ❌ LED appears at full brightness (not 56%)")
             else:
                 percentage = led_brightness
                 print(f"   ⚠️  LED Brightness is {percentage}% (expected 56%)")
         
         # Check if there are other brightness-related parameters
         all_params = {k: v for k, v in params.items() if isinstance(v, (int, float))}
-        print(f"\n🔍 All numeric parameters (potential brightness indicators):")
+        print("\n🔍 All numeric parameters (potential brightness indicators):")
         for key, value in sorted(all_params.items()):
             if key not in ["LED Brightness", "LED Hue"]:
                 print(f"   {key}: {value}")

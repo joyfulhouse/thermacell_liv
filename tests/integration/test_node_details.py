@@ -114,7 +114,7 @@ class NodeDetailsTester:
                 if response.status == 200:
                     try:
                         data = await response.json()
-                        print(f"      ✅ SUCCESS!")
+                        print("      ✅ SUCCESS!")
                         
                         if detailed:
                             response_str = json.dumps(data, indent=8)
