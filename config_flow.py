@@ -25,16 +25,33 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect."""
+    """Validate the user input allows us to connect.
+
+    Test-before-setup validation (Bronze tier requirement):
+    1. Authenticate with credentials to verify they are valid
+    2. Test API connectivity by fetching user nodes
+    3. Only proceed to setup if both tests pass
+
+    Raises:
+        InvalidAuth: If credentials are invalid or authentication fails
+        CannotConnect: If API is unreachable or user has no devices
+
+    Returns:
+        dict: Validation info with integration title
+    """
     api = ThermacellLivAPI(hass, data[CONF_USERNAME], data[CONF_PASSWORD])
 
+    # Step 1: Test authentication (validates credentials)
     if not await api.authenticate():
+        _LOGGER.error("Authentication failed - invalid credentials for user: %s", data[CONF_USERNAME])
         raise InvalidAuth
 
-    # Test connection by trying to fetch user nodes
+    # Step 2: Test connection (validates API access and user has devices)
     if not await api.test_connection():
+        _LOGGER.error("Connection test failed - unable to fetch nodes for user: %s", data[CONF_USERNAME])
         raise CannotConnect
 
+    _LOGGER.info("Validation successful for user: %s", data[CONF_USERNAME])
     return {"title": "Thermacell LIV"}
 
 

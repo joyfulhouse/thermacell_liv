@@ -21,14 +21,32 @@ except ImportError:
 
 _LOGGER = logging.getLogger(__name__)
 
-UPDATE_INTERVAL = timedelta(seconds=60)  # Poll every 60 seconds
+# Default polling interval: 60 seconds
+# Justification (appropriate-polling Bronze requirement):
+# - Thermacell API has no published rate limits; conservative 60s avoids potential issues
+# - AC-powered devices with infrequent state changes don't require aggressive polling
+# - Optimistic updates provide instant UI feedback, making polling interval less critical
+# - User-configurable via options flow (30-300s range) for flexibility
+UPDATE_INTERVAL = timedelta(seconds=60)
 
 
 class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
-    """Class to manage fetching Thermacell LIV data from the API."""
+    """Class to manage fetching Thermacell LIV data from the API.
+
+    Polling Strategy:
+    - Default 60-second interval balances responsiveness with API conservation
+    - Configurable via integration options (30-300 seconds)
+    - Optimistic updates provide immediate UI feedback independent of polling
+    """
 
     def __init__(self, hass: HomeAssistant, api: ThermacellLivAPI, scan_interval: int = 60) -> None:
-        """Initialize the coordinator."""
+        """Initialize the coordinator.
+
+        Args:
+            hass: Home Assistant instance
+            api: Thermacell API client
+            scan_interval: Polling interval in seconds (default: 60, range: 30-300)
+        """
         super().__init__(
             hass,
             _LOGGER,
