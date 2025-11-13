@@ -7,6 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
+from homeassistant.components.repairs import async_create_issue, async_delete_repair_issue
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -169,9 +170,21 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     if previous_state is not None and previous_state != is_online:
                         if is_online:
                             _LOGGER.info("Node %s (%s) is now online", node_name, node_id)
+                            # Delete repair issue if device comes back online
+                            async_delete_repair_issue(self.hass, DOMAIN, f"device_offline_{node_name}")
                         else:
                             _LOGGER.warning(
                                 "Node %s (%s) is now offline - entities will become unavailable", node_name, node_id
+                            )
+                            # Create repair issue for offline device
+                            async_create_issue(
+                                self.hass,
+                                DOMAIN,
+                                f"device_offline_{node_name}",
+                                is_fixable=False,
+                                severity="warning",
+                                translation_key="device_offline",
+                                translation_placeholders={"device_name": node_name},
                             )
 
                     self._node_online_states[node_id] = is_online
