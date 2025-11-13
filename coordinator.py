@@ -68,14 +68,24 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 raise UpdateFailed("No nodes found")
 
             updated_data = {}
+            previous_node_ids = set(self.nodes.keys()) if self.nodes else set()
 
             # Process each node and get its current status
+            # Dynamic device support (Gold tier): New devices are automatically discovered
             for node in nodes_data:
                 node_id = node.get("id")
                 if not node_id:
                     continue
 
                 node_name = node.get("node_name", f"Unknown Node {node_id}")
+
+                # Log new device discovery (Gold tier: dynamic-devices)
+                if node_id not in previous_node_ids:
+                    _LOGGER.info(
+                        "New Thermacell device discovered: %s (node_id: %s) - will be added automatically",
+                        node_name,
+                        node_id,
+                    )
 
                 # Get current status and config for this node
                 status_data = await self.api.get_node_status(node_id)

@@ -272,6 +272,42 @@ If your credentials change or expire:
 
 The integration will automatically reload with new credentials.
 
+### 🗑️ Removing Devices
+
+#### Remove a Specific Device
+If you want to remove a specific Thermacell LIV device from Home Assistant:
+
+1. Go to **Settings** → **Devices & Services**
+2. Click on **Thermacell LIV** integration
+3. Click on the **device** you want to remove (e.g., "Patio")
+4. Click the **gear icon** (⚙️) in the top right
+5. Click **Delete** and confirm
+
+**Note:** The device will be automatically re-added on the next update if it's still in your Thermacell account. To permanently remove it, you must:
+- Remove the device from your Thermacell account via the mobile app, OR
+- Remove the entire integration (see below)
+
+#### Remove the Integration
+To completely remove the Thermacell LIV integration and all devices:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find **Thermacell LIV** integration
+3. Click the **three dots** (⋮) menu
+4. Click **Delete**
+5. Confirm the removal
+
+All entities, devices, and configuration will be removed. You can re-add the integration anytime by following the installation steps.
+
+#### What Gets Removed
+When you delete the integration:
+- ✅ All entities (switches, lights, sensors, buttons)
+- ✅ All devices from the Devices page
+- ✅ Integration configuration (credentials)
+- ✅ Entity history (if you've enabled cleanup)
+- ❌ Historical data in the database (preserved by default)
+
+**To remove historical data:** Use the **Developer Tools** → **Statistics** page to delete entity statistics if needed.
+
 ## 🚀 Usage Examples
 
 ### 🤖 Automation Examples
