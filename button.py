@@ -20,6 +20,10 @@ except ImportError:
 _LOGGER = logging.getLogger(__name__)
 
 
+# Limit parallel button presses to avoid API conflicts
+PARALLEL_UPDATES = 1
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,

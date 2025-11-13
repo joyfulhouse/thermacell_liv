@@ -43,6 +43,51 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
+        """Handle reauthentication request."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Confirm reauthentication with new credentials."""
+        errors = {}
+
+        if user_input is not None:
+            # Get the existing entry
+            existing_entry = self.hass.config_entries.async_get_entry(
+                self.context["entry_id"]
+            )
+
+            # Validate new credentials
+            try:
+                await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception during reauth")
+                errors["base"] = "unknown"
+            else:
+                # Update the config entry with new credentials
+                self.hass.config_entries.async_update_entry(
+                    existing_entry,
+                    data=user_input,
+                )
+                await self.hass.config_entries.async_reload(existing_entry.entry_id)
+                return self.async_abort(reason="reauth_successful")
+
+        # Show the reauth form
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
+            description_placeholders={
+                "account": self.context.get("unique_id", "Unknown")
+            },
+        )
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:

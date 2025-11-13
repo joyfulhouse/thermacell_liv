@@ -25,6 +25,10 @@ except ImportError:
 _LOGGER = logging.getLogger(__name__)
 
 
+# Sensor platform doesn't make write operations, so parallel updates can be higher
+PARALLEL_UPDATES = 0  # No limit on sensor updates
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,

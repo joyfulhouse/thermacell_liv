@@ -8,6 +8,14 @@
           "username": "Username/Email",
           "password": "Password"
         }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate Thermacell LIV",
+        "description": "Your Thermacell credentials have expired. Please enter your username and password to continue.",
+        "data": {
+          "username": "Username/Email",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -16,7 +24,8 @@
       "unknown": "An unexpected error occurred. Please try again later."
     },
     "abort": {
-      "already_configured": "This Thermacell account is already configured."
+      "already_configured": "This Thermacell account is already configured.",
+      "reauth_successful": "Reauthentication successful. Your credentials have been updated."
     }
   }
 }
