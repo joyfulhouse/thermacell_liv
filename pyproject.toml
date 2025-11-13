@@ -72,7 +72,7 @@ disallow_any_generics = false
 check_untyped_defs = true
 no_implicit_reexport = true
 
-# Strict mode (for Platinum tier)
-# disallow_untyped_defs = true
-# disallow_incomplete_defs = true
-# disallow_untyped_calls = true
+# Strict mode (Platinum tier requirement)
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true

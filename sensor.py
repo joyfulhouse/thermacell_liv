@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -144,7 +145,7 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
         return "Unknown"
 
     @property
-    def extra_state_attributes(self) -> dict[str, any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         if device_data:
@@ -202,7 +203,7 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         return 0
 
     @property
-    def extra_state_attributes(self) -> dict[str, any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes with human-readable runtime."""
         node_data = self.coordinator.get_node_data(self._node_id)
         if node_data:
@@ -316,7 +317,7 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
         return device_data.get("error_code", 0) if device_data else 0
 
     @property
-    def extra_state_attributes(self) -> dict[str, any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         if device_data:
