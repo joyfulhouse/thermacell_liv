@@ -1,14 +1,15 @@
 """Data update coordinator for Thermacell LIV."""
+
 from __future__ import annotations
 
 import colorsys
-from datetime import datetime, timedelta
-from homeassistant.util import dt as dt_util
 import logging
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 try:
     from .api import ThermacellLivAPI
@@ -167,16 +168,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
                     if previous_state is not None and previous_state != is_online:
                         if is_online:
-                            _LOGGER.info(
-                                "Node %s (%s) is now online",
-                                node_name,
-                                node_id
-                            )
+                            _LOGGER.info("Node %s (%s) is now online", node_name, node_id)
                         else:
                             _LOGGER.warning(
-                                "Node %s (%s) is now offline - entities will become unavailable",
-                                node_name,
-                                node_id
+                                "Node %s (%s) is now offline - entities will become unavailable", node_name, node_id
                             )
 
                     self._node_online_states[node_id] = is_online
@@ -189,11 +184,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             return updated_data
 
         except Exception as err:
-            _LOGGER.error(
-                "Error communicating with Thermacell API - integration unavailable: %s",
-                err,
-                exc_info=True
-            )
+            _LOGGER.error("Error communicating with Thermacell API - integration unavailable: %s", err, exc_info=True)
             raise UpdateFailed(f"Error communicating with API: {err}") from err
 
     def get_node_data(self, node_id: str) -> Dict[str, Any] | None:
@@ -237,7 +228,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 "Failed to set power to %s for device %s (node %s) - service unavailable",
                 "on" if power_on else "off",
                 device_name,
-                node_id
+                node_id,
             )
 
             # Revert optimistic update on failure
@@ -254,11 +245,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     # Notify UI of revert
                     self.async_update_listeners()
         else:
-            _LOGGER.debug(
-                "Successfully set power to %s for device %s",
-                "on" if power_on else "off",
-                device_name
-            )
+            _LOGGER.debug("Successfully set power to %s for device %s", "on" if power_on else "off", device_name)
 
         return success
 
@@ -289,7 +276,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             _LOGGER.warning(
                 "Failed to set LED power to %s for device %s - service unavailable",
                 "on" if led_on else "off",
-                device_name
+                device_name,
             )
 
             # Revert optimistic update on failure
@@ -306,9 +293,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         return success
 
-    async def async_set_device_led_color(
-        self, node_id: str, device_name: str, red: int, green: int, blue: int
-    ) -> bool:
+    async def async_set_device_led_color(self, node_id: str, device_name: str, red: int, green: int, blue: int) -> bool:
         """Set device LED color with optimistic update."""
         # Optimistic update - update UI immediately
         original_color = None
@@ -375,9 +360,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         if not success and original_brightness is not None:
             _LOGGER.warning(
-                "Failed to set LED brightness to %d for device %s - service unavailable",
-                brightness,
-                device_name
+                "Failed to set LED brightness to %d for device %s - service unavailable", brightness, device_name
             )
 
             # Revert optimistic update on failure

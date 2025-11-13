@@ -1,4 +1,5 @@
 """Platform for light integration."""
+
 from __future__ import annotations
 
 import logging
@@ -43,9 +44,7 @@ async def async_setup_entry(
     # Create light entities for each device in each node
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
-            lights.append(
-                ThermacellLivLight(coordinator, node_id, device_name)
-            )
+            lights.append(ThermacellLivLight(coordinator, node_id, device_name))
 
     async_add_entities(lights, update_before_add=True)
 
@@ -53,14 +52,11 @@ async def async_setup_entry(
 class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntity):
     """Representation of a Thermacell LIV LED light."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the light."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-
 
         self._attr_has_entity_name = True
         self._attr_name = "LED"
@@ -92,10 +88,7 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def is_on(self) -> bool:
@@ -124,22 +117,14 @@ class ThermacellLivLight(CoordinatorEntity[ThermacellLivCoordinator], LightEntit
         """Turn on the light."""
         if ATTR_RGB_COLOR in kwargs:
             r, g, b = kwargs[ATTR_RGB_COLOR]
-            await self.coordinator.async_set_device_led_color(
-                self._node_id, self._device_name, r, g, b
-            )
+            await self.coordinator.async_set_device_led_color(self._node_id, self._device_name, r, g, b)
 
         if ATTR_BRIGHTNESS in kwargs:
             brightness = kwargs[ATTR_BRIGHTNESS]
-            await self.coordinator.async_set_device_led_brightness(
-                self._node_id, self._device_name, brightness
-            )
+            await self.coordinator.async_set_device_led_brightness(self._node_id, self._device_name, brightness)
 
-        await self.coordinator.async_set_device_led_power(
-            self._node_id, self._device_name, True
-        )
+        await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
-        await self.coordinator.async_set_device_led_power(
-            self._node_id, self._device_name, False
-        )
+        await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, False)

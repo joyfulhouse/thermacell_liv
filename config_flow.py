@@ -1,18 +1,18 @@
 """Config flow for Thermacell LIV integration."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import ThermacellLivAPI
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,17 +47,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle reauthentication request."""
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Confirm reauthentication with new credentials."""
         errors = {}
 
         if user_input is not None:
             # Get the existing entry
-            existing_entry = self.hass.config_entries.async_get_entry(
-                self.context["entry_id"]
-            )
+            existing_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
 
             # Validate new credentials
             try:
@@ -83,19 +79,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
-            description_placeholders={
-                "account": self.context.get("unique_id", "Unknown")
-            },
+            description_placeholders={"account": self.context.get("unique_id", "Unknown")},
         )
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         if user_input is None:
-            return self.async_show_form(
-                step_id="user", data_schema=STEP_USER_DATA_SCHEMA
-            )
+            return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA)
 
         errors = {}
 
@@ -116,9 +106,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             return self.async_create_entry(title=info["title"], data=user_input)
 
-        return self.async_show_form(
-            step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
-        )
+        return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors)
 
 
 class CannotConnect(HomeAssistantError):

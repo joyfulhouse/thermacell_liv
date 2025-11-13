@@ -1,4 +1,5 @@
 """Thermacell LIV API client based on ESP Rainmaker API."""
+
 from __future__ import annotations
 
 import asyncio
@@ -9,7 +10,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from aiohttp import ClientSession, ClientTimeout
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -87,17 +87,17 @@ class ThermacellLivAPI:
     def _decode_jwt_payload(self, jwt_token: str) -> Dict[str, Any]:
         """Decode JWT token payload without verification."""
         try:
-            parts = jwt_token.split('.')
+            parts = jwt_token.split(".")
             if len(parts) != 3:
                 return {}
 
             payload = parts[1]
             padding = 4 - len(payload) % 4
             if padding != 4:
-                payload += '=' * padding
+                payload += "=" * padding
 
             decoded_bytes = base64.urlsafe_b64decode(payload)
-            return json.loads(decoded_bytes.decode('utf-8'))
+            return json.loads(decoded_bytes.decode("utf-8"))
         except Exception as e:
             _LOGGER.debug("Failed to decode JWT payload: %s", e)
             return {}
@@ -116,9 +116,7 @@ class ThermacellLivAPI:
         for attempt in range(RETRY_ATTEMPTS):
             try:
                 timeout = ClientTimeout(total=API_TIMEOUT)
-                async with self.session.request(
-                    method, url, json=data, headers=headers, timeout=timeout
-                ) as response:
+                async with self.session.request(method, url, json=data, headers=headers, timeout=timeout) as response:
                     if response.status == 401:
                         # Token expired, try re-authentication
                         if await self.authenticate():
@@ -166,7 +164,7 @@ class ThermacellLivAPI:
                         "id": node_id,
                         "node_name": liv_hub_params.get("Name", f"Node {node_id}"),
                         "type": "LIV Hub",
-                        "params": params_response
+                        "params": params_response,
                     }
                     nodes.append(node_data)
             return nodes
@@ -189,16 +187,10 @@ class ThermacellLivAPI:
     async def set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
         """Turn device on or off."""
         # Based on API validation, the device is "LIV Hub" and uses "Enable Repellers"
-        params = {
-            "LIV Hub": {
-                "Enable Repellers": power_on
-            }
-        }
+        params = {"LIV Hub": {"Enable Repellers": power_on}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_color(
-        self, node_id: str, device_name: str, red: int, green: int, blue: int
-    ) -> bool:
+    async def set_device_led_color(self, node_id: str, device_name: str, red: int, green: int, blue: int) -> bool:
         """Set device LED color."""
         # Convert RGB to HSV hue (0-360 range)
         r_norm, g_norm, b_norm = red / 255.0, green / 255.0, blue / 255.0
@@ -206,23 +198,14 @@ class ThermacellLivAPI:
         hue = int(h * 360)
         brightness = int(v * 100)
 
-        params = {
-            "LIV Hub": {
-                "LED Hue": hue,
-                "LED Brightness": brightness
-            }
-        }
+        params = {"LIV Hub": {"LED Hue": hue, "LED Brightness": brightness}}
         return await self.set_node_params(node_id, params)
 
     async def set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
         """Turn device LED on or off."""
         # Set brightness to 0 to turn off, or restore to default brightness
         brightness = 100 if led_on else 0
-        params = {
-            "LIV Hub": {
-                "LED Brightness": brightness
-            }
-        }
+        params = {"LIV Hub": {"LED Brightness": brightness}}
         return await self.set_node_params(node_id, params)
 
     async def set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
@@ -231,20 +214,12 @@ class ThermacellLivAPI:
         thermacell_brightness = int((brightness / 255) * 100)
         thermacell_brightness = max(0, min(100, thermacell_brightness))  # Clamp to 0-100
 
-        params = {
-            "LIV Hub": {
-                "LED Brightness": thermacell_brightness
-            }
-        }
+        params = {"LIV Hub": {"LED Brightness": thermacell_brightness}}
         return await self.set_node_params(node_id, params)
 
     async def reset_refill_life(self, node_id: str, device_name: str) -> bool:
         """Reset the refill life counter."""
-        params = {
-            "LIV Hub": {
-                "Refill Reset": 1  # Based on API, this is a counter, not boolean
-            }
-        }
+        params = {"LIV Hub": {"Refill Reset": 1}}  # Based on API, this is a counter, not boolean
         return await self.set_node_params(node_id, params)
 
     async def test_connection(self) -> bool:

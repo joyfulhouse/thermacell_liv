@@ -1,4 +1,5 @@
 """Platform for button integration."""
+
 from __future__ import annotations
 
 import logging
@@ -37,12 +38,8 @@ async def async_setup_entry(
     # Create button entities for each device in each node
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
-            buttons.append(
-                ThermacellLivResetButton(coordinator, node_id, device_name)
-            )
-            buttons.append(
-                ThermacellLivRefreshButton(coordinator, node_id, device_name)
-            )
+            buttons.append(ThermacellLivResetButton(coordinator, node_id, device_name))
+            buttons.append(ThermacellLivRefreshButton(coordinator, node_id, device_name))
 
     async_add_entities(buttons, update_before_add=True)
 
@@ -50,14 +47,11 @@ async def async_setup_entry(
 class ThermacellLivResetButton(CoordinatorEntity[ThermacellLivCoordinator], ButtonEntity):
     """Representation of a Thermacell LIV refill reset button."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the button."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-
 
         self._attr_has_entity_name = True
         self._attr_name = "Reset Refill"
@@ -87,16 +81,11 @@ class ThermacellLivResetButton(CoordinatorEntity[ThermacellLivCoordinator], Butt
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        success = await self.coordinator.async_reset_refill_life(
-            self._node_id, self._device_name
-        )
+        success = await self.coordinator.async_reset_refill_life(self._node_id, self._device_name)
         if success:
             _LOGGER.info("Reset refill life for %s", self._attr_name)
             await self.coordinator.async_request_refresh()
@@ -107,14 +96,11 @@ class ThermacellLivResetButton(CoordinatorEntity[ThermacellLivCoordinator], Butt
 class ThermacellLivRefreshButton(CoordinatorEntity[ThermacellLivCoordinator], ButtonEntity):
     """Representation of a Thermacell LIV refresh button."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the button."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
-
 
         self._attr_has_entity_name = True
         self._attr_name = "Refresh"
@@ -145,10 +131,7 @@ class ThermacellLivRefreshButton(CoordinatorEntity[ThermacellLivCoordinator], Bu
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     async def async_press(self) -> None:
         """Handle the button press."""

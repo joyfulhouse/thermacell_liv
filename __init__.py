@@ -1,4 +1,5 @@
 """The Thermacell LIV integration."""
+
 from __future__ import annotations
 
 import logging
@@ -9,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api import ThermacellLivAPI
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 from .coordinator import ThermacellLivCoordinator
 
 _LOGGER = logging.getLogger(__name__)
