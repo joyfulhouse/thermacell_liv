@@ -22,25 +22,87 @@ This release marks the first stable production version with significant improvem
 ## ✨ Features
 
 - 🎛️ **Control mosquito repellers**: Turn your Thermacell LIV devices on and off
-- 💡 **LED color control**: Customize the LED color and brightness on your devices  
+- 💡 **LED color control**: Customize the LED color and brightness on your devices
 - ⏱️ **Monitor refill life**: Track remaining refill life in hours
 - 🔄 **Refill reset**: Reset the refill life counter when replacing cartridges
 - 🏘️ **Multi-device support**: Manage multiple Thermacell LIV hubs from a single integration
 - 📡 **Real-time status**: Monitor device connectivity and online status
 - ⏰ **System runtime**: Track how long your devices have been running
-- 📊 **System status**: Monitor current state (On, Off, Warming Up)
+- 📊 **System status**: Monitor current state (On, Off, Warming Up, Protected)
 - 🔧 **Device information**: View firmware version, serial number, and model details
+- 🔄 **Reauthentication**: Update credentials without removing integration
+- ⚙️ **Configurable polling**: Adjust update interval (30-300 seconds)
+- 🩺 **Diagnostics**: Comprehensive debug data for troubleshooting
 
 ## 🏠 Supported Entities
 
 Each Thermacell LIV hub provides the following Home Assistant entities:
 
+### Primary Entities (Enabled by Default)
 - 🔌 **Switch**: `switch.thermacell_liv_{device_name}` - Controls the mosquito repeller on/off
-- 💡 **Light**: `light.thermacell_liv_{device_name}_led` - Controls LED color and brightness  
-- ⏱️ **Refill Life Sensor**: `sensor.thermacell_liv_{device_name}_refill_life` - Monitors refill life remaining (hours)
-- 📊 **System Status Sensor**: `sensor.thermacell_liv_{device_name}_system_status` - Current device status (On, Off, Warming Up)
-- ⏰ **System Runtime Sensor**: `sensor.thermacell_liv_{device_name}_system_runtime` - Total runtime (formatted as days/hours/minutes)
+- 💡 **Light**: `light.thermacell_liv_{device_name}_led` - Controls LED color and brightness
+- ⏱️ **Refill Life Sensor**: `sensor.thermacell_liv_{device_name}_refill_life` - Monitors refill life remaining (%)
+- 📊 **System Status Sensor**: `sensor.thermacell_liv_{device_name}_system_status` - Current device status
 - 🔄 **Reset Button**: `button.thermacell_liv_{device_name}_reset_refill` - Resets refill life counter
+
+### Diagnostic Entities (Disabled by Default)
+These can be enabled via Settings → Devices & Services → Thermacell LIV → Entity Settings:
+- ⏰ **System Runtime Sensor**: Total runtime (formatted as days/hours/minutes)
+- 📡 **Connectivity Sensor**: Connection status (Connected/Disconnected)
+- ⚠️ **Error Code Sensor**: Numeric error codes with status attributes
+- 🆔 **Hub ID Sensor**: Device serial number for identification
+- 💾 **Firmware Version Sensor**: Current firmware version
+- 🔄 **Refresh Button**: Manual data refresh from API
+
+## 🦟 Supported Devices
+
+This integration supports all **Thermacell LIV** mosquito repeller hubs with the following specifications:
+
+### Compatible Models
+- ✅ **Thermacell LIV Hub** (Model: thermacell-hub)
+  - Cloud-connected mosquito repeller
+  - RGB LED indicator
+  - WiFi connectivity (2.4GHz)
+  - Refillable cartridge system
+
+### Firmware Compatibility
+- ✅ **Tested Versions**: 5.3.2 and later
+- ✅ **Minimum Version**: Any firmware supporting ESP Rainmaker API v1
+- ⚠️ **Note**: Older firmware may lack some features
+
+### Regional Availability
+- 🌍 Available in regions where Thermacell LIV is sold
+- 🇺🇸 United States
+- 🇨🇦 Canada
+- 🌐 Check [Thermacell's website](https://www.thermacell.com/) for current availability
+
+### Incompatible Devices
+- ❌ Thermacell Patio Shield (non-WiFi model)
+- ❌ Thermacell E-Series (different protocol)
+- ❌ Thermacell Radius (different app/API)
+
+## 🎯 Use Cases
+
+### 🏡 Home & Patio
+- **Outdoor dining**: Automatically enable repeller at sunset for mosquito-free meals
+- **Evening relaxation**: Schedule protection during peak mosquito hours (dusk to dawn)
+- **Party mode**: Link LED color to scene changes for ambiance
+
+### 🏕️ Events & Gatherings
+- **Outdoor parties**: Coordinate multiple hubs for large area coverage
+- **Camping**: Remote monitoring and control from inside
+- **BBQ automation**: Trigger with outdoor cooking automations
+
+### 🏠 Smart Home Integration
+- **Presence detection**: Auto-enable when outdoor motion detected
+- **Weather integration**: Disable during rain, enable when weather clears
+- **Solar automation**: Enable at sunset, disable at sunrise
+- **Energy management**: Monitor runtime for refill planning
+
+### 🔧 Maintenance
+- **Refill tracking**: Get notifications when refill life is low
+- **Usage analytics**: Track runtime patterns to optimize placement
+- **Diagnostics**: Troubleshoot connectivity issues with diagnostic sensors
 
 ## 📦 Installation
 
@@ -249,24 +311,109 @@ entities:
     name: Reset Refill
 ```
 
+## 🔄 Data Updates & Polling
+
+### How Data Refresh Works
+
+The integration uses a **cloud polling** mechanism with intelligent optimistic updates:
+
+1. **Initial Connection**: On startup, fetches all device data from Thermacell API
+2. **Periodic Polling**: Updates device status every 60 seconds (configurable 30-300s)
+3. **Optimistic Updates**: When you control a device:
+   - UI updates instantly (0.01s response time)
+   - API call happens in background (2.5s average)
+   - Reverts if API call fails
+4. **Manual Refresh**: Use the refresh button for immediate updates
+
+### Update Intervals
+
+- **Default**: 60 seconds (balanced performance)
+- **Configurable**: 30-300 seconds via integration options
+- **Faster updates**: Set to 30s for near real-time (may impact API limits)
+- **Slower updates**: Set to 300s for reduced API calls
+
+### Data Freshness
+
+- **Device states**: Updated every poll interval
+- **Refill life**: Real-time tracking
+- **System status**: Live status (Protected, Warming Up, Off, Error)
+- **Connectivity**: Immediate detection of offline devices
+
+## ⚠️ Known Limitations
+
+### API & Connectivity
+
+- **Internet Required**: Integration requires constant internet access to Thermacell cloud
+- **Cloud Dependency**: Cannot function if Thermacell API is down or unavailable
+- **No Local Control**: Devices must communicate through Thermacell cloud (no local API)
+- **Polling Delay**: Status updates limited by polling interval (default 60s)
+
+### Device Limitations
+
+- **Single Account**: Each integration instance supports one Thermacell account
+- **2.4GHz WiFi Only**: LIV hubs require 2.4GHz WiFi (5GHz not supported by hardware)
+- **Runtime Tracking**: Shows current session runtime, not lifetime usage
+- **Refill Accuracy**: Refill life is estimated, not measured
+
+### Platform Limitations
+
+- **No Push Notifications**: Integration polls API, doesn't receive device push updates
+- **Rate Limiting**: Excessive API calls may result in temporary throttling
+- **Geofencing**: No automatic location-based control
+- **Historical Data**: No built-in historical tracking (use HA recorder/history)
+
+### Feature Limitations
+
+- **LED Control**: Basic RGB, no effects or patterns (hardware limitation)
+- **Scheduling**: No device-side schedules (use HA automations instead)
+- **Multiple Zones**: Each hub is independent (no built-in zone grouping)
+- **Battery Status**: LIV hub is AC-powered (no battery monitoring)
+
 ## 🔧 Troubleshooting
 
 ### ❗ Common Issues
 
 **🔐 Authentication Failed**:
-- Verify your username/password are correct
-- Ensure your Thermacell account is active
-- Check that your devices are registered in the Thermacell mobile app
+- ✅ Verify username/password are correct (same as mobile app)
+- ✅ Ensure Thermacell account is active and verified
+- ✅ Check that devices are registered in Thermacell mobile app
+- ✅ Try reauthentication: Settings → Devices & Services → Thermacell LIV → Configure
+- ❌ If persists: Reset password via Thermacell website, then reauth
 
 **📱 No devices found**:
-- Make sure your LIV devices are online and connected to WiFi
-- Verify devices are registered in your Thermacell account
-- Try refreshing the integration: Settings → Devices & Services → Thermacell LIV → "Reload"
+- ✅ Ensure LIV devices are powered on and LED is lit
+- ✅ Verify devices are online in Thermacell mobile app
+- ✅ Check WiFi connection (2.4GHz network required)
+- ✅ Try manual refresh button
+- ✅ Reload integration: Settings → Devices & Services → Thermacell LIV → "⋮" → Reload
+- ❌ If persists: Remove and re-add integration
 
 **🌐 Connection timeout**:
-- Check your internet connection
-- Verify the API base URL is correct: `https://api.iot.thermacell.com/`
-- Check Home Assistant logs for detailed error messages
+- ✅ Test internet connectivity from Home Assistant
+- ✅ Verify API URL: `https://api.iot.thermacell.com/`
+- ✅ Check firewall isn't blocking outbound HTTPS
+- ✅ Review Home Assistant logs for detailed error messages
+- ❌ If persists: Check Thermacell API status
+
+**💡 LED not responding**:
+- ✅ Verify hub is powered on (LED should be lit)
+- ✅ Check if hub is online (connectivity sensor)
+- ✅ Try controlling via mobile app (hardware test)
+- ✅ Ensure brightness > 0 (LED off if brightness = 0)
+- ❌ If hardware issue: Contact Thermacell support
+
+**⏱️ Slow response times**:
+- ✅ Check your internet speed and latency
+- ✅ Increase polling interval if API seems slow
+- ✅ Verify not hitting API rate limits (check logs)
+- ✅ Optimistic updates provide instant UI feedback
+
+**🔄 Entities unavailable**:
+- ✅ Check device connectivity sensor status
+- ✅ Verify device is online in mobile app
+- ✅ Check Home Assistant logs for API errors
+- ✅ Try manual refresh or reload integration
+- ✅ Check credentials haven't expired (reauth if needed)
 
 ### 🐛 Debug Logging
 
@@ -277,14 +424,32 @@ logger:
   default: info
   logs:
     custom_components.thermacell_liv: debug
+    custom_components.thermacell_liv.coordinator: debug
+    custom_components.thermacell_liv.api: debug
 ```
 
-### 📊 API Rate Limiting
+This will log:
+- API requests and responses
+- Authentication attempts
+- Node online/offline transitions
+- Service call successes/failures
+- Optimistic update operations
 
-The integration polls the Thermacell API every 60 seconds by default. If you experience rate limiting:
+### 📊 Diagnostics
 
-- Reduce polling frequency in the coordinator configuration
-- Avoid making too many manual API calls through automations
+Download diagnostic data for support:
+
+1. Go to **Settings** → **Devices & Services**
+2. Click **Thermacell LIV** integration
+3. Click **"⋮"** (three dots) → **Download Diagnostics**
+4. Share the file when reporting issues (sensitive data is auto-redacted)
+
+### 🆘 Getting Help
+
+- **GitHub Issues**: [Report bugs and feature requests](https://github.com/joyfulhouse/thermacell_liv/issues)
+- **Discussions**: [Ask questions and share tips](https://github.com/joyfulhouse/thermacell_liv/discussions)
+- **Logs**: Always include debug logs when reporting issues
+- **Diagnostics**: Attach diagnostic file for faster troubleshooting
 
 ## 🛠️ Development
 
