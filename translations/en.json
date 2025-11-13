@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Thermacell LIV",
+        "description": "Enter your Thermacell account credentials to connect your LIV devices.",
+        "data": {
+          "username": "Username/Email",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Thermacell API. Please check your internet connection and try again.",
+      "invalid_auth": "Invalid username or password. Please check your credentials.",
+      "unknown": "An unexpected error occurred. Please try again later."
+    },
+    "abort": {
+      "already_configured": "This Thermacell account is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Refill life"
+      },
+      "system_status": {
+        "name": "System status"
+      },
+      "system_runtime": {
+        "name": "System runtime"
+      },
+      "connectivity": {
+        "name": "Connectivity"
+      },
+      "error_code": {
+        "name": "Error code"
+      },
+      "hub_id": {
+        "name": "Hub ID"
+      },
+      "firmware": {
+        "name": "Firmware version"
+      }
+    },
+    "switch": {
+      "switch": {
+        "name": "Repeller"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Reset refill"
+      },
+      "refresh": {
+        "name": "Refresh"
+      }
+    }
+  }
+}

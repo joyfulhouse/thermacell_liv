@@ -31,7 +31,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the sensor platform."""
-    coordinator: ThermacellLivCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: ThermacellLivCoordinator = config_entry.runtime_data
 
     sensors = []
 

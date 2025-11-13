@@ -255,11 +255,107 @@ This integration uses the Thermacell IoT API (ESP Rainmaker platform):
 
 ## 📋 Requirements
 
-- **Home Assistant**: 2023.1.0 or newer
+- **Home Assistant**: 2023.1.0 or newer (2024.x+ recommended for best compatibility)
 - **Python**: 3.10 or newer
-- **Dependencies**: 
-  - `aiohttp` (included with Home Assistant)
-  - `homeassistant` core
+- **Network**: Internet connection required for cloud API access
+- **Account**: Active Thermacell account with registered LIV devices
+
+### 📦 Dependencies
+
+This integration requires the following Python packages:
+
+- **aiohttp** (>= 3.8.0): Async HTTP client for API communication
+  - Included with Home Assistant core
+  - Used for all API requests to Thermacell cloud services
+  - Handles authentication, device control, and status polling
+
+- **homeassistant** core libraries:
+  - `homeassistant.helpers.aiohttp_client`: For managed HTTP sessions
+  - `homeassistant.helpers.update_coordinator`: For coordinated data updates
+  - `homeassistant.config_entries`: For configuration flow management
+
+All dependencies are automatically managed by Home Assistant. No manual installation required.
+
+## 🗑️ Uninstallation
+
+### Removing the Integration
+
+To completely remove the Thermacell LIV integration from your Home Assistant:
+
+1. **Remove the Integration Instance**:
+   - Go to **Settings** → **Devices & Services**
+   - Find **Thermacell LIV** in the list
+   - Click the **three dots menu** (⋮) on the integration card
+   - Select **Delete**
+   - Confirm the deletion
+
+2. **Remove Integration Files** (if desired):
+
+   **For HACS installations**:
+   - Open HACS in your Home Assistant instance
+   - Go to **Integrations**
+   - Find **Thermacell LIV**
+   - Click **Remove**
+   - Restart Home Assistant
+
+   **For manual installations**:
+   ```bash
+   # Remove the integration directory
+   rm -rf /config/custom_components/thermacell_liv
+   ```
+
+3. **Clean up (optional)**:
+   - Remove any automations using Thermacell entities
+   - Remove any Lovelace cards displaying Thermacell data
+   - Clear any related notification templates
+
+4. **Restart Home Assistant**:
+   - Settings → System → Restart → **Restart Home Assistant**
+
+### What Gets Removed
+
+When you delete the integration:
+- ✅ All entities (switches, lights, sensors, buttons)
+- ✅ All device entries
+- ✅ Configuration data (username/password)
+- ✅ Historical data in the database (after retention period)
+- ❌ Integration files remain (unless manually removed or via HACS)
+
+**Note**: Deleting the integration does not affect your Thermacell account or devices. You can re-add the integration at any time.
+
+## 🔧 Available Services
+
+This integration uses standard Home Assistant services. No custom services are provided.
+
+### Switch Services
+
+- `switch.turn_on`: Enable mosquito repeller
+- `switch.turn_off`: Disable mosquito repeller
+- `switch.toggle`: Toggle repeller state
+
+### Light Services
+
+- `light.turn_on`: Control LED power, color, and brightness
+  - Parameters:
+    - `rgb_color`: RGB color tuple (e.g., [255, 100, 0])
+    - `brightness`: Brightness value 0-255
+- `light.turn_off`: Turn off LED
+
+### Button Services
+
+- `button.press`: Press button (refill reset or refresh)
+
+**Example Service Call**:
+```yaml
+service: light.turn_on
+target:
+  entity_id: light.thermacell_liv_patio_led
+data:
+  rgb_color: [255, 100, 0]  # Orange
+  brightness: 200            # ~78% brightness
+```
+
+For more information on using these services, see the [Home Assistant Services Documentation](https://www.home-assistant.io/docs/scripts/service-calls/).
 
 ## 📄 License
 

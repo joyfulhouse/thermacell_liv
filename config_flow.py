@@ -54,6 +54,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
 
+        # Check for duplicate entries (unique-config-entry requirement)
+        # Use username as unique identifier
+        await self.async_set_unique_id(user_input[CONF_USERNAME].lower())
+        self._abort_if_unique_id_configured()
+
         try:
             info = await validate_input(self.hass, user_input)
         except CannotConnect:
