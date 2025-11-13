@@ -174,6 +174,7 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         self._attr_suggested_unit_of_measurement = UnitOfTime.HOURS
         self._attr_icon = "mdi:timer-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -246,6 +247,7 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
         self.entity_id = f"sensor.{DOMAIN}_{device_name}_connectivity"
         self._attr_icon = "mdi:wifi"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -288,6 +290,7 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
         self.entity_id = f"sensor.{DOMAIN}_{device_name}_error_code"
         self._attr_icon = "mdi:alert-circle-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -340,6 +343,7 @@ class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], Sens
         self.entity_id = f"sensor.{DOMAIN}_{device_name}_hub_id"
         self._attr_icon = "mdi:identifier"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -380,6 +384,7 @@ class ThermacellLivFirmwareSensor(CoordinatorEntity[ThermacellLivCoordinator], S
         self.entity_id = f"sensor.{DOMAIN}_{device_name}_firmware"
         self._attr_icon = "mdi:chip"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
 
     @property
     def device_info(self) -> DeviceInfo:

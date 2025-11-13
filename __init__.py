@@ -30,8 +30,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not await api.authenticate():
         raise ConfigEntryNotReady("Failed to authenticate with Thermacell API")
 
-    # Initialize coordinator
-    coordinator = ThermacellLivCoordinator(hass, api)
+    # Initialize coordinator with configurable scan interval
+    scan_interval = entry.options.get("scan_interval", 60)
+    coordinator = ThermacellLivCoordinator(hass, api, scan_interval=scan_interval)
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -39,10 +40,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store coordinator in runtime_data (HA 2024.x+ best practice)
     entry.runtime_data = coordinator
 
+    # Setup options update listener
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
     # Forward to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

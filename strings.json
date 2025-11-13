@@ -27,5 +27,19 @@
       "already_configured": "This Thermacell account is already configured.",
       "reauth_successful": "Reauthentication successful. Your credentials have been updated."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thermacell LIV Options",
+        "description": "Configure integration settings",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to poll the Thermacell API for device status (30-300 seconds)"
+        }
+      }
+    }
   }
 }

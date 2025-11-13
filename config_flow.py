@@ -43,6 +43,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
+        """Get the options flow for this handler."""
+        return ThermacellLivOptionsFlow(config_entry)
+
     async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle reauthentication request."""
         return await self.async_step_reauth_confirm()
@@ -107,6 +112,36 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors)
+
+
+class ThermacellLivOptionsFlow(config_entries.OptionsFlow):
+    """Handle options flow for Thermacell LIV."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        # Get current options or use defaults
+        options = {
+            "scan_interval": self.config_entry.options.get("scan_interval", 60),
+        }
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        "scan_interval",
+                        default=options["scan_interval"],
+                    ): vol.All(vol.Coerce(int), vol.Range(min=30, max=300)),
+                }
+            ),
+        )
 
 
 class CannotConnect(HomeAssistantError):

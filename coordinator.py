@@ -26,13 +26,13 @@ UPDATE_INTERVAL = timedelta(seconds=60)  # Poll every 60 seconds
 class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
     """Class to manage fetching Thermacell LIV data from the API."""
 
-    def __init__(self, hass: HomeAssistant, api: ThermacellLivAPI) -> None:
+    def __init__(self, hass: HomeAssistant, api: ThermacellLivAPI, scan_interval: int = 60) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=UPDATE_INTERVAL,
+            update_interval=timedelta(seconds=scan_interval),
         )
         self.api = api
         self.nodes: Dict[str, Dict[str, Any]] = {}
