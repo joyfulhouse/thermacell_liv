@@ -107,20 +107,84 @@ Each Thermacell LIV hub provides the following Home Assistant entities:
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=thermacell_liv)
 
 1. 🎛️ **Go to Settings** → **Devices & Services**
-2. ➕ **Click "Add Integration"** 
+2. ➕ **Click "Add Integration"**
 3. 🔍 **Search for "Thermacell LIV"**
 4. 🔐 **Enter your credentials**:
    - 👤 **Username**: Your Thermacell account username/email
-   - 🔑 **Password**: Your Thermacell account password  
-   - 🌐 **API Base URL**: `https://api.iot.thermacell.com/` (default)
+   - 🔑 **Password**: Your Thermacell account password
+
+### 📝 Configuration Parameters
+
+#### Required Parameters
+
+- **Username/Email** (string, required)
+  - Your Thermacell account login credentials
+  - The same email address you use for the Thermacell mobile app
+  - Format: Valid email address (e.g., user@example.com)
+  - Used for: API authentication and device discovery
+
+- **Password** (string, required)
+  - Your Thermacell account password
+  - The same password you use for the Thermacell mobile app
+  - Security: Stored encrypted in Home Assistant's secure storage
+  - Used for: API authentication
+
+#### Automatic Parameters
+
+- **API Base URL**: `https://api.iot.thermacell.com/` (automatic)
+  - ESP Rainmaker platform endpoint
+  - Cannot be changed (hardcoded for reliability)
+  - Protocol: HTTPS with TLS encryption
+
+- **Polling Interval**: 60 seconds (automatic)
+  - How often the integration fetches device status
+  - Optimized for: Balance between responsiveness and API rate limits
+  - Cannot be changed (may be configurable in future versions)
+
+- **Parallel Updates**: Platform-specific (automatic)
+  - Switch/Light/Button: 1 concurrent operation (prevents API conflicts)
+  - Sensors: Unlimited (read-only operations)
+  - Purpose: Prevents overwhelming the Thermacell API
 
 ### 🔐 Authentication Setup
 
 You'll need a Thermacell account with registered LIV devices. The integration uses the same credentials you use for the 📱 Thermacell mobile app.
 
+#### Prerequisites
+
+1. **Active Thermacell account**
+   - 📝 Create at [Thermacell's website](https://www.thermacell.com/)
+   - ✅ Verify your email address
+   - 🔑 Remember your password
+
+2. **Registered LIV device**
+   - 📱 Download the Thermacell mobile app (iOS/Android)
+   - 🔗 Follow the in-app setup wizard
+   - 📡 Connect your LIV hub to WiFi
+   - ✅ Verify device appears in the app
+
+3. **Network requirements**
+   - 🌐 Home Assistant must have internet access
+   - 🔓 No firewall configuration needed (outbound HTTPS only)
+   - ⚡ Stable internet connection recommended
+
+#### Setup Steps
+
 1. 📝 **Create an account** at [🌐 Thermacell's website](https://www.thermacell.com/) if you don't have one
-2. 📱 **Register your LIV devices** using the Thermacell mobile app  
+2. 📱 **Register your LIV devices** using the Thermacell mobile app
 3. 🏠 **Use the same credentials** in Home Assistant
+
+### 🔄 Reauthentication
+
+If your credentials change or expire:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find **Thermacell LIV** integration
+3. Click **Configure** (or notification prompt)
+4. Enter your new username and password
+5. Click **Submit** to update credentials
+
+The integration will automatically reload with new credentials.
 
 ## 🚀 Usage Examples
 

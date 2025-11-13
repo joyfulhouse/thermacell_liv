@@ -36,6 +36,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         self.api = api
         self.nodes: Dict[str, Dict[str, Any]] = {}
         self.last_update_success_time: Optional[datetime] = None
+        self._node_online_states: Dict[str, bool] = {}  # Track online/offline transitions
 
     async def _async_update_data(self) -> Dict[str, Any]:
         """Fetch data from API endpoint."""
@@ -160,15 +161,39 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                                 "last_updated": connectivity.get("timestamp", 0) // 1000,  # Convert to seconds
                             }
 
+                    # Log online/offline transitions (log-when-unavailable requirement)
+                    is_online = node_info.get("online", False)
+                    previous_state = self._node_online_states.get(node_id)
+
+                    if previous_state is not None and previous_state != is_online:
+                        if is_online:
+                            _LOGGER.info(
+                                "Node %s (%s) is now online",
+                                node_name,
+                                node_id
+                            )
+                        else:
+                            _LOGGER.warning(
+                                "Node %s (%s) is now offline - entities will become unavailable",
+                                node_name,
+                                node_id
+                            )
+
+                    self._node_online_states[node_id] = is_online
                     updated_data[node_id] = node_info
 
             self.nodes = updated_data
             # Update the last successful update timestamp (timezone-aware)
             self.last_update_success_time = dt_util.utcnow()
+            _LOGGER.debug("Successfully updated data for %d node(s)", len(updated_data))
             return updated_data
 
         except Exception as err:
-            _LOGGER.error("Error communicating with Thermacell API: %s", err)
+            _LOGGER.error(
+                "Error communicating with Thermacell API - integration unavailable: %s",
+                err,
+                exc_info=True
+            )
             raise UpdateFailed(f"Error communicating with API: {err}") from err
 
     def get_node_data(self, node_id: str) -> Dict[str, Any] | None:
@@ -207,6 +232,14 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         success = await self.api.set_device_power(node_id, device_name, power_on)
 
         if not success:
+            # Log service failure (log-when-unavailable requirement)
+            _LOGGER.warning(
+                "Failed to set power to %s for device %s (node %s) - service unavailable",
+                "on" if power_on else "off",
+                device_name,
+                node_id
+            )
+
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 devices = self.data[node_id].get("devices", {})
@@ -220,6 +253,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
                     # Notify UI of revert
                     self.async_update_listeners()
+        else:
+            _LOGGER.debug(
+                "Successfully set power to %s for device %s",
+                "on" if power_on else "off",
+                device_name
+            )
 
         return success
 
@@ -247,6 +286,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         success = await self.api.set_device_led_power(node_id, device_name, led_on)
 
         if not success:
+            _LOGGER.warning(
+                "Failed to set LED power to %s for device %s - service unavailable",
+                "on" if led_on else "off",
+                device_name
+            )
+
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 devices = self.data[node_id].get("devices", {})
@@ -256,6 +301,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
                     # Notify UI of revert
                     self.async_update_listeners()
+        else:
+            _LOGGER.debug("Successfully set LED power to %s for device %s", "on" if led_on else "off", device_name)
 
         return success
 
@@ -327,6 +374,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         success = await self.api.set_device_led_brightness(node_id, device_name, brightness)
 
         if not success and original_brightness is not None:
+            _LOGGER.warning(
+                "Failed to set LED brightness to %d for device %s - service unavailable",
+                brightness,
+                device_name
+            )
+
             # Revert optimistic update on failure
             if self.data and node_id in self.data:
                 devices = self.data[node_id].get("devices", {})
@@ -338,6 +391,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
                     # Notify UI of revert
                     self.async_update_listeners()
+        else:
+            _LOGGER.debug("Successfully set LED brightness to %d for device %s", brightness, device_name)
 
         return success
 
@@ -345,8 +400,11 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         """Reset refill life and update local data."""
         success = await self.api.reset_refill_life(node_id, device_name)
         if success:
+            _LOGGER.info("Successfully reset refill life for device %s", device_name)
             # Update local cache immediately
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
                 device_data["refill_life"] = 100  # Assume 100% after reset
+        else:
+            _LOGGER.warning("Failed to reset refill life for device %s - service unavailable", device_name)
         return success
