@@ -220,6 +220,20 @@ class TestThermacellLivLight:
 
         assert light.rgb_color == (255, 255, 255)  # Default white
 
+    def test_brightness(self, mock_coordinator):
+        """Test light brightness property."""
+        mock_coordinator.get_device_data.return_value = {"led_brightness": 150}
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+
+        assert light.brightness == 150
+
+    def test_brightness_no_device_data(self, mock_coordinator):
+        """Test light brightness property with no device data."""
+        mock_coordinator.get_device_data.return_value = None
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+
+        assert light.brightness == 255  # Default max brightness
+
     @pytest.mark.asyncio
     async def test_async_turn_on_success(self, mock_coordinator):
         """Test turning light on successfully."""
@@ -244,6 +258,19 @@ class TestThermacellLivLight:
         mock_coordinator.async_set_device_led_color.assert_called_once_with(
             "node1", "Device1", red=255, green=0, blue=128
         )
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
+
+    @pytest.mark.asyncio
+    async def test_async_turn_on_with_brightness(self, mock_coordinator):
+        """Test turning light on with brightness change."""
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
+        mock_coordinator.async_set_device_led_brightness = AsyncMock(return_value=True)
+
+        light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
+
+        await light.async_turn_on(brightness=128)
+
+        mock_coordinator.async_set_device_led_brightness.assert_called_once_with("node1", "Device1", 128)
         mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
 
     @pytest.mark.asyncio
