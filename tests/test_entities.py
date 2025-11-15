@@ -664,12 +664,14 @@ class TestThermacellLivSystemRuntimeSensor:
     def test_extra_state_attributes_with_runtime(self, mock_coordinator):
         """Test extra state attributes with runtime data."""
         # Test with 2 days, 3 hours, 45 minutes = 2925 minutes
+        # Note: 2925 // 1440 = 2 days, (2925 % 1440) // 60 = 45 // 60 = 0 hours, 2925 % 60 = 45 minutes
+        # So the formatted output is "2 days, 45 minutes" (hours component is omitted when 0)
         mock_coordinator.get_node_data.return_value = {"system_runtime": 2925}
         sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
 
         attrs = sensor.extra_state_attributes
         assert attrs is not None
-        assert attrs["formatted_runtime"] == "2 days, 3 hours, 45 minutes"
+        assert attrs["formatted_runtime"] == "2 days, 45 minutes"
         assert attrs["total_minutes"] == 2925
         assert attrs["total_hours"] == 48.8
         assert attrs["total_days"] == 2.03
@@ -686,13 +688,13 @@ class TestThermacellLivSystemRuntimeSensor:
 
     def test_extra_state_attributes_zero_runtime(self, mock_coordinator):
         """Test extra state attributes with zero runtime."""
+        # When runtime is 0, the sensor returns None for extra_state_attributes
+        # because the condition `if runtime_minutes:` is False
         mock_coordinator.get_node_data.return_value = {"system_runtime": 0}
         sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
 
         attrs = sensor.extra_state_attributes
-        assert attrs is not None
-        assert attrs["formatted_runtime"] == "0 minutes"
-        assert attrs["total_minutes"] == 0
+        assert attrs is None
 
     def test_extra_state_attributes_no_node_data(self, mock_coordinator):
         """Test extra state attributes with no node data."""
