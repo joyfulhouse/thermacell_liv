@@ -30,8 +30,7 @@ def mock_api():
 
 
 @pytest.fixture
-@patch("homeassistant.helpers.frame.report_usage")
-def coordinator(mock_report_usage, hass, mock_api):
+def coordinator(hass, mock_api):
     """Return a coordinator with mocked API."""
     return ThermacellLivCoordinator(hass, mock_api)
 
@@ -89,8 +88,7 @@ def sample_status_data():
 class TestThermacellLivCoordinator:
     """Test the ThermacellLivCoordinator class."""
 
-    @patch("homeassistant.helpers.frame.report_usage")
-    def test_init(self, mock_report_usage, hass, mock_api):
+    def test_init(self, hass, mock_api):
         """Test coordinator initialization."""
         coordinator = ThermacellLivCoordinator(hass, mock_api)
 
