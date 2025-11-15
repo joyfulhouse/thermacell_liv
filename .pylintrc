@@ -13,14 +13,11 @@ disable=
     too-many-positional-arguments,   # Related to too-many-arguments
     too-many-locals,                 # Complex parsing methods need local variables
     duplicate-code,                  # Common HA setup boilerplate across platforms
+    abstract-method,                 # HA uses async_ prefixed methods, not sync abstract methods
 
 [FORMAT]
 # Match Black's max line length setting (we use 120 instead of Black's default 88)
 max-line-length=120
-
-# Let Black handle all formatting decisions
-# Disable pylint formatting checks that Black already handles
-disable=line-too-long,bad-continuation,bad-whitespace,missing-final-newline
 
 [BASIC]
 # Allow single-letter variable names in common patterns
