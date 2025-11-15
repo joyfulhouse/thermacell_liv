@@ -24,10 +24,9 @@ def custom_import(name, globals=None, locals=None, fromlist=(), level=0):
         parent_dir_abs = os.path.abspath(parent_dir)
 
         # If this module is in our integration directory
-        if module_dir == parent_dir_abs:
-            if not hasattr(module, '__package__') or module.__package__ is None:
-                module.__package__ = package_name
-                module.__name__ = f"{package_name}.{name}" if '.' not in name else name
+        if module_dir == parent_dir_abs and (not hasattr(module, '__package__') or module.__package__ is None):
+            module.__package__ = package_name
+            module.__name__ = f"{package_name}.{name}" if '.' not in name else name
 
     return module
 
