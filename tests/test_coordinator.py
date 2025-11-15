@@ -121,7 +121,7 @@ class TestThermacellLivCoordinator:
         assert device1_data["led_power"] is True
         assert device1_data["led_color"] == {"r": 255, "g": 127, "b": 0}  # HSV 30,100 -> RGB
         assert device1_data["refill_life"] == 75
-        assert device1_data["system_status"] == "On"
+        assert device1_data["system_status"] == "Protected"  # Status code 3 = "Protected"
         assert device1_data["system_status_code"] == 3
         assert device1_data["error_code"] == 0
         assert device1_data["last_updated"] == 1234567890
@@ -289,7 +289,17 @@ class TestThermacellLivCoordinator:
     async def test_async_set_device_led_power_success(self, coordinator):
         """Test setting LED power successfully."""
         coordinator.api.set_device_led_power.return_value = True
-        coordinator.data = {"node1": {"devices": {"Device1": {"led_power": False}}}}
+        coordinator.data = {
+            "node1": {
+                "devices": {
+                    "Device1": {
+                        "led_power": False,
+                        "power": True,  # Hub must be powered for LED to be on
+                        "led_brightness": 50,  # Brightness > 0 required
+                    }
+                }
+            }
+        }
 
         result = await coordinator.async_set_device_led_power("node1", "Device1", True)
 
