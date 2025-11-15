@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """Unit tests for __init__ module."""
 
-from pathlib import Path
+import os
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Add custom_components to path for package imports
-repo_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(repo_root))
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import custom_components.thermacell_liv as init_module  # noqa: E402
-from custom_components.thermacell_liv.const import DOMAIN  # noqa: E402
+import __init__ as init_module
+from const import DOMAIN
 
 
 class TestAsyncSetupEntry:
@@ -29,8 +28,8 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
-            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("__init__.ThermacellLivAPI") as mock_api_class,
+            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             # Setup mocks
             mock_api = AsyncMock()
@@ -64,7 +63,7 @@ class TestAsyncSetupEntry:
         entry = MagicMock()
         entry.data = {"username": "test@example.com", "password": "wrongpass"}
 
-        with patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class:
+        with patch("__init__.ThermacellLivAPI") as mock_api_class:
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = False
             mock_api_class.return_value = mock_api
@@ -83,8 +82,8 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
-            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("__init__.ThermacellLivAPI") as mock_api_class,
+            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
@@ -115,8 +114,8 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
-            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("__init__.ThermacellLivAPI") as mock_api_class,
+            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
@@ -169,9 +168,9 @@ class TestAsyncCleanupStaleDevices:
         device3.id = "device3_id"
 
         with (
-            patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
+            patch("__init__.dr.async_get", return_value=device_registry),
             patch(
-                "custom_components.thermacell_liv.dr.async_entries_for_config_entry",
+                "__init__.dr.async_entries_for_config_entry",
                 return_value=[device1, device2, device3],
             ),
         ):
@@ -199,9 +198,9 @@ class TestAsyncCleanupStaleDevices:
         device2.identifiers = {(DOMAIN, "node2")}
 
         with (
-            patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
+            patch("__init__.dr.async_get", return_value=device_registry),
             patch(
-                "custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1, device2]
+                "__init__.dr.async_entries_for_config_entry", return_value=[device1, device2]
             ),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
@@ -226,8 +225,8 @@ class TestAsyncCleanupStaleDevices:
         device1.id = "device1_id"
 
         with (
-            patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
-            patch("custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1]),
+            patch("__init__.dr.async_get", return_value=device_registry),
+            patch("__init__.dr.async_entries_for_config_entry", return_value=[device1]),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 

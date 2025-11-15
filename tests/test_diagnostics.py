@@ -2,25 +2,17 @@
 """Unit tests for diagnostics module."""
 
 from datetime import datetime, timedelta
-from pathlib import Path
+import os
 import sys
 from unittest.mock import MagicMock
 
 import pytest
 
-# Add custom_components to path for package imports
-repo_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(repo_root))
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from custom_components.thermacell_liv.const import (  # noqa: E402
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    DOMAIN,
-)
-from custom_components.thermacell_liv.diagnostics import (  # noqa: E402
-    TO_REDACT,
-    async_get_config_entry_diagnostics,
-)
+from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from diagnostics import TO_REDACT, async_get_config_entry_diagnostics
 
 
 class TestDiagnostics:
