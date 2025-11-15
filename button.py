@@ -55,7 +55,6 @@ class ThermacellLivResetButton(ThermacellLivEntity, ButtonEntity):
         self._attr_has_entity_name = True
         self._attr_name = "Reset Refill"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_reset_refill"
-        self.entity_id = f"button.{DOMAIN}_{device_name}_reset_refill"
         self._attr_icon = "mdi:refresh"
 
     async def async_press(self) -> None:
@@ -78,7 +77,6 @@ class ThermacellLivRefreshButton(ThermacellLivEntity, ButtonEntity):
         self._attr_has_entity_name = True
         self._attr_name = "Refresh"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refresh"
-        self.entity_id = f"button.{DOMAIN}_{device_name}_refresh"
         self._attr_icon = "mdi:refresh"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 

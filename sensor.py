@@ -74,10 +74,13 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
         self._attr_has_entity_name = True
         self._attr_name = "Refill Life"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_refill_life"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_native_unit_of_measurement = "%"
-        self._attr_icon = "mdi:battery"
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:battery"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -115,9 +118,12 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
         self._attr_has_entity_name = True
         self._attr_name = "System Status"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_status"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_system_status"
-        self._attr_icon = "mdi:power"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:power"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -169,13 +175,20 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         self._attr_has_entity_name = True
         self._attr_name = "System Runtime"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_runtime"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_system_runtime"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
-        self._attr_suggested_unit_of_measurement = UnitOfTime.HOURS
-        self._attr_icon = "mdi:timer-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def suggested_unit_of_measurement(self) -> str:
+        """Return the suggested unit of measurement."""
+        return UnitOfTime.HOURS
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:timer-outline"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -245,10 +258,13 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
         self._attr_has_entity_name = True
         self._attr_name = "Connectivity"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_connectivity"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_connectivity"
-        self._attr_icon = "mdi:wifi"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:wifi"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -288,10 +304,13 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
         self._attr_has_entity_name = True
         self._attr_name = "Error Code"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_error_code"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_error_code"
-        self._attr_icon = "mdi:alert-circle-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:alert-circle-outline"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -341,10 +360,13 @@ class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], Sens
         self._attr_has_entity_name = True
         self._attr_name = "Hub ID"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_hub_id"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_hub_id"
-        self._attr_icon = "mdi:identifier"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:identifier"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -382,10 +404,13 @@ class ThermacellLivFirmwareSensor(CoordinatorEntity[ThermacellLivCoordinator], S
         self._attr_has_entity_name = True
         self._attr_name = "Firmware Version"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_firmware"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_firmware"
-        self._attr_icon = "mdi:chip"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:chip"
 
     @property
     def device_info(self) -> DeviceInfo:

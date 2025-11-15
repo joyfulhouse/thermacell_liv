@@ -59,7 +59,6 @@ class ThermacellLivLight(ThermacellLivEntity, LightEntity):
         self._attr_has_entity_name = True
         self._attr_name = "LED"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_light"
-        self.entity_id = f"light.{DOMAIN}_{device_name}_led"
         self._attr_color_mode = ColorMode.RGB
         self._attr_supported_color_modes = {ColorMode.RGB}
         self._attr_supported_features = LightEntityFeature(0)
@@ -99,6 +98,6 @@ class ThermacellLivLight(ThermacellLivEntity, LightEntity):
 
         await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, True)
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **_kwargs: Any) -> None:
         """Turn off the light."""
         await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, False)

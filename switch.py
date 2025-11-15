@@ -53,7 +53,6 @@ class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
         self._attr_has_entity_name = True
         self._attr_name = None  # Main switch entity for the device
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
-        self.entity_id = f"switch.{DOMAIN}_{device_name}_switch"
 
     @property
     def is_on(self) -> bool:
@@ -61,10 +60,10 @@ class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         return device_data.get("power", False) if device_data else False
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
+    async def async_turn_on(self, **_kwargs: Any) -> None:
         """Turn the switch on."""
         await self.coordinator.async_set_device_power(self._node_id, self._device_name, True)
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **_kwargs: Any) -> None:
         """Turn the switch off."""
         await self.coordinator.async_set_device_power(self._node_id, self._device_name, False)
