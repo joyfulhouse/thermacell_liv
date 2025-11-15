@@ -570,6 +570,47 @@ class TestThermacellLivSystemRuntimeSensor:
 
         assert sensor.native_value == 0
 
+    def test_extra_state_attributes_with_runtime(self, mock_coordinator):
+        """Test extra state attributes with runtime data."""
+        # Test with 2 days, 3 hours, 45 minutes = 2925 minutes
+        mock_coordinator.get_node_data.return_value = {"system_runtime": 2925}
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["formatted_runtime"] == "2 days, 3 hours, 45 minutes"
+        assert attrs["total_minutes"] == 2925
+        assert attrs["total_hours"] == 48.8
+        assert attrs["total_days"] == 2.03
+
+    def test_extra_state_attributes_single_units(self, mock_coordinator):
+        """Test extra state attributes with singular units."""
+        # Test with 1 day, 1 hour, 1 minute = 1501 minutes
+        mock_coordinator.get_node_data.return_value = {"system_runtime": 1501}
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["formatted_runtime"] == "1 day, 1 hour, 1 minute"
+
+    def test_extra_state_attributes_zero_runtime(self, mock_coordinator):
+        """Test extra state attributes with zero runtime."""
+        mock_coordinator.get_node_data.return_value = {"system_runtime": 0}
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["formatted_runtime"] == "0 minutes"
+        assert attrs["total_minutes"] == 0
+
+    def test_extra_state_attributes_no_node_data(self, mock_coordinator):
+        """Test extra state attributes with no node data."""
+        mock_coordinator.get_node_data.return_value = None
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is None
+
 
 class TestThermacellLivConnectivitySensor:
     """Test the ThermacellLivConnectivitySensor class."""
@@ -634,6 +675,34 @@ class TestThermacellLivErrorCodeSensor:
         sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
 
         assert sensor.native_value == 0
+
+    def test_extra_state_attributes_no_error(self, mock_coordinator):
+        """Test extra state attributes with no error."""
+        mock_coordinator.get_device_data.return_value = {"error_code": 0}
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["has_error"] is False
+        assert attrs["status"] == "OK"
+
+    def test_extra_state_attributes_with_error(self, mock_coordinator):
+        """Test extra state attributes with error."""
+        mock_coordinator.get_device_data.return_value = {"error_code": 5}
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["has_error"] is True
+        assert attrs["status"] == "Error"
+
+    def test_extra_state_attributes_no_device_data(self, mock_coordinator):
+        """Test extra state attributes with no device data."""
+        mock_coordinator.get_device_data.return_value = None
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is None
 
 
 class TestThermacellLivHubIdSensor:
