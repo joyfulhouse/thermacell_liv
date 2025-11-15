@@ -42,7 +42,7 @@ jobs:
 
       - name: Code Quality - Pylint
         run: |
-          pylint *.py --disable=C0114,C0115,C0116,R0913,R0914,R0912,R0915 --max-line-length=120
+          pylint *.py --max-line-length=120
 
       - name: Bronze - Validate manifest.json
         run: |

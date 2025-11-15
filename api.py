@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientSession, ClientTimeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -76,7 +76,7 @@ class ThermacellLivAPI:
                     _LOGGER.debug("Authentication successful")
                     return self.access_token is not None and self.user_id is not None
 
-            except Exception as err:
+            except (ClientError, asyncio.TimeoutError, json.JSONDecodeError) as err:
                 _LOGGER.error("Authentication error: %s", err)
                 return False
 
@@ -94,7 +94,7 @@ class ThermacellLivAPI:
 
             decoded_bytes = base64.urlsafe_b64decode(payload)
             return json.loads(decoded_bytes.decode("utf-8"))
-        except Exception as e:
+        except (ValueError, KeyError, json.JSONDecodeError, UnicodeDecodeError) as e:
             _LOGGER.debug("Failed to decode JWT payload: %s", e)
             return {}
 
@@ -102,9 +102,8 @@ class ThermacellLivAPI:
         self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
         """Make an authenticated API request."""
-        if not self.access_token:
-            if not await self.authenticate():
-                return None
+        if not self.access_token and not await self.authenticate():
+            return None
 
         headers = {"Authorization": self.access_token}
         url = f"{self.base_url}/v1{endpoint}"
@@ -115,30 +114,28 @@ class ThermacellLivAPI:
                 async with self.session.request(method, url, json=data, headers=headers, timeout=timeout) as response:
                     if response.status == 401:
                         # Token expired, try re-authentication
-                        if await self.authenticate():
-                            headers = {"Authorization": self.access_token}
-                            continue
-                        return None
+                        if not await self.authenticate():
+                            break  # Exit retry loop on auth failure
+                        headers = {"Authorization": self.access_token}
+                        continue
 
                     if response.status in (200, 201, 204):
-                        if response.content_type == "application/json":
-                            return await response.json()
-                        return {}
+                        return await response.json() if response.content_type == "application/json" else {}
 
                     _LOGGER.error(
                         "API request failed with status %s: %s",
                         response.status,
                         await response.text(),
                     )
-                    return None
+                    break  # Don't retry on 4xx/5xx errors
 
             except asyncio.TimeoutError:
                 _LOGGER.warning("API request timeout (attempt %s/%s)", attempt + 1, RETRY_ATTEMPTS)
-                if attempt == RETRY_ATTEMPTS - 1:
-                    return None
-            except Exception as err:
+                if attempt < RETRY_ATTEMPTS - 1:
+                    continue  # Retry on timeout
+            except (ClientError, json.JSONDecodeError) as err:
                 _LOGGER.error("API request error: %s", err)
-                return None
+                break  # Don't retry on client errors
 
         return None
 
@@ -222,5 +219,5 @@ class ThermacellLivAPI:
         try:
             nodes = await self.get_user_nodes()
             return isinstance(nodes, list)
-        except Exception:
+        except (ClientError, asyncio.TimeoutError, json.JSONDecodeError):
             return False
