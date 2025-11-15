@@ -90,7 +90,8 @@ class TestThermacellLivSwitch:
         assert switch._device_name == "Device1"
         assert switch._attr_name is None  # Main device entity has no name
         assert switch._attr_unique_id == f"{DOMAIN}_node1_Device1_switch"
-        assert switch.entity_id == f"switch.{DOMAIN}_Device1_switch"
+        # entity_id is set by HA entity registry, not during __init__
+        assert switch.entity_id is None
 
     def test_device_info(self, mock_coordinator):
         """Test switch device info."""
@@ -190,7 +191,8 @@ class TestThermacellLivLight:
         assert light._device_name == "Device1"
         assert light._attr_name == "LED"
         assert light._attr_unique_id == f"{DOMAIN}_node1_Device1_light"
-        assert light.entity_id == f"light.{DOMAIN}_Device1_led"
+        # entity_id is set by HA entity registry, not during __init__
+        assert light.entity_id is None
 
     def test_is_on_true(self, mock_coordinator):
         """Test light is_on property (true)."""
@@ -267,7 +269,8 @@ class TestThermacellLivRefillSensor:
         assert sensor._device_name == "Device1"
         assert sensor._attr_name == "Refill Life"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_refill_life"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_refill_life"
+        # entity_id is set by HA entity registry, not during __init__
+        assert sensor.entity_id is None
         assert sensor._attr_native_unit_of_measurement == "%"
 
     def test_native_value(self, mock_coordinator):
@@ -302,7 +305,8 @@ class TestThermacellLivResetButton:
         assert button._device_name == "Device1"
         assert button._attr_name == "Reset Refill"
         assert button._attr_unique_id == f"{DOMAIN}_node1_Device1_reset_refill"
-        assert button.entity_id == f"button.{DOMAIN}_Device1_reset_refill"
+        # entity_id is set by HA entity registry, not during __init__
+        assert button.entity_id is None
         assert button._attr_icon == "mdi:refresh"
 
     @pytest.mark.asyncio
@@ -548,7 +552,8 @@ class TestThermacellLivSystemRuntimeSensor:
         assert sensor._device_name == "Device1"
         assert sensor._attr_name == "System Runtime"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_system_runtime"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_system_runtime"
+        # entity_id is set by HA entity registry, not during __init__
+        assert sensor.entity_id is None
         assert sensor._attr_device_class == "duration"
         assert sensor._attr_native_unit_of_measurement == "min"
 
@@ -577,7 +582,8 @@ class TestThermacellLivConnectivitySensor:
         assert sensor._device_name == "Device1"
         assert sensor._attr_name == "Connectivity"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_connectivity"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_connectivity"
+        # entity_id is set by HA entity registry, not during __init__
+        assert sensor.entity_id is None
         assert sensor._attr_entity_category == "diagnostic"
 
     def test_native_value_online(self, mock_coordinator):
@@ -605,7 +611,8 @@ class TestThermacellLivErrorCodeSensor:
         assert sensor._device_name == "Device1"
         assert sensor._attr_name == "Error Code"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_error_code"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_error_code"
+        # entity_id is set by HA entity registry, not during __init__
+        assert sensor.entity_id is None
         assert sensor._attr_entity_category == "diagnostic"
 
     def test_native_value_no_error(self, mock_coordinator):
@@ -640,7 +647,8 @@ class TestThermacellLivHubIdSensor:
         assert sensor._device_name == "Device1"
         assert sensor._attr_name == "Hub ID"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_hub_id"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_hub_id"
+        # entity_id is set by HA entity registry, not during __init__
+        assert sensor.entity_id is None
         assert sensor._attr_entity_category == "diagnostic"
 
     def test_native_value(self, mock_coordinator):
@@ -668,7 +676,8 @@ class TestThermacellLivFirmwareSensor:
         assert sensor._device_name == "Device1"
         assert sensor._attr_name == "Firmware Version"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_firmware"
-        assert sensor.entity_id == f"sensor.{DOMAIN}_Device1_firmware"
+        # entity_id is set by HA entity registry, not during __init__
+        assert sensor.entity_id is None
         assert sensor._attr_entity_category == "diagnostic"
 
     def test_native_value(self, mock_coordinator):
@@ -696,7 +705,8 @@ class TestThermacellLivRefreshButton:
         assert button._device_name == "Device1"
         assert button._attr_name == "Refresh"
         assert button._attr_unique_id == f"{DOMAIN}_node1_Device1_refresh"
-        assert button.entity_id == f"button.{DOMAIN}_Device1_refresh"
+        # entity_id is set by HA entity registry, not during __init__
+        assert button.entity_id is None
         assert button._attr_icon == "mdi:refresh"
         assert button._attr_entity_category == "diagnostic"
 

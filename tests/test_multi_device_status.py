@@ -32,6 +32,8 @@ class TestMultiDeviceSupport:
         self.coordinator.api = self.api
         self.coordinator.data = None
         self.coordinator.last_update_success = True
+        self.coordinator.nodes = {}  # Initialize nodes attribute
+        self.coordinator._node_online_states = {}  # Initialize online states tracking
 
     @pytest.mark.asyncio
     async def test_offline_node_status(self):

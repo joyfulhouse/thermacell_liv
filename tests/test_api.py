@@ -298,7 +298,7 @@ class TestThermacellLivAPI:
         with patch.object(api_client, "set_node_params") as mock_set_params:
             mock_set_params.return_value = True
 
-            result = await api_client.set_device_led_color("node123", "LIV Hub", 255, 128, 0)
+            result = await api_client.set_device_led_color("node123", "LIV Hub", red=255, green=128, blue=0)
 
             # The API converts RGB to HSV, so we expect LED Hue and LED Brightness
             mock_set_params.assert_called_once_with(
@@ -348,8 +348,10 @@ class TestThermacellLivAPI:
     @pytest.mark.asyncio
     async def test_test_connection_failure(self, api_client):
         """Test failed connection test."""
+        from aiohttp import ClientError
+
         with patch.object(api_client, "get_user_nodes") as mock_get_nodes:
-            mock_get_nodes.side_effect = Exception("Network error")
+            mock_get_nodes.side_effect = ClientError("Network error")
 
             result = await api_client.test_connection()
 

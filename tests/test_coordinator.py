@@ -304,11 +304,11 @@ class TestThermacellLivCoordinator:
         coordinator.api.set_device_led_color.return_value = True
         coordinator.data = {"node1": {"devices": {"Device1": {"led_color": {"r": 0, "g": 0, "b": 0}}}}}
 
-        result = await coordinator.async_set_device_led_color("node1", "Device1", 255, 128, 64)
+        result = await coordinator.async_set_device_led_color("node1", "Device1", red=255, green=128, blue=64)
 
         assert result is True
         assert coordinator.data["node1"]["devices"]["Device1"]["led_color"] == {"r": 255, "g": 128, "b": 64}
-        coordinator.api.set_device_led_color.assert_called_once_with("node1", "Device1", 255, 128, 64)
+        coordinator.api.set_device_led_color.assert_called_once_with("node1", "Device1", red=255, green=128, blue=64)
 
     @pytest.mark.asyncio
     async def test_async_reset_refill_life_success(self, coordinator):

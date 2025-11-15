@@ -121,7 +121,7 @@ class TestOptimisticUpdatesFix:
         self.api.set_device_led_color = AsyncMock(return_value=True)
 
         # Update color for device1 only
-        result = await self.coordinator.async_set_device_led_color("device1", "LIV Hub", 255, 0, 0)
+        result = await self.coordinator.async_set_device_led_color("device1", "LIV Hub", red=255, green=0, blue=0)
 
         assert result
 
