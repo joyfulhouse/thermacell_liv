@@ -152,8 +152,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Convert color space
         led_color = _convert_hsv_to_rgb(hue, brightness)
 
-        # Map status
-        status_text = _map_system_status(system_status, enable_repellers, error)
+        # Check if node is offline first - override all other status
+        is_connected = connectivity.get("connected", False)
+        if not is_connected:
+            status_text = "Not Connected"
+        else:
+            # Map status based on device state
+            status_text = _map_system_status(system_status, enable_repellers, error)
 
         # Convert brightness
         ha_brightness = _convert_brightness_to_ha(brightness)
