@@ -607,6 +607,30 @@ class TestThermacellLivSystemStatusSensor:
             "enable_repellers": True,
         }
 
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+
+        assert sensor.icon == "mdi:power"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "node1", "Device1")
+
+        device_info = sensor.device_info
+        assert device_info is not None
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+        assert device_info["name"] == "Test Node"
+        assert device_info["manufacturer"] == "Thermacell"
+
+    def test_available(self, mock_coordinator):
+        """Test sensor available."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.available is True
+
 
 class TestThermacellLivSystemRuntimeSensor:
     """Test the ThermacellLivSystemRuntimeSensor class."""
