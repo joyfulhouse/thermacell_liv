@@ -27,9 +27,10 @@ class TestAsyncSetupEntry:
         entry.add_update_listener = MagicMock(return_value=MagicMock())
         entry.async_on_unload = MagicMock()
 
-        with patch("__init__.ThermacellLivAPI") as mock_api_class, patch(
-            "__init__.ThermacellLivCoordinator"
-        ) as mock_coordinator_class:
+        with (
+            patch("__init__.ThermacellLivAPI") as mock_api_class,
+            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
+        ):
             # Setup mocks
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
@@ -80,9 +81,10 @@ class TestAsyncSetupEntry:
         entry.add_update_listener = MagicMock(return_value=MagicMock())
         entry.async_on_unload = MagicMock()
 
-        with patch("__init__.ThermacellLivAPI") as mock_api_class, patch(
-            "__init__.ThermacellLivCoordinator"
-        ) as mock_coordinator_class:
+        with (
+            patch("__init__.ThermacellLivAPI") as mock_api_class,
+            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
+        ):
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
             mock_api_class.return_value = mock_api
@@ -111,9 +113,10 @@ class TestAsyncSetupEntry:
         entry.add_update_listener = MagicMock(return_value=MagicMock())
         entry.async_on_unload = MagicMock()
 
-        with patch("__init__.ThermacellLivAPI") as mock_api_class, patch(
-            "__init__.ThermacellLivCoordinator"
-        ) as mock_coordinator_class:
+        with (
+            patch("__init__.ThermacellLivAPI") as mock_api_class,
+            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
+        ):
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
             mock_api_class.return_value = mock_api
@@ -126,7 +129,7 @@ class TestAsyncSetupEntry:
 
             hass.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
 
-            result = await init_module.async_setup_entry(hass, entry)
+            await init_module.async_setup_entry(hass, entry)
 
             # Verify listeners were registered
             assert entry.async_on_unload.call_count == 2  # Update listener + cleanup listener
@@ -164,8 +167,9 @@ class TestAsyncCleanupStaleDevices:
         device3.name = "Device 3"
         device3.id = "device3_id"
 
-        with patch("__init__.dr.async_get", return_value=device_registry), patch(
-            "__init__.dr.async_entries_for_config_entry", return_value=[device1, device2, device3]
+        with (
+            patch("__init__.dr.async_get", return_value=device_registry),
+            patch("__init__.dr.async_entries_for_config_entry", return_value=[device1, device2, device3]),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 
@@ -190,8 +194,9 @@ class TestAsyncCleanupStaleDevices:
         device2 = MagicMock()
         device2.identifiers = {(DOMAIN, "node2")}
 
-        with patch("__init__.dr.async_get", return_value=device_registry), patch(
-            "__init__.dr.async_entries_for_config_entry", return_value=[device1, device2]
+        with (
+            patch("__init__.dr.async_get", return_value=device_registry),
+            patch("__init__.dr.async_entries_for_config_entry", return_value=[device1, device2]),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 
@@ -214,8 +219,9 @@ class TestAsyncCleanupStaleDevices:
         device1.identifiers = {(DOMAIN, "node1")}
         device1.id = "device1_id"
 
-        with patch("__init__.dr.async_get", return_value=device_registry), patch(
-            "__init__.dr.async_entries_for_config_entry", return_value=[device1]
+        with (
+            patch("__init__.dr.async_get", return_value=device_registry),
+            patch("__init__.dr.async_entries_for_config_entry", return_value=[device1]),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 

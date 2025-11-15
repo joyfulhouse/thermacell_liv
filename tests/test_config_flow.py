@@ -123,7 +123,7 @@ class TestConfigFlow:
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            result = await flow.async_step_user(user_input=user_input)
+            await flow.async_step_user(user_input=user_input)
 
             flow.async_show_form.assert_called_once()
             call_args = flow.async_show_form.call_args
@@ -144,7 +144,7 @@ class TestConfigFlow:
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            result = await flow.async_step_user(user_input=user_input)
+            await flow.async_step_user(user_input=user_input)
 
             flow.async_show_form.assert_called_once()
             call_args = flow.async_show_form.call_args
@@ -165,7 +165,7 @@ class TestConfigFlow:
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            result = await flow.async_step_user(user_input=user_input)
+            await flow.async_step_user(user_input=user_input)
 
             flow.async_show_form.assert_called_once()
             call_args = flow.async_show_form.call_args
@@ -179,7 +179,7 @@ class TestConfigFlow:
         flow.hass = hass
         flow.async_step_reauth_confirm = AsyncMock(return_value={"type": "form"})
 
-        result = await flow.async_step_reauth({})
+        await flow.async_step_reauth({})
 
         flow.async_step_reauth_confirm.assert_called_once()
 
@@ -238,7 +238,7 @@ class TestConfigFlow:
         with patch("config_flow.validate_input", side_effect=InvalidAuth):
             flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            result = await flow.async_step_reauth_confirm(user_input=user_input)
+            await flow.async_step_reauth_confirm(user_input=user_input)
 
             flow.async_show_form.assert_called_once()
             call_args = flow.async_show_form.call_args
