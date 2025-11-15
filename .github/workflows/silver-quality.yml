@@ -6,6 +6,7 @@ on:
       - 'claude/silver-*'
       - 'claude/gold-*'
       - 'claude/platinum-*'
+      - 'claude/home-assistant-*'
       - main
   pull_request:
     branches:
