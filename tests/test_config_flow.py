@@ -102,7 +102,9 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}):
+        with patch(
+            "custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}
+        ):
             # Mock unique_id methods
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
@@ -165,7 +167,9 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=Exception("Unexpected error")):
+        with patch(
+            "custom_components.thermacell_liv.config_flow.validate_input", side_effect=Exception("Unexpected error")
+        ):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
@@ -218,7 +222,9 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "newpassword"}
 
-        with patch("custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}):
+        with patch(
+            "custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}
+        ):
             flow.async_abort = MagicMock(return_value={"type": "abort"})
 
             result = await flow.async_step_reauth_confirm(user_input=user_input)

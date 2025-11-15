@@ -170,7 +170,10 @@ class TestAsyncCleanupStaleDevices:
 
         with (
             patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
-            patch("custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1, device2, device3]),
+            patch(
+                "custom_components.thermacell_liv.dr.async_entries_for_config_entry",
+                return_value=[device1, device2, device3],
+            ),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 
@@ -197,7 +200,9 @@ class TestAsyncCleanupStaleDevices:
 
         with (
             patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
-            patch("custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1, device2]),
+            patch(
+                "custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1, device2]
+            ),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 
