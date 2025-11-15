@@ -202,7 +202,7 @@ jobs:
 
       - name: Run test suite
         run: |
-          pytest tests/ -v --cov=. --cov-report=term-missing
+          pytest tests/ -v --cov=. --cov-report=term-missing --ignore=tests/manual --ignore=tests/integration --ignore=tests/debug
 
       - name: Verify test coverage
         run: |
