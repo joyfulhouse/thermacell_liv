@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Unit tests for diagnostics module."""
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
