@@ -10,9 +10,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
-from .api import ThermacellLivAPI
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
-from .coordinator import ThermacellLivCoordinator
+try:
+    from .api import ThermacellLivAPI
+    from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+    from .coordinator import ThermacellLivCoordinator
+except ImportError:
+    from api import ThermacellLivAPI
+    from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+    from coordinator import ThermacellLivCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

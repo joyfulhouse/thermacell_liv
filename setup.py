@@ -1,22 +1,11 @@
 """Setup configuration for pytest to import the package properly."""
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
-    name="thermacell_liv",
+    name="thermacell-liv",
     version="1.0.0",
-    py_modules=[
-        "__init__",
-        "api",
-        "button",
-        "config_flow",
-        "const",
-        "coordinator",
-        "diagnostics",
-        "entity",
-        "light",
-        "repairs",
-        "sensor",
-        "switch",
-    ],
+    packages=find_packages(where="."),
+    package_dir={"": "."},
+    python_requires=">=3.11",
 )
