@@ -4,6 +4,8 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 asyncio_mode = "auto"
+# Exclude manual and integration tests that require secrets
+norecursedirs = ["tests/manual", "tests/integration", "tests/debug"]
 
 # Coverage settings for Silver tier >95% requirement
 [tool.coverage.run]
