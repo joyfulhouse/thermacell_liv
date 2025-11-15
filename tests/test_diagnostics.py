@@ -2,17 +2,18 @@
 """Unit tests for diagnostics module."""
 
 from datetime import datetime, timedelta
-import os
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add custom_components to path for package imports
+repo_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(repo_root))
 
-from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
-from diagnostics import TO_REDACT, async_get_config_entry_diagnostics
+from custom_components.thermacell_liv.const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from custom_components.thermacell_liv.diagnostics import TO_REDACT, async_get_config_entry_diagnostics
 
 
 class TestDiagnostics:
