@@ -75,17 +75,17 @@ class TestOptimisticUpdatesFix:
         # Update power for device1 only
         result = await self.coordinator.async_set_device_power("device1", "LIV Hub", True)
 
-        assert result == True
+        assert result
 
         # Verify device1 was updated
         device1_data = self.coordinator.data["device1"]["devices"]["LIV Hub"]
-        assert device1_data["power"] == True
-        assert device1_data["led_power"] == True  # Should be True because brightness > 0
+        assert device1_data["power"]
+        assert device1_data["led_power"]  # Should be True because brightness > 0
 
         # Verify device2 was NOT affected
         device2_data = self.coordinator.data["device2"]["devices"]["LIV Hub"]
-        assert device2_data["power"] == True  # Original state unchanged
-        assert device2_data["led_power"] == True  # Original state unchanged
+        assert device2_data["power"]  # Original state unchanged
+        assert device2_data["led_power"]  # Original state unchanged
         assert device2_data["led_brightness"] == 200  # Original state unchanged
 
         # Verify UI update was called
@@ -100,7 +100,7 @@ class TestOptimisticUpdatesFix:
         # Update brightness for device2 only
         result = await self.coordinator.async_set_device_led_brightness("device2", "LIV Hub", 100)
 
-        assert result == True
+        assert result
 
         # Verify device2 was updated
         device2_data = self.coordinator.data["device2"]["devices"]["LIV Hub"]
@@ -111,7 +111,7 @@ class TestOptimisticUpdatesFix:
         device1_data = self.coordinator.data["device1"]["devices"]["LIV Hub"]
         assert device1_data["led_brightness"] == 128  # Original state unchanged
         assert device1_data["led_brightness_pct"] == 50  # Original state unchanged
-        assert device1_data["power"] == False  # Original state unchanged
+        assert not device1_data["power"]  # Original state unchanged
 
     @pytest.mark.asyncio
     async def test_led_color_optimistic_update_isolation(self):
@@ -122,7 +122,7 @@ class TestOptimisticUpdatesFix:
         # Update color for device1 only
         result = await self.coordinator.async_set_device_led_color("device1", "LIV Hub", 255, 0, 0)
 
-        assert result == True
+        assert result
 
         # Verify device1 was updated
         device1_data = self.coordinator.data["device1"]["devices"]["LIV Hub"]
@@ -145,7 +145,7 @@ class TestOptimisticUpdatesFix:
         # Attempt to update power for device1 (will fail)
         result = await self.coordinator.async_set_device_power("device1", "LIV Hub", True)
 
-        assert result == False
+        assert not result
 
         # Verify device1 was reverted to original state
         device1_data = self.coordinator.data["device1"]["devices"]["LIV Hub"]
@@ -179,7 +179,7 @@ class TestOptimisticUpdatesFix:
         result = asyncio.run(self.coordinator.async_set_device_power("nonexistent_node", "LIV Hub", True))
 
         # Should return True (API call succeeded) but not crash
-        assert result == True
+        assert result
 
         # Verify original data is unchanged
         for node_id, node_data in self.coordinator.data.items():

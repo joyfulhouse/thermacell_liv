@@ -114,21 +114,21 @@ class TestMultiDeviceSupport:
 
         # Verify online node status
         online_node = data["online_node"]
-        assert online_node["online"] == True
+        assert online_node["online"]
         assert online_node["name"] == "Online Hub"
 
         online_device = online_node["devices"]["LIV Hub"]
         assert online_device["system_status"] == "Protected"  # System status 3 + connected
-        assert online_device["power"] == True  # Enable Repellers is True
+        assert online_device["power"]  # Enable Repellers is True
 
         # Verify offline node status
         offline_node = data["offline_node"]
-        assert offline_node["online"] == False
+        assert not offline_node["online"]
         assert offline_node["name"] == "Offline Hub"
 
         offline_device = offline_node["devices"]["LIV Hub"]
         assert offline_device["system_status"] == "Not Connected"  # Should override other status
-        assert offline_device["power"] == True  # Enable Repellers still True but irrelevant
+        assert offline_device["power"]  # Enable Repellers still True but irrelevant
 
     def test_coordinator_helper_methods(self):
         """Test coordinator helper methods with multi-device data."""
@@ -159,31 +159,31 @@ class TestMultiDeviceSupport:
         }
 
         # Test is_node_online method
-        assert self.coordinator.is_node_online("online_node") == True
-        assert self.coordinator.is_node_online("offline_node") == False
-        assert self.coordinator.is_node_online("nonexistent_node") == False
+        assert self.coordinator.is_node_online("online_node")
+        assert not self.coordinator.is_node_online("offline_node")
+        assert not self.coordinator.is_node_online("nonexistent_node")
 
         # Test get_node_data method
         online_data = self.coordinator.get_node_data("online_node")
         assert online_data is not None
         assert online_data["name"] == "Online Hub"
-        assert online_data["online"] == True
+        assert online_data["online"]
 
         offline_data = self.coordinator.get_node_data("offline_node")
         assert offline_data is not None
         assert offline_data["name"] == "Offline Hub"
-        assert offline_data["online"] == False
+        assert not offline_data["online"]
 
         # Test get_device_data method
         online_device = self.coordinator.get_device_data("online_node", "LIV Hub")
         assert online_device is not None
         assert online_device["system_status"] == "Protected"
-        assert online_device["power"] == True
+        assert online_device["power"]
 
         offline_device = self.coordinator.get_device_data("offline_node", "LIV Hub")
         assert offline_device is not None
         assert offline_device["system_status"] == "Not Connected"
-        assert offline_device["power"] == True  # Power state preserved but irrelevant
+        assert offline_device["power"]  # Power state preserved but irrelevant
 
     def test_entity_availability_logic(self):
         """Test entity availability logic for multi-device scenario."""
@@ -209,14 +209,14 @@ class TestMultiDeviceSupport:
             self.coordinator.last_update_success and
             self.coordinator.is_node_online("online_node")
         )
-        assert online_available == True
+        assert online_available
 
         # Offline node entities should be unavailable
         offline_available = (
             self.coordinator.last_update_success and
             self.coordinator.is_node_online("offline_node")
         )
-        assert offline_available == False
+        assert not offline_available
 
 
 if __name__ == "__main__":
