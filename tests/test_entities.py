@@ -293,6 +293,46 @@ class TestThermacellLivRefillSensor:
 
         assert sensor.native_value == 0
 
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.icon == "mdi:battery"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+
+        device_info = sensor.device_info
+        assert device_info is not None
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+        assert device_info["name"] == "Test Node"
+        assert device_info["manufacturer"] == "Thermacell"
+
+    def test_available_true(self, mock_coordinator):
+        """Test sensor available when coordinator successful and node online."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.available is True
+
+    def test_available_false_coordinator_failed(self, mock_coordinator):
+        """Test sensor unavailable when coordinator failed."""
+        mock_coordinator.last_update_success = False
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.available is False
+
+    def test_available_false_node_offline(self, mock_coordinator):
+        """Test sensor unavailable when node offline."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = False
+        sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.available is False
+
 
 class TestThermacellLivResetButton:
     """Test the ThermacellLivResetButton class."""
