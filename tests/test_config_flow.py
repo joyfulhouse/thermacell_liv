@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for config_flow module."""
 
-import sys
 from pathlib import Path
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,14 +11,18 @@ import pytest
 repo_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(repo_root))
 
-from custom_components.thermacell_liv.config_flow import (
+from custom_components.thermacell_liv.config_flow import (  # noqa: E402
     CannotConnect,
     ConfigFlow,
     InvalidAuth,
     ThermacellLivOptionsFlow,
     validate_input,
 )
-from custom_components.thermacell_liv.const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from custom_components.thermacell_liv.const import (  # noqa: E402
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    DOMAIN,
+)
 
 
 class TestValidateInput:

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for __init__ module."""
 
-import sys
 from pathlib import Path
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,8 +11,8 @@ import pytest
 repo_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(repo_root))
 
-import custom_components.thermacell_liv as init_module
-from custom_components.thermacell_liv.const import DOMAIN
+import custom_components.thermacell_liv as init_module  # noqa: E402
+from custom_components.thermacell_liv.const import DOMAIN  # noqa: E402
 
 
 class TestAsyncSetupEntry:
