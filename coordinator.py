@@ -131,9 +131,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         return fw_version, model
 
-    def _parse_device_params(
-        self, device_params: Dict[str, Any], connectivity: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _parse_device_params(self, device_params: Dict[str, Any], connectivity: Dict[str, Any]) -> Dict[str, Any]:
         """Parse device parameters into standardized format.
 
         Args:
@@ -207,9 +205,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         self._node_online_states[node_id] = is_online
 
-    async def _process_node(
-        self, node: Dict[str, Any], previous_node_ids: set[str]
-    ) -> Optional[Dict[str, Any]]:
+    async def _process_node(self, node: Dict[str, Any], previous_node_ids: set[str]) -> Optional[Dict[str, Any]]:
         """Process a single node and return its data.
 
         Args:
@@ -273,9 +269,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             device_params = params["LIV Hub"]
             if isinstance(device_params, dict):
                 device_name = device_params.get("Name", "LIV Hub")
-                node_info["devices"][device_name] = self._parse_device_params(
-                    device_params, connectivity
-                )
+                node_info["devices"][device_name] = self._parse_device_params(device_params, connectivity)
 
         # Handle state transitions
         self._handle_node_state_change(node_id, node_name, node_info["online"])
@@ -369,18 +363,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         # Revert on failure
         if not success:
-            _LOGGER.warning(
-                "Failed to %s for device %s (node %s) - service unavailable",
-                operation_name,
-                device_name,
-                node_id,
-            )
+            _LOGGER.warning("Failed to set %s for device %s (node %s) - service unavailable", operation_name, device_name, node_id)
             device_data = self._get_device_data_safe(node_id, device_name)
             if device_data:
                 revert_fn(device_data)
                 self.async_update_listeners()
         else:
-            _LOGGER.debug("Successfully %s for device %s", operation_name, device_name)
+            _LOGGER.debug("Successfully set %s for device %s", operation_name, device_name)
 
         return success
 
@@ -406,9 +395,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             f"set power to {'on' if power_on else 'off'}",
         )
 
-    async def async_set_device_led_power(
-        self, node_id: str, device_name: str, led_on: bool
-    ) -> bool:
+    async def async_set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
         """Set device LED power with optimistic update."""
         original_led_power = False
 
@@ -450,16 +437,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             node_id,
             device_name,
             update,
-            lambda: self.api.set_device_led_color(
-                node_id, device_name, red=red, green=green, blue=blue
-            ),
+            lambda: self.api.set_device_led_color(node_id, device_name, red=red, green=green, blue=blue),
             revert,
             f"set LED color to RGB({red}, {green}, {blue})",
         )
 
-    async def async_set_device_led_brightness(
-        self, node_id: str, device_name: str, brightness: int
-    ) -> bool:
+    async def async_set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
         """Set device LED brightness with optimistic update."""
         original_brightness = None
         original_brightness_pct = None
@@ -501,8 +484,5 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
                 device_data["refill_life"] = 100  # Assume 100% after reset
         else:
-            _LOGGER.warning(
-                "Failed to reset refill life for device %s - service unavailable",
-                device_name
-            )
+            _LOGGER.warning("Failed to reset refill life for device %s - service unavailable", device_name)
         return success
