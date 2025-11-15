@@ -221,24 +221,18 @@ class TestThermacellLivLight:
     @pytest.mark.asyncio
     async def test_async_turn_on_success(self, mock_coordinator):
         """Test turning light on successfully."""
-        mock_coordinator.async_set_device_led_power = AsyncMock(
-            return_value=True
-        )
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
 
         light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
 
         await light.async_turn_on()
 
-        mock_coordinator.async_set_device_led_power.assert_called_once_with(
-            "node1", "Device1", True
-        )
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
 
     @pytest.mark.asyncio
     async def test_async_turn_on_with_color(self, mock_coordinator):
         """Test turning light on with color change."""
-        mock_coordinator.async_set_device_led_power = AsyncMock(
-            return_value=True
-        )
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
         mock_coordinator.async_set_device_led_color = AsyncMock(return_value=True)
 
         light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
@@ -248,24 +242,18 @@ class TestThermacellLivLight:
         mock_coordinator.async_set_device_led_color.assert_called_once_with(
             "node1", "Device1", red=255, green=0, blue=128
         )
-        mock_coordinator.async_set_device_led_power.assert_called_once_with(
-            "node1", "Device1", True
-        )
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
 
     @pytest.mark.asyncio
     async def test_async_turn_off_success(self, mock_coordinator):
         """Test turning light off successfully."""
-        mock_coordinator.async_set_device_led_power = AsyncMock(
-            return_value=True
-        )
+        mock_coordinator.async_set_device_led_power = AsyncMock(return_value=True)
 
         light = ThermacellLivLight(mock_coordinator, "node1", "Device1")
 
         await light.async_turn_off()
 
-        mock_coordinator.async_set_device_led_power.assert_called_once_with(
-            "node1", "Device1", False
-        )
+        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", False)
 
 
 class TestThermacellLivRefillSensor:
@@ -353,9 +341,7 @@ class TestEntityPlatformSetup:
         return AsyncMock()
 
     @pytest.mark.asyncio
-    async def test_switch_setup_entry(
-        self, hass, config_entry, mock_coordinator, mock_add_entities
-    ):
+    async def test_switch_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test switch platform setup."""
         from switch import async_setup_entry
 
@@ -369,9 +355,7 @@ class TestEntityPlatformSetup:
         assert isinstance(switches[0], ThermacellLivSwitch)
 
     @pytest.mark.asyncio
-    async def test_light_setup_entry(
-        self, hass, config_entry, mock_coordinator, mock_add_entities
-    ):
+    async def test_light_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test light platform setup."""
         from light import async_setup_entry
 
@@ -385,9 +369,7 @@ class TestEntityPlatformSetup:
         assert isinstance(lights[0], ThermacellLivLight)
 
     @pytest.mark.asyncio
-    async def test_sensor_setup_entry(
-        self, hass, config_entry, mock_coordinator, mock_add_entities
-    ):
+    async def test_sensor_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test sensor platform setup."""
         from sensor import async_setup_entry
 
@@ -409,9 +391,7 @@ class TestEntityPlatformSetup:
         assert ThermacellLivFirmwareSensor in sensor_types
 
     @pytest.mark.asyncio
-    async def test_button_setup_entry(
-        self, hass, config_entry, mock_coordinator, mock_add_entities
-    ):
+    async def test_button_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test button platform setup."""
         from button import async_setup_entry
 
@@ -427,9 +407,7 @@ class TestEntityPlatformSetup:
         assert ThermacellLivRefreshButton in button_types
 
     @pytest.mark.asyncio
-    async def test_setup_entry_multiple_devices(
-        self, hass, config_entry, mock_coordinator, mock_add_entities
-    ):
+    async def test_setup_entry_multiple_devices(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test platform setup with multiple devices."""
         from switch import async_setup_entry
 
@@ -449,9 +427,7 @@ class TestEntityPlatformSetup:
         assert len(switches) == 2
 
     @pytest.mark.asyncio
-    async def test_setup_entry_multiple_nodes(
-        self, hass, config_entry, mock_coordinator, mock_add_entities
-    ):
+    async def test_setup_entry_multiple_nodes(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test platform setup with multiple nodes."""
         from switch import async_setup_entry
 

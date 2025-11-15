@@ -1,4 +1,5 @@
 """Tests for Thermacell LIV coordinator."""
+
 from datetime import timedelta
 import os
 import sys
@@ -9,7 +10,7 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from api import ThermacellLivAPI
 from coordinator import ThermacellLivCoordinator
 
@@ -29,7 +30,7 @@ def mock_api():
 
 
 @pytest.fixture
-@patch('homeassistant.helpers.frame.report_usage')
+@patch("homeassistant.helpers.frame.report_usage")
 def coordinator(mock_report_usage, hass, mock_api):
     """Return a coordinator with mocked API."""
     return ThermacellLivCoordinator(hass, mock_api)
@@ -53,7 +54,7 @@ def sample_nodes_data():
                     "System Status": 3,
                     "Error": 0,
                 }
-            }
+            },
         },
         {
             "id": "node2",
@@ -69,8 +70,8 @@ def sample_nodes_data():
                     "System Status": 1,
                     "Error": 0,
                 }
-            }
-        }
+            },
+        },
     ]
 
 
@@ -80,7 +81,7 @@ def sample_status_data():
     return {
         "connectivity": {
             "connected": True,
-            "timestamp": 1234567890000  # milliseconds
+            "timestamp": 1234567890000,  # milliseconds
         }
     }
 
@@ -88,7 +89,7 @@ def sample_status_data():
 class TestThermacellLivCoordinator:
     """Test the ThermacellLivCoordinator class."""
 
-    @patch('homeassistant.helpers.frame.report_usage')
+    @patch("homeassistant.helpers.frame.report_usage")
     def test_init(self, mock_report_usage, hass, mock_api):
         """Test coordinator initialization."""
         coordinator = ThermacellLivCoordinator(hass, mock_api)
@@ -183,9 +184,7 @@ class TestThermacellLivCoordinator:
 
     def test_get_node_data_success(self, coordinator):
         """Test getting node data successfully."""
-        coordinator.data = {
-            "node1": {"name": "Test Node", "online": True}
-        }
+        coordinator.data = {"node1": {"name": "Test Node", "online": True}}
 
         result = coordinator.get_node_data("node1")
 
@@ -209,13 +208,7 @@ class TestThermacellLivCoordinator:
 
     def test_get_device_data_success(self, coordinator):
         """Test getting device data successfully."""
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"power": True, "refill_life": 50}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"power": True, "refill_life": 50}}}}
 
         result = coordinator.get_device_data("node1", "Device1")
 
@@ -223,9 +216,7 @@ class TestThermacellLivCoordinator:
 
     def test_get_device_data_device_not_found(self, coordinator):
         """Test getting device data for non-existent device."""
-        coordinator.data = {
-            "node1": {"devices": {}}
-        }
+        coordinator.data = {"node1": {"devices": {}}}
 
         result = coordinator.get_device_data("node1", "Device1")
 
@@ -241,9 +232,7 @@ class TestThermacellLivCoordinator:
 
     def test_is_node_online_true(self, coordinator):
         """Test checking if node is online (true)."""
-        coordinator.data = {
-            "node1": {"online": True}
-        }
+        coordinator.data = {"node1": {"online": True}}
 
         result = coordinator.is_node_online("node1")
 
@@ -251,9 +240,7 @@ class TestThermacellLivCoordinator:
 
     def test_is_node_online_false(self, coordinator):
         """Test checking if node is online (false)."""
-        coordinator.data = {
-            "node1": {"online": False}
-        }
+        coordinator.data = {"node1": {"online": False}}
 
         result = coordinator.is_node_online("node1")
 
@@ -271,13 +258,7 @@ class TestThermacellLivCoordinator:
     async def test_async_set_device_power_success(self, coordinator):
         """Test setting device power successfully."""
         coordinator.api.set_device_power.return_value = True
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"power": False}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"power": False}}}}
 
         result = await coordinator.async_set_device_power("node1", "Device1", True)
 
@@ -289,13 +270,7 @@ class TestThermacellLivCoordinator:
     async def test_async_set_device_power_failure(self, coordinator):
         """Test setting device power with API failure."""
         coordinator.api.set_device_power.return_value = False
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"power": False}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"power": False}}}}
 
         result = await coordinator.async_set_device_power("node1", "Device1", True)
 
@@ -316,13 +291,7 @@ class TestThermacellLivCoordinator:
     async def test_async_set_device_led_power_success(self, coordinator):
         """Test setting LED power successfully."""
         coordinator.api.set_device_led_power.return_value = True
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"led_power": False}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"led_power": False}}}}
 
         result = await coordinator.async_set_device_led_power("node1", "Device1", True)
 
@@ -333,33 +302,19 @@ class TestThermacellLivCoordinator:
     async def test_async_set_device_led_color_success(self, coordinator):
         """Test setting LED color successfully."""
         coordinator.api.set_device_led_color.return_value = True
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"led_color": {"r": 0, "g": 0, "b": 0}}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"led_color": {"r": 0, "g": 0, "b": 0}}}}}
 
         result = await coordinator.async_set_device_led_color("node1", "Device1", 255, 128, 64)
 
         assert result is True
-        assert coordinator.data["node1"]["devices"]["Device1"]["led_color"] == {
-            "r": 255, "g": 128, "b": 64
-        }
+        assert coordinator.data["node1"]["devices"]["Device1"]["led_color"] == {"r": 255, "g": 128, "b": 64}
         coordinator.api.set_device_led_color.assert_called_once_with("node1", "Device1", 255, 128, 64)
 
     @pytest.mark.asyncio
     async def test_async_reset_refill_life_success(self, coordinator):
         """Test resetting refill life successfully."""
         coordinator.api.reset_refill_life.return_value = True
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"refill_life": 25}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"refill_life": 25}}}}
 
         result = await coordinator.async_reset_refill_life("node1", "Device1")
 
@@ -371,13 +326,7 @@ class TestThermacellLivCoordinator:
     async def test_async_reset_refill_life_failure(self, coordinator):
         """Test resetting refill life with API failure."""
         coordinator.api.reset_refill_life.return_value = False
-        coordinator.data = {
-            "node1": {
-                "devices": {
-                    "Device1": {"refill_life": 25}
-                }
-            }
-        }
+        coordinator.data = {"node1": {"devices": {"Device1": {"refill_life": 25}}}}
 
         result = await coordinator.async_reset_refill_life("node1", "Device1")
 

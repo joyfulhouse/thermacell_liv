@@ -2,6 +2,7 @@
 """
 Unit tests for multi-device support including offline node handling.
 """
+
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
@@ -36,71 +37,58 @@ class TestMultiDeviceSupport:
     async def test_offline_node_status(self):
         """Test that offline nodes show 'Not Connected' status."""
         # Mock API responses for two nodes - one online, one offline
-        self.api.get_user_nodes = AsyncMock(return_value=[
-            {
-                "id": "online_node",
-                "node_name": "Online Hub",
-                "params": {
-                    "LIV Hub": {
-                        "Name": "LIV Hub",
-                        "Hub ID": "ONLINE123",
-                        "LED Hue": 60,
-                        "LED Brightness": 50,
-                        "Enable Repellers": True,
-                        "System Status": 3,
-                        "Error": 0,
-                        "Refill Life": 75,
-                        "System Runtime": 120
-                    }
-                }
-            },
-            {
-                "id": "offline_node",
-                "node_name": "Offline Hub",
-                "params": {
-                    "LIV Hub": {
-                        "Name": "LIV Hub",
-                        "Hub ID": "OFFLINE456",
-                        "LED Hue": 0,
-                        "LED Brightness": 100,
-                        "Enable Repellers": True,
-                        "System Status": 3,
-                        "Error": 0,
-                        "Refill Life": 85,
-                        "System Runtime": 200
-                    }
-                }
-            }
-        ])
+        self.api.get_user_nodes = AsyncMock(
+            return_value=[
+                {
+                    "id": "online_node",
+                    "node_name": "Online Hub",
+                    "params": {
+                        "LIV Hub": {
+                            "Name": "LIV Hub",
+                            "Hub ID": "ONLINE123",
+                            "LED Hue": 60,
+                            "LED Brightness": 50,
+                            "Enable Repellers": True,
+                            "System Status": 3,
+                            "Error": 0,
+                            "Refill Life": 75,
+                            "System Runtime": 120,
+                        }
+                    },
+                },
+                {
+                    "id": "offline_node",
+                    "node_name": "Offline Hub",
+                    "params": {
+                        "LIV Hub": {
+                            "Name": "LIV Hub",
+                            "Hub ID": "OFFLINE456",
+                            "LED Hue": 0,
+                            "LED Brightness": 100,
+                            "Enable Repellers": True,
+                            "System Status": 3,
+                            "Error": 0,
+                            "Refill Life": 85,
+                            "System Runtime": 200,
+                        }
+                    },
+                },
+            ]
+        )
 
         # Mock status responses - online node connected, offline node disconnected
         async def mock_get_node_status(node_id):
             if node_id == "online_node":
-                return {
-                    "connectivity": {
-                        "connected": True,
-                        "timestamp": 1757107867638
-                    }
-                }
+                return {"connectivity": {"connected": True, "timestamp": 1757107867638}}
             elif node_id == "offline_node":
-                return {
-                    "connectivity": {
-                        "connected": False,
-                        "timestamp": 1757183054832
-                    }
-                }
+                return {"connectivity": {"connected": False, "timestamp": 1757183054832}}
             return None
 
         self.api.get_node_status = AsyncMock(side_effect=mock_get_node_status)
 
         # Mock config responses
         async def mock_get_node_config(node_id):
-            return {
-                "info": {
-                    "fw_version": "5.3.2",
-                    "model": "thermacell-hub"
-                }
-            }
+            return {"info": {"fw_version": "5.3.2", "model": "thermacell-hub"}}
 
         self.api.get_node_config = AsyncMock(side_effect=mock_get_node_config)
 
@@ -137,25 +125,13 @@ class TestMultiDeviceSupport:
             "online_node": {
                 "name": "Online Hub",
                 "online": True,
-                "devices": {
-                    "LIV Hub": {
-                        "power": True,
-                        "system_status": "Protected",
-                        "refill_life": 75
-                    }
-                }
+                "devices": {"LIV Hub": {"power": True, "system_status": "Protected", "refill_life": 75}},
             },
             "offline_node": {
                 "name": "Offline Hub",
                 "online": False,
-                "devices": {
-                    "LIV Hub": {
-                        "power": True,
-                        "system_status": "Not Connected",
-                        "refill_life": 85
-                    }
-                }
-            }
+                "devices": {"LIV Hub": {"power": True, "system_status": "Not Connected", "refill_life": 85}},
+            },
         }
 
         # Test is_node_online method
@@ -189,33 +165,19 @@ class TestMultiDeviceSupport:
         """Test entity availability logic for multi-device scenario."""
         # Set up coordinator data
         self.coordinator.data = {
-            "online_node": {
-                "name": "Online Hub",
-                "online": True,
-                "devices": {"LIV Hub": {"power": True}}
-            },
-            "offline_node": {
-                "name": "Offline Hub",
-                "online": False,
-                "devices": {"LIV Hub": {"power": True}}
-            }
+            "online_node": {"name": "Online Hub", "online": True, "devices": {"LIV Hub": {"power": True}}},
+            "offline_node": {"name": "Offline Hub", "online": False, "devices": {"LIV Hub": {"power": True}}},
         }
 
         self.coordinator.last_update_success = True
 
         # Simulate entity availability checks (as entities would do them)
         # Online node entities should be available
-        online_available = (
-            self.coordinator.last_update_success and
-            self.coordinator.is_node_online("online_node")
-        )
+        online_available = self.coordinator.last_update_success and self.coordinator.is_node_online("online_node")
         assert online_available
 
         # Offline node entities should be unavailable
-        offline_available = (
-            self.coordinator.last_update_success and
-            self.coordinator.is_node_online("offline_node")
-        )
+        offline_available = self.coordinator.last_update_success and self.coordinator.is_node_online("offline_node")
         assert not offline_available
 
 
@@ -237,6 +199,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Offline node status test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test coordinator methods
@@ -247,6 +210,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Coordinator helper methods test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test entity availability
@@ -257,6 +221,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Entity availability logic test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     print("\n🎉 Multi-device tests completed!")

@@ -4,6 +4,13 @@
 target-version = "py311"
 line-length = 120
 
+# Exclude manual, integration, and debug test directories (require API credentials)
+exclude = [
+    "tests/manual",
+    "tests/integration",
+    "tests/debug",
+]
+
 [lint]
 select = [
     "E",  # pycodestyle errors

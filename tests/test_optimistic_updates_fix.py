@@ -2,6 +2,7 @@
 """
 Test optimistic updates fix for multi-device data corruption issue.
 """
+
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
@@ -45,9 +46,9 @@ class TestOptimisticUpdatesFix:
                         "led_brightness_pct": 50,
                         "led_color": {"r": 255, "g": 255, "b": 0},
                         "system_status": "Off",
-                        "refill_life": 75
+                        "refill_life": 75,
                     }
-                }
+                },
             },
             "device2": {
                 "name": "Hub 2",
@@ -60,10 +61,10 @@ class TestOptimisticUpdatesFix:
                         "led_brightness_pct": 78,
                         "led_color": {"r": 0, "g": 255, "b": 255},
                         "system_status": "Protected",
-                        "refill_life": 90
+                        "refill_life": 90,
                     }
-                }
-            }
+                },
+            },
         }
 
     @pytest.mark.asyncio
@@ -167,8 +168,7 @@ class TestOptimisticUpdatesFix:
         original_data = {
             node_id: {
                 "devices": {
-                    device_name: device_data.copy()
-                    for device_name, device_data in node_data["devices"].items()
+                    device_name: device_data.copy() for device_name, device_data in node_data["devices"].items()
                 }
             }
             for node_id, node_data in self.coordinator.data.items()
@@ -176,6 +176,7 @@ class TestOptimisticUpdatesFix:
 
         # Attempt to update nonexistent device
         import asyncio
+
         result = asyncio.run(self.coordinator.async_set_device_power("nonexistent_node", "LIV Hub", True))
 
         # Should return True (API call succeeded) but not crash
@@ -209,6 +210,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Power update isolation test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test 2: LED brightness update isolation
@@ -220,6 +222,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ LED brightness update isolation test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test 3: LED color update isolation
@@ -231,6 +234,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ LED color update isolation test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test 4: Failed API call revert isolation
@@ -242,6 +246,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Failed API call revert isolation test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test 5: Nonexistent device handling
@@ -253,6 +258,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Nonexistent device handling test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
     print("\n🎉 Optimistic updates fix tests completed!")
