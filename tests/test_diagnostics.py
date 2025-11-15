@@ -2,14 +2,9 @@
 """Unit tests for diagnostics module."""
 
 from datetime import datetime, timedelta
-import os
-import sys
 from unittest.mock import MagicMock
 
 import pytest
-
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 from diagnostics import TO_REDACT, async_get_config_entry_diagnostics
