@@ -7,9 +7,10 @@ import base64
 import colorsys
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -40,8 +41,8 @@ class ThermacellLivAPI:
         self.password = password
         self.base_url = base_url.rstrip("/")
         self.session: ClientSession = async_get_clientsession(hass)
-        self.access_token: Optional[str] = None
-        self.user_id: Optional[str] = None
+        self.access_token: str | None = None
+        self.user_id: str | None = None
         self._auth_lock = asyncio.Lock()
 
     async def authenticate(self) -> bool:
@@ -76,11 +77,11 @@ class ThermacellLivAPI:
                     _LOGGER.debug("Authentication successful")
                     return self.access_token is not None and self.user_id is not None
 
-            except (ClientError, asyncio.TimeoutError, json.JSONDecodeError) as err:
+            except (TimeoutError, ClientError, json.JSONDecodeError) as err:
                 _LOGGER.error("Authentication error: %s", err)
                 return False
 
-    def _decode_jwt_payload(self, jwt_token: str) -> Dict[str, Any]:
+    def _decode_jwt_payload(self, jwt_token: str) -> dict[str, Any]:
         """Decode JWT token payload without verification."""
         try:
             parts = jwt_token.split(".")
@@ -99,8 +100,8 @@ class ThermacellLivAPI:
             return {}
 
     async def _make_request(
-        self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, method: str, endpoint: str, data: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """Make an authenticated API request."""
         if not self.access_token and not await self.authenticate():
             return None
@@ -129,7 +130,7 @@ class ThermacellLivAPI:
                     )
                     break  # Don't retry on 4xx/5xx errors
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 _LOGGER.warning("API request timeout (attempt %s/%s)", attempt + 1, RETRY_ATTEMPTS)
                 if attempt < RETRY_ATTEMPTS - 1:
                     continue  # Retry on timeout
@@ -139,7 +140,7 @@ class ThermacellLivAPI:
 
         return None
 
-    async def get_user_nodes(self) -> List[Dict[str, Any]]:
+    async def get_user_nodes(self) -> list[dict[str, Any]]:
         """Get all nodes (devices) for the authenticated user."""
         response = await self._make_request("GET", "/user/nodes")
         if response:
@@ -162,15 +163,15 @@ class ThermacellLivAPI:
             return nodes
         return []
 
-    async def get_node_status(self, node_id: str) -> Optional[Dict[str, Any]]:
+    async def get_node_status(self, node_id: str) -> dict[str, Any] | None:
         """Get status of a specific node."""
         return await self._make_request("GET", f"/user/nodes/status?nodeid={node_id}")
 
-    async def get_node_config(self, node_id: str) -> Optional[Dict[str, Any]]:
+    async def get_node_config(self, node_id: str) -> dict[str, Any] | None:
         """Get configuration and device info for a specific node."""
         return await self._make_request("GET", f"/user/nodes/config?nodeid={node_id}")
 
-    async def set_node_params(self, node_id: str, params: Dict[str, Any]) -> bool:
+    async def set_node_params(self, node_id: str, params: dict[str, Any]) -> bool:
         """Set node parameters."""
         # The correct API structure uses query parameter and direct payload
         response = await self._make_request("PUT", f"/user/nodes/params?nodeid={node_id}", params)
@@ -219,5 +220,5 @@ class ThermacellLivAPI:
         try:
             nodes = await self.get_user_nodes()
             return isinstance(nodes, list)
-        except (ClientError, asyncio.TimeoutError, json.JSONDecodeError):
+        except (TimeoutError, ClientError, json.JSONDecodeError):
             return False

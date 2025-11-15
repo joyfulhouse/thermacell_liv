@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 import colorsys
-import logging
 from datetime import datetime, timedelta
-from typing import Any, Awaitable, Callable, Dict, Optional
+import logging
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
@@ -30,7 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = timedelta(seconds=60)
 
 
-def _convert_hsv_to_rgb(hue: int, brightness: int) -> Dict[str, int]:
+def _convert_hsv_to_rgb(hue: int, brightness: int) -> dict[str, int]:
     """Convert HSV values to RGB color dictionary.
 
     Args:
@@ -85,7 +86,7 @@ def _convert_brightness_to_thermacell(brightness: int) -> int:
     return int((brightness / 255) * 100)
 
 
-class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Thermacell LIV data from the API.
 
     Polling Strategy:
@@ -109,11 +110,11 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.api = api
-        self.nodes: Dict[str, Dict[str, Any]] = {}
-        self.last_update_success_time: Optional[datetime] = None
-        self._node_online_states: Dict[str, bool] = {}  # Track online/offline transitions
+        self.nodes: dict[str, dict[str, Any]] = {}
+        self.last_update_success_time: datetime | None = None
+        self._node_online_states: dict[str, bool] = {}  # Track online/offline transitions
 
-    def _extract_device_info(self, config_data: Optional[Dict[str, Any]]) -> tuple[str, str]:
+    def _extract_device_info(self, config_data: dict[str, Any] | None) -> tuple[str, str]:
         """Extract firmware version and model from config data.
 
         Returns:
@@ -131,7 +132,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         return fw_version, model
 
-    def _parse_device_params(self, device_params: Dict[str, Any], connectivity: Dict[str, Any]) -> Dict[str, Any]:
+    def _parse_device_params(self, device_params: dict[str, Any], connectivity: dict[str, Any]) -> dict[str, Any]:
         """Parse device parameters into standardized format.
 
         Args:
@@ -205,7 +206,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         self._node_online_states[node_id] = is_online
 
-    async def _process_node(self, node: Dict[str, Any], previous_node_ids: set[str]) -> Optional[Dict[str, Any]]:
+    async def _process_node(self, node: dict[str, Any], previous_node_ids: set[str]) -> dict[str, Any] | None:
         """Process a single node and return its data.
 
         Args:
@@ -276,7 +277,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         return node_info
 
-    async def _async_update_data(self) -> Dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
             # Get all nodes from API
@@ -307,11 +308,11 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             )
             raise UpdateFailed(f"Error communicating with API: {err}") from err
 
-    def get_node_data(self, node_id: str) -> Dict[str, Any] | None:
+    def get_node_data(self, node_id: str) -> dict[str, Any] | None:
         """Get data for a specific node."""
         return self.data.get(node_id) if self.data else None
 
-    def get_device_data(self, node_id: str, device_name: str) -> Dict[str, Any] | None:
+    def get_device_data(self, node_id: str, device_name: str) -> dict[str, Any] | None:
         """Get data for a specific device within a node."""
         node_data = self.get_node_data(node_id)
         if node_data:
@@ -323,7 +324,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         node_data = self.get_node_data(node_id)
         return node_data.get("online", False) if node_data else False
 
-    def _get_device_data_safe(self, node_id: str, device_name: str) -> Optional[Dict[str, Any]]:
+    def _get_device_data_safe(self, node_id: str, device_name: str) -> dict[str, Any] | None:
         """Safely get device data with null checks."""
         if not self.data or node_id not in self.data:
             return None
@@ -334,9 +335,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         self,
         node_id: str,
         device_name: str,
-        update_fn: Callable[[Dict[str, Any]], None],
+        update_fn: Callable[[dict[str, Any]], None],
         api_call: Callable[[], Awaitable[bool]],
-        revert_fn: Callable[[Dict[str, Any]], None],
+        revert_fn: Callable[[dict[str, Any]], None],
         operation_name: str,
     ) -> bool:
         """Generic optimistic update handler.
@@ -378,12 +379,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
     async def async_set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
         """Set device power with optimistic update."""
 
-        def update(data: Dict[str, Any]) -> None:
+        def update(data: dict[str, Any]) -> None:
             data["power"] = power_on
             brightness = data.get("led_brightness", 0)
             data["led_power"] = power_on and brightness > 0
 
-        def revert(data: Dict[str, Any]) -> None:
+        def revert(data: dict[str, Any]) -> None:
             data["power"] = not power_on
             brightness = data.get("led_brightness", 0)
             data["led_power"] = (not power_on) and brightness > 0
@@ -401,14 +402,14 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         """Set device LED power with optimistic update."""
         original_led_power = False
 
-        def update(data: Dict[str, Any]) -> None:
+        def update(data: dict[str, Any]) -> None:
             nonlocal original_led_power
             original_led_power = data.get("led_power", False)
             hub_powered = data.get("power", False)
             brightness = data.get("led_brightness", 0)
             data["led_power"] = led_on and hub_powered and brightness > 0
 
-        def revert(data: Dict[str, Any]) -> None:
+        def revert(data: dict[str, Any]) -> None:
             data["led_power"] = original_led_power
 
         return await self._optimistic_update(
@@ -426,12 +427,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         """Set device LED color with optimistic update."""
         original_color = None
 
-        def update(data: Dict[str, Any]) -> None:
+        def update(data: dict[str, Any]) -> None:
             nonlocal original_color
             original_color = data.get("led_color", {"r": 255, "g": 255, "b": 255}).copy()
             data["led_color"] = {"r": red, "g": green, "b": blue}
 
-        def revert(data: Dict[str, Any]) -> None:
+        def revert(data: dict[str, Any]) -> None:
             if original_color:
                 data["led_color"] = original_color
 
@@ -450,7 +451,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         original_brightness_pct = None
         original_led_power = None
 
-        def update(data: Dict[str, Any]) -> None:
+        def update(data: dict[str, Any]) -> None:
             nonlocal original_brightness, original_brightness_pct, original_led_power
             original_brightness = data.get("led_brightness", 255)
             original_brightness_pct = data.get("led_brightness_pct", 100)
@@ -461,7 +462,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             hub_powered = data.get("power", False)
             data["led_power"] = hub_powered and brightness > 0
 
-        def revert(data: Dict[str, Any]) -> None:
+        def revert(data: dict[str, Any]) -> None:
             if original_brightness is not None:
                 data["led_brightness"] = original_brightness
                 data["led_brightness_pct"] = original_brightness_pct

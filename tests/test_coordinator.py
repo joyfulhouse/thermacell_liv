@@ -1,15 +1,17 @@
 """Tests for Thermacell LIV coordinator."""
 from datetime import timedelta
+import os
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
-import sys
-import os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from coordinator import ThermacellLivCoordinator
 from api import ThermacellLivAPI
+from coordinator import ThermacellLivCoordinator
 
 
 @pytest.fixture
@@ -90,7 +92,7 @@ class TestThermacellLivCoordinator:
     def test_init(self, mock_report_usage, hass, mock_api):
         """Test coordinator initialization."""
         coordinator = ThermacellLivCoordinator(hass, mock_api)
-        
+
         assert coordinator.api is mock_api
         assert coordinator.nodes == {}
         assert coordinator.update_interval == timedelta(seconds=60)
@@ -100,20 +102,20 @@ class TestThermacellLivCoordinator:
         """Test successful data update."""
         coordinator.api.get_user_nodes.return_value = sample_nodes_data
         coordinator.api.get_node_status.return_value = sample_status_data
-        
+
         result = await coordinator._async_update_data()
-        
+
         assert len(result) == 2
         assert "node1" in result
         assert "node2" in result
-        
+
         # Check node1 data structure
         node1_data = result["node1"]
         assert node1_data["id"] == "node1"
         assert node1_data["name"] == "Living Room Thermacell"
         assert node1_data["online"] is True
         assert "LIV Hub" in node1_data["devices"]
-        
+
         # Check device data structure
         device1_data = node1_data["devices"]["LIV Hub"]
         assert device1_data["power"] is True
@@ -124,7 +126,7 @@ class TestThermacellLivCoordinator:
         assert device1_data["system_status_code"] == 3
         assert device1_data["error_code"] == 0
         assert device1_data["last_updated"] == 1234567890
-        
+
         # Verify API calls
         coordinator.api.get_user_nodes.assert_called_once()
         assert coordinator.api.get_node_status.call_count == 2
@@ -133,7 +135,7 @@ class TestThermacellLivCoordinator:
     async def test_async_update_data_no_nodes(self, coordinator):
         """Test update with no nodes returned."""
         coordinator.api.get_user_nodes.return_value = []
-        
+
         with pytest.raises(UpdateFailed, match="No nodes found"):
             await coordinator._async_update_data()
 
@@ -141,7 +143,7 @@ class TestThermacellLivCoordinator:
     async def test_async_update_data_api_error(self, coordinator):
         """Test update with API error."""
         coordinator.api.get_user_nodes.side_effect = Exception("Network error")
-        
+
         with pytest.raises(UpdateFailed, match="Error communicating with API"):
             await coordinator._async_update_data()
 
@@ -150,9 +152,9 @@ class TestThermacellLivCoordinator:
         """Test update with node missing ID."""
         nodes_data = [{"node_name": "Test Node"}]  # Missing 'id' field
         coordinator.api.get_user_nodes.return_value = nodes_data
-        
+
         result = await coordinator._async_update_data()
-        
+
         assert result == {}  # Should skip nodes without ID
 
     @pytest.mark.asyncio
@@ -160,9 +162,9 @@ class TestThermacellLivCoordinator:
         """Test update when node status fetch fails."""
         coordinator.api.get_user_nodes.return_value = sample_nodes_data
         coordinator.api.get_node_status.return_value = None
-        
+
         result = await coordinator._async_update_data()
-        
+
         assert result == {}  # Should skip nodes without status
 
     @pytest.mark.asyncio
@@ -170,9 +172,9 @@ class TestThermacellLivCoordinator:
         """Test update with empty status data."""
         coordinator.api.get_user_nodes.return_value = [sample_nodes_data[0]]  # Just one node
         coordinator.api.get_node_status.return_value = {"connectivity": {"connected": False}}  # Disconnected
-        
+
         result = await coordinator._async_update_data()
-        
+
         assert len(result) == 1
         node_data = result["node1"]
         assert node_data["online"] is False
@@ -184,25 +186,25 @@ class TestThermacellLivCoordinator:
         coordinator.data = {
             "node1": {"name": "Test Node", "online": True}
         }
-        
+
         result = coordinator.get_node_data("node1")
-        
+
         assert result == {"name": "Test Node", "online": True}
 
     def test_get_node_data_not_found(self, coordinator):
         """Test getting node data for non-existent node."""
         coordinator.data = {}
-        
+
         result = coordinator.get_node_data("node1")
-        
+
         assert result is None
 
     def test_get_node_data_no_data(self, coordinator):
         """Test getting node data when coordinator has no data."""
         coordinator.data = None
-        
+
         result = coordinator.get_node_data("node1")
-        
+
         assert result is None
 
     def test_get_device_data_success(self, coordinator):
@@ -214,9 +216,9 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = coordinator.get_device_data("node1", "Device1")
-        
+
         assert result == {"power": True, "refill_life": 50}
 
     def test_get_device_data_device_not_found(self, coordinator):
@@ -224,17 +226,17 @@ class TestThermacellLivCoordinator:
         coordinator.data = {
             "node1": {"devices": {}}
         }
-        
+
         result = coordinator.get_device_data("node1", "Device1")
-        
+
         assert result is None
 
     def test_get_device_data_node_not_found(self, coordinator):
         """Test getting device data for non-existent node."""
         coordinator.data = {}
-        
+
         result = coordinator.get_device_data("node1", "Device1")
-        
+
         assert result is None
 
     def test_is_node_online_true(self, coordinator):
@@ -242,9 +244,9 @@ class TestThermacellLivCoordinator:
         coordinator.data = {
             "node1": {"online": True}
         }
-        
+
         result = coordinator.is_node_online("node1")
-        
+
         assert result is True
 
     def test_is_node_online_false(self, coordinator):
@@ -252,17 +254,17 @@ class TestThermacellLivCoordinator:
         coordinator.data = {
             "node1": {"online": False}
         }
-        
+
         result = coordinator.is_node_online("node1")
-        
+
         assert result is False
 
     def test_is_node_online_not_found(self, coordinator):
         """Test checking if non-existent node is online."""
         coordinator.data = {}
-        
+
         result = coordinator.is_node_online("node1")
-        
+
         assert result is False
 
     @pytest.mark.asyncio
@@ -276,9 +278,9 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = await coordinator.async_set_device_power("node1", "Device1", True)
-        
+
         assert result is True
         assert coordinator.data["node1"]["devices"]["Device1"]["power"] is True
         coordinator.api.set_device_power.assert_called_once_with("node1", "Device1", True)
@@ -294,9 +296,9 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = await coordinator.async_set_device_power("node1", "Device1", True)
-        
+
         assert result is False
         assert coordinator.data["node1"]["devices"]["Device1"]["power"] is False  # Unchanged
 
@@ -305,9 +307,9 @@ class TestThermacellLivCoordinator:
         """Test setting device power with no local data."""
         coordinator.api.set_device_power.return_value = True
         coordinator.data = None
-        
+
         result = await coordinator.async_set_device_power("node1", "Device1", True)
-        
+
         assert result is True  # API call succeeded, but no local update
 
     @pytest.mark.asyncio
@@ -321,9 +323,9 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = await coordinator.async_set_device_led_power("node1", "Device1", True)
-        
+
         assert result is True
         assert coordinator.data["node1"]["devices"]["Device1"]["led_power"] is True
 
@@ -338,9 +340,9 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = await coordinator.async_set_device_led_color("node1", "Device1", 255, 128, 64)
-        
+
         assert result is True
         assert coordinator.data["node1"]["devices"]["Device1"]["led_color"] == {
             "r": 255, "g": 128, "b": 64
@@ -358,9 +360,9 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = await coordinator.async_reset_refill_life("node1", "Device1")
-        
+
         assert result is True
         assert coordinator.data["node1"]["devices"]["Device1"]["refill_life"] == 100
         coordinator.api.reset_refill_life.assert_called_once_with("node1", "Device1")
@@ -376,8 +378,8 @@ class TestThermacellLivCoordinator:
                 }
             }
         }
-        
+
         result = await coordinator.async_reset_refill_life("node1", "Device1")
-        
+
         assert result is False
         assert coordinator.data["node1"]["devices"]["Device1"]["refill_life"] == 25  # Unchanged

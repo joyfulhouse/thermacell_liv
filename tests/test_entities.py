@@ -5,10 +5,13 @@ import sys
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from datetime import UTC
+
 from button import ThermacellLivRefreshButton, ThermacellLivResetButton
 from const import DOMAIN
 from coordinator import ThermacellLivCoordinator
@@ -46,7 +49,7 @@ def mock_coordinator():
 
     coordinator = MagicMock(spec=ThermacellLivCoordinator)
     coordinator.last_update_success = True
-    coordinator.last_update_success_time = datetime.now(timezone.utc)  # Timezone-aware
+    coordinator.last_update_success_time = datetime.now(UTC)  # Timezone-aware
     coordinator.data = {
         "node1": {
             "id": "node1",
