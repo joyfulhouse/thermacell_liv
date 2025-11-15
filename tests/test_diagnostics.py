@@ -52,7 +52,7 @@ class TestDiagnostics:
         # Verify coordinator data
         assert result["coordinator"]["last_update_success"] is True
         assert result["coordinator"]["last_update_success_time"] is not None
-        assert "60" in result["coordinator"]["update_interval"]
+        assert result["coordinator"]["update_interval"] == "0:01:00"  # 60 seconds = "0:01:00"
         assert result["coordinator"]["node_count"] == 0
 
     @pytest.mark.asyncio
