@@ -46,7 +46,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Setup stale device cleanup listener (Gold tier: stale-devices requirement)
     # This removes devices from HA when they're removed from Thermacell account
-    entry.async_on_unload(coordinator.async_add_listener(_async_cleanup_stale_devices(hass, entry)))
+    @callback
+    def cleanup_stale_devices() -> None:
+        """Cleanup callback for stale devices."""
+        _async_cleanup_stale_devices(hass, entry)
+
+    entry.async_on_unload(coordinator.async_add_listener(cleanup_stale_devices))
 
     # Forward to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
