@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Unit tests for diagnostics module."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import MagicMock
 
 import pytest
@@ -26,7 +26,7 @@ class TestDiagnostics:
         # Create mock coordinator with minimal data
         coordinator = MagicMock()
         coordinator.last_update_success = True
-        coordinator.last_update_success_time = datetime.now(timezone.utc)
+        coordinator.last_update_success_time = datetime.now(UTC)
         coordinator.update_interval = timedelta(seconds=60)
         coordinator.data = {}
 
@@ -68,7 +68,7 @@ class TestDiagnostics:
         # Create mock coordinator with node data
         coordinator = MagicMock()
         coordinator.last_update_success = True
-        coordinator.last_update_success_time = datetime.now(timezone.utc)
+        coordinator.last_update_success_time = datetime.now(UTC)
         coordinator.update_interval = timedelta(seconds=60)
         coordinator.data = {
             "node1": {
@@ -143,7 +143,7 @@ class TestDiagnostics:
         # Create mock coordinator with multiple nodes
         coordinator = MagicMock()
         coordinator.last_update_success = True
-        coordinator.last_update_success_time = datetime.now(timezone.utc)
+        coordinator.last_update_success_time = datetime.now(UTC)
         coordinator.update_interval = timedelta(seconds=60)
         coordinator.data = {
             "node1": {
