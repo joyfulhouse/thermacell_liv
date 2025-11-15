@@ -32,7 +32,7 @@ PARALLEL_UPDATES = 0  # No limit on sensor updates
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:

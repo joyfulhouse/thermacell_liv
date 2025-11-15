@@ -57,28 +57,24 @@ class ThermacellLivAPI:
 
                 timeout = ClientTimeout(total=API_TIMEOUT)
                 async with self.session.post(url, json=data, timeout=timeout) as response:
-                    if response.status == 200:
-                        auth_data = await response.json()
-
-                        # Extract access token
-                        self.access_token = auth_data.get("accesstoken")
-
-                        # Extract user ID from ID token
-                        id_token = auth_data.get("idtoken")
-                        if id_token:
-                            id_payload = self._decode_jwt_payload(id_token)
-                            if id_payload:
-                                self.user_id = id_payload.get("custom:user_id")
-
-                        _LOGGER.debug("Authentication successful")
-                        return self.access_token is not None and self.user_id is not None
-                    else:
-                        _LOGGER.error(
-                            "Authentication failed with status %s: %s",
-                            response.status,
-                            await response.text(),
-                        )
+                    if response.status != 200:
+                        _LOGGER.error("Authentication failed with status %s", response.status)
                         return False
+
+                    auth_data = await response.json()
+
+                    # Extract access token
+                    self.access_token = auth_data.get("accesstoken")
+
+                    # Extract user ID from ID token
+                    id_token = auth_data.get("idtoken")
+                    if id_token:
+                        id_payload = self._decode_jwt_payload(id_token)
+                        if id_payload:
+                            self.user_id = id_payload.get("custom:user_id")
+
+                    _LOGGER.debug("Authentication successful")
+                    return self.access_token is not None and self.user_id is not None
 
             except Exception as err:
                 _LOGGER.error("Authentication error: %s", err)
@@ -122,8 +118,7 @@ class ThermacellLivAPI:
                         if await self.authenticate():
                             headers = {"Authorization": self.access_token}
                             continue
-                        else:
-                            return None
+                        return None
 
                     if response.status in (200, 201, 204):
                         if response.content_type == "application/json":
@@ -184,31 +179,31 @@ class ThermacellLivAPI:
         response = await self._make_request("PUT", f"/user/nodes/params?nodeid={node_id}", params)
         return response is not None
 
-    async def set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
+    async def set_device_power(self, node_id: str, _device_name: str, power_on: bool) -> bool:
         """Turn device on or off."""
         # Based on API validation, the device is "LIV Hub" and uses "Enable Repellers"
         params = {"LIV Hub": {"Enable Repellers": power_on}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_color(self, node_id: str, device_name: str, red: int, green: int, blue: int) -> bool:
+    async def set_device_led_color(self, node_id: str, _device_name: str, *, red: int, green: int, blue: int) -> bool:
         """Set device LED color."""
         # Convert RGB to HSV hue (0-360 range)
         r_norm, g_norm, b_norm = red / 255.0, green / 255.0, blue / 255.0
-        h, s, v = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
-        hue = int(h * 360)
-        brightness = int(v * 100)
+        hue_val, _saturation, brightness_val = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
+        hue = int(hue_val * 360)
+        brightness = int(brightness_val * 100)
 
         params = {"LIV Hub": {"LED Hue": hue, "LED Brightness": brightness}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
+    async def set_device_led_power(self, node_id: str, _device_name: str, led_on: bool) -> bool:
         """Turn device LED on or off."""
         # Set brightness to 0 to turn off, or restore to default brightness
         brightness = 100 if led_on else 0
         params = {"LIV Hub": {"LED Brightness": brightness}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
+    async def set_device_led_brightness(self, node_id: str, _device_name: str, brightness: int) -> bool:
         """Set device LED brightness (0-255 range)."""
         # Convert Home Assistant brightness (0-255) to Thermacell range (0-100)
         thermacell_brightness = int((brightness / 255) * 100)
@@ -217,7 +212,7 @@ class ThermacellLivAPI:
         params = {"LIV Hub": {"LED Brightness": thermacell_brightness}}
         return await self.set_node_params(node_id, params)
 
-    async def reset_refill_life(self, node_id: str, device_name: str) -> bool:
+    async def reset_refill_life(self, node_id: str, _device_name: str) -> bool:
         """Reset the refill life counter."""
         params = {"LIV Hub": {"Refill Reset": 1}}  # Based on API, this is a counter, not boolean
         return await self.set_node_params(node_id, params)

@@ -67,7 +67,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         """Get the options flow for this handler."""
         return ThermacellLivOptionsFlow(config_entry)
 
-    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
+    async def async_step_reauth(self, _entry_data: dict[str, Any]) -> FlowResult:
         """Handle reauthentication request."""
         return await self.async_step_reauth_confirm()
 

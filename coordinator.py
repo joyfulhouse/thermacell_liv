@@ -7,8 +7,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
-from homeassistant.components.repairs import async_create_issue, async_delete_repair_issue
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -199,18 +199,18 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                         if is_online:
                             _LOGGER.info("Node %s (%s) is now online", node_name, node_id)
                             # Delete repair issue if device comes back online
-                            async_delete_repair_issue(self.hass, DOMAIN, f"device_offline_{node_name}")
+                            ir.async_delete_issue(self.hass, DOMAIN, f"device_offline_{node_name}")
                         else:
                             _LOGGER.warning(
                                 "Node %s (%s) is now offline - entities will become unavailable", node_name, node_id
                             )
                             # Create repair issue for offline device
-                            async_create_issue(
+                            ir.async_create_issue(
                                 self.hass,
                                 DOMAIN,
                                 f"device_offline_{node_name}",
                                 is_fixable=False,
-                                severity="warning",
+                                severity=ir.IssueSeverity.WARNING,
                                 translation_key="device_offline",
                                 translation_placeholders={"device_name": node_name},
                             )
@@ -334,7 +334,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         return success
 
-    async def async_set_device_led_color(self, node_id: str, device_name: str, red: int, green: int, blue: int) -> bool:
+    async def async_set_device_led_color(
+        self, node_id: str, device_name: str, *, red: int, green: int, blue: int
+    ) -> bool:
         """Set device LED color with optimistic update."""
         # Optimistic update - update UI immediately
         original_color = None
@@ -353,7 +355,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 self.async_update_listeners()
 
         # Make API call in background
-        success = await self.api.set_device_led_color(node_id, device_name, red, green, blue)
+        success = await self.api.set_device_led_color(node_id, device_name, red=red, green=green, blue=blue)
 
         if not success and original_color:
             # Revert optimistic update on failure
