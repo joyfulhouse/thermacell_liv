@@ -363,7 +363,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
         # Revert on failure
         if not success:
-            _LOGGER.warning("Failed to set %s for device %s (node %s) - service unavailable", operation_name, device_name, node_id)
+            _LOGGER.warning(
+                "Failed to set %s for device %s (node %s) - service unavailable", operation_name, device_name, node_id
+            )
             device_data = self._get_device_data_safe(node_id, device_name)
             if device_data:
                 revert_fn(device_data)
