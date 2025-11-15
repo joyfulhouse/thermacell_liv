@@ -702,6 +702,24 @@ class TestThermacellLivSystemRuntimeSensor:
         attrs = sensor.extra_state_attributes
         assert attrs is None
 
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.icon == "mdi:timer-outline"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        device_info = sensor.device_info
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+
+    def test_available(self, mock_coordinator):
+        """Test sensor available."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.available is True
+
 
 class TestThermacellLivConnectivitySensor:
     """Test the ThermacellLivConnectivitySensor class."""
@@ -730,6 +748,24 @@ class TestThermacellLivConnectivitySensor:
         sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
 
         assert sensor.native_value == "Disconnected"
+
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+        assert sensor.icon == "mdi:wifi"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+        device_info = sensor.device_info
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+
+    def test_available(self, mock_coordinator):
+        """Test sensor available."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+        assert sensor.available is True
 
 
 class TestThermacellLivErrorCodeSensor:
@@ -795,6 +831,24 @@ class TestThermacellLivErrorCodeSensor:
         attrs = sensor.extra_state_attributes
         assert attrs is None
 
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.icon == "mdi:alert-circle-outline"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        device_info = sensor.device_info
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+
+    def test_available(self, mock_coordinator):
+        """Test sensor available."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.available is True
+
 
 class TestThermacellLivHubIdSensor:
     """Test the ThermacellLivHubIdSensor class."""
@@ -824,6 +878,24 @@ class TestThermacellLivHubIdSensor:
 
         assert sensor.native_value is None
 
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.icon == "mdi:identifier"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
+        device_info = sensor.device_info
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+
+    def test_available(self, mock_coordinator):
+        """Test sensor available."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.available is True
+
 
 class TestThermacellLivFirmwareSensor:
     """Test the ThermacellLivFirmwareSensor class."""
@@ -852,6 +924,24 @@ class TestThermacellLivFirmwareSensor:
         sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
 
         assert sensor.native_value == "Unknown"
+
+    def test_icon(self, mock_coordinator):
+        """Test sensor icon."""
+        sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.icon == "mdi:chip"
+
+    def test_device_info(self, mock_coordinator):
+        """Test sensor device info."""
+        sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
+        device_info = sensor.device_info
+        assert (DOMAIN, "node1") in device_info["identifiers"]
+
+    def test_available(self, mock_coordinator):
+        """Test sensor available."""
+        mock_coordinator.last_update_success = True
+        mock_coordinator.is_node_online.return_value = True
+        sensor = ThermacellLivFirmwareSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.available is True
 
 
 class TestThermacellLivRefreshButton:
