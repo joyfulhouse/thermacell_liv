@@ -7,7 +7,9 @@
   "documentation": "https://github.com/joyfulhouse/thermacell_liv",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/joyfulhouse/thermacell_liv/issues",
+  "quality_scale": "platinum",
   "requirements": ["aiohttp>=3.8.0"],
-  "version": "1.0.0",
+  "version": "1.5.0",
   "icon": "https://raw.githubusercontent.com/joyfulhouse/thermacell_liv/main/icon.png"
 }
