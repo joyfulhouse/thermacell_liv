@@ -1,4 +1,5 @@
 """Thermacell LIV API client based on ESP Rainmaker API."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,9 +7,9 @@ import base64
 import colorsys
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientSession, ClientTimeout
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -40,8 +41,8 @@ class ThermacellLivAPI:
         self.password = password
         self.base_url = base_url.rstrip("/")
         self.session: ClientSession = async_get_clientsession(hass)
-        self.access_token: Optional[str] = None
-        self.user_id: Optional[str] = None
+        self.access_token: str | None = None
+        self.user_id: str | None = None
         self._auth_lock = asyncio.Lock()
 
     async def authenticate(self) -> bool:
@@ -57,58 +58,53 @@ class ThermacellLivAPI:
 
                 timeout = ClientTimeout(total=API_TIMEOUT)
                 async with self.session.post(url, json=data, timeout=timeout) as response:
-                    if response.status == 200:
-                        auth_data = await response.json()
-
-                        # Extract access token
-                        self.access_token = auth_data.get("accesstoken")
-
-                        # Extract user ID from ID token
-                        id_token = auth_data.get("idtoken")
-                        if id_token:
-                            id_payload = self._decode_jwt_payload(id_token)
-                            if id_payload:
-                                self.user_id = id_payload.get("custom:user_id")
-
-                        _LOGGER.debug("Authentication successful")
-                        return self.access_token is not None and self.user_id is not None
-                    else:
-                        _LOGGER.error(
-                            "Authentication failed with status %s: %s",
-                            response.status,
-                            await response.text(),
-                        )
+                    if response.status != 200:
+                        _LOGGER.error("Authentication failed with status %s", response.status)
                         return False
 
-            except Exception as err:
+                    auth_data = await response.json()
+
+                    # Extract access token
+                    self.access_token = auth_data.get("accesstoken")
+
+                    # Extract user ID from ID token
+                    id_token = auth_data.get("idtoken")
+                    if id_token:
+                        id_payload = self._decode_jwt_payload(id_token)
+                        if id_payload:
+                            self.user_id = id_payload.get("custom:user_id")
+
+                    _LOGGER.debug("Authentication successful")
+                    return self.access_token is not None and self.user_id is not None
+
+            except (TimeoutError, ClientError, json.JSONDecodeError) as err:
                 _LOGGER.error("Authentication error: %s", err)
                 return False
 
-    def _decode_jwt_payload(self, jwt_token: str) -> Dict[str, Any]:
+    def _decode_jwt_payload(self, jwt_token: str) -> dict[str, Any]:
         """Decode JWT token payload without verification."""
         try:
-            parts = jwt_token.split('.')
+            parts = jwt_token.split(".")
             if len(parts) != 3:
                 return {}
 
             payload = parts[1]
             padding = 4 - len(payload) % 4
             if padding != 4:
-                payload += '=' * padding
+                payload += "=" * padding
 
             decoded_bytes = base64.urlsafe_b64decode(payload)
-            return json.loads(decoded_bytes.decode('utf-8'))
-        except Exception as e:
+            return json.loads(decoded_bytes.decode("utf-8"))
+        except (ValueError, KeyError, json.JSONDecodeError, UnicodeDecodeError) as e:
             _LOGGER.debug("Failed to decode JWT payload: %s", e)
             return {}
 
     async def _make_request(
-        self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, method: str, endpoint: str, data: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """Make an authenticated API request."""
-        if not self.access_token:
-            if not await self.authenticate():
-                return None
+        if not self.access_token and not await self.authenticate():
+            return None
 
         headers = {"Authorization": self.access_token}
         url = f"{self.base_url}/v1{endpoint}"
@@ -116,40 +112,35 @@ class ThermacellLivAPI:
         for attempt in range(RETRY_ATTEMPTS):
             try:
                 timeout = ClientTimeout(total=API_TIMEOUT)
-                async with self.session.request(
-                    method, url, json=data, headers=headers, timeout=timeout
-                ) as response:
+                async with self.session.request(method, url, json=data, headers=headers, timeout=timeout) as response:
                     if response.status == 401:
                         # Token expired, try re-authentication
-                        if await self.authenticate():
-                            headers = {"Authorization": self.access_token}
-                            continue
-                        else:
-                            return None
+                        if not await self.authenticate():
+                            break  # Exit retry loop on auth failure
+                        headers = {"Authorization": self.access_token}
+                        continue
 
                     if response.status in (200, 201, 204):
-                        if response.content_type == "application/json":
-                            return await response.json()
-                        return {}
+                        return await response.json() if response.content_type == "application/json" else {}
 
                     _LOGGER.error(
                         "API request failed with status %s: %s",
                         response.status,
                         await response.text(),
                     )
-                    return None
+                    break  # Don't retry on 4xx/5xx errors
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 _LOGGER.warning("API request timeout (attempt %s/%s)", attempt + 1, RETRY_ATTEMPTS)
-                if attempt == RETRY_ATTEMPTS - 1:
-                    return None
-            except Exception as err:
+                if attempt < RETRY_ATTEMPTS - 1:
+                    continue  # Retry on timeout
+            except (ClientError, json.JSONDecodeError) as err:
                 _LOGGER.error("API request error: %s", err)
-                return None
+                break  # Don't retry on client errors
 
         return None
 
-    async def get_user_nodes(self) -> List[Dict[str, Any]]:
+    async def get_user_nodes(self) -> list[dict[str, Any]]:
         """Get all nodes (devices) for the authenticated user."""
         response = await self._make_request("GET", "/user/nodes")
         if response:
@@ -166,85 +157,62 @@ class ThermacellLivAPI:
                         "id": node_id,
                         "node_name": liv_hub_params.get("Name", f"Node {node_id}"),
                         "type": "LIV Hub",
-                        "params": params_response
+                        "params": params_response,
                     }
                     nodes.append(node_data)
             return nodes
         return []
 
-    async def get_node_status(self, node_id: str) -> Optional[Dict[str, Any]]:
+    async def get_node_status(self, node_id: str) -> dict[str, Any] | None:
         """Get status of a specific node."""
         return await self._make_request("GET", f"/user/nodes/status?nodeid={node_id}")
 
-    async def get_node_config(self, node_id: str) -> Optional[Dict[str, Any]]:
+    async def get_node_config(self, node_id: str) -> dict[str, Any] | None:
         """Get configuration and device info for a specific node."""
         return await self._make_request("GET", f"/user/nodes/config?nodeid={node_id}")
 
-    async def set_node_params(self, node_id: str, params: Dict[str, Any]) -> bool:
+    async def set_node_params(self, node_id: str, params: dict[str, Any]) -> bool:
         """Set node parameters."""
         # The correct API structure uses query parameter and direct payload
         response = await self._make_request("PUT", f"/user/nodes/params?nodeid={node_id}", params)
         return response is not None
 
-    async def set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
+    async def set_device_power(self, node_id: str, _device_name: str, power_on: bool) -> bool:
         """Turn device on or off."""
         # Based on API validation, the device is "LIV Hub" and uses "Enable Repellers"
-        params = {
-            "LIV Hub": {
-                "Enable Repellers": power_on
-            }
-        }
+        params = {"LIV Hub": {"Enable Repellers": power_on}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_color(
-        self, node_id: str, device_name: str, red: int, green: int, blue: int
-    ) -> bool:
+    async def set_device_led_color(self, node_id: str, _device_name: str, *, red: int, green: int, blue: int) -> bool:
         """Set device LED color."""
         # Convert RGB to HSV hue (0-360 range)
         r_norm, g_norm, b_norm = red / 255.0, green / 255.0, blue / 255.0
-        h, s, v = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
-        hue = int(h * 360)
-        brightness = int(v * 100)
+        hue_val, _saturation, brightness_val = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
+        hue = int(hue_val * 360)
+        brightness = int(brightness_val * 100)
 
-        params = {
-            "LIV Hub": {
-                "LED Hue": hue,
-                "LED Brightness": brightness
-            }
-        }
+        params = {"LIV Hub": {"LED Hue": hue, "LED Brightness": brightness}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
+    async def set_device_led_power(self, node_id: str, _device_name: str, led_on: bool) -> bool:
         """Turn device LED on or off."""
         # Set brightness to 0 to turn off, or restore to default brightness
         brightness = 100 if led_on else 0
-        params = {
-            "LIV Hub": {
-                "LED Brightness": brightness
-            }
-        }
+        params = {"LIV Hub": {"LED Brightness": brightness}}
         return await self.set_node_params(node_id, params)
 
-    async def set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
+    async def set_device_led_brightness(self, node_id: str, _device_name: str, brightness: int) -> bool:
         """Set device LED brightness (0-255 range)."""
         # Convert Home Assistant brightness (0-255) to Thermacell range (0-100)
         thermacell_brightness = int((brightness / 255) * 100)
         thermacell_brightness = max(0, min(100, thermacell_brightness))  # Clamp to 0-100
 
-        params = {
-            "LIV Hub": {
-                "LED Brightness": thermacell_brightness
-            }
-        }
+        params = {"LIV Hub": {"LED Brightness": thermacell_brightness}}
         return await self.set_node_params(node_id, params)
 
-    async def reset_refill_life(self, node_id: str, device_name: str) -> bool:
+    async def reset_refill_life(self, node_id: str, _device_name: str) -> bool:
         """Reset the refill life counter."""
-        params = {
-            "LIV Hub": {
-                "Refill Reset": 1  # Based on API, this is a counter, not boolean
-            }
-        }
+        params = {"LIV Hub": {"Refill Reset": 1}}  # Based on API, this is a counter, not boolean
         return await self.set_node_params(node_id, params)
 
     async def test_connection(self) -> bool:
@@ -252,5 +220,5 @@ class ThermacellLivAPI:
         try:
             nodes = await self.get_user_nodes()
             return isinstance(nodes, list)
-        except Exception:
+        except (TimeoutError, ClientError, json.JSONDecodeError):
             return False

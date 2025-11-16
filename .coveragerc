@@ -1,0 +1,24 @@
+[run]
+source = .
+omit =
+    tests/*
+    setup.py
+    */__pycache__/*
+    */tests/debug/*
+    */tests/manual/*
+    */tests/integration/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+fail_under = 95.0
+
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod

@@ -1,7 +1,9 @@
 """Platform for sensor integration."""
+
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -25,13 +27,17 @@ except ImportError:
 _LOGGER = logging.getLogger(__name__)
 
 
+# Sensor platform doesn't make write operations, so parallel updates can be higher
+PARALLEL_UPDATES = 0  # No limit on sensor updates
+
+
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the sensor platform."""
-    coordinator: ThermacellLivCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: ThermacellLivCoordinator = config_entry.runtime_data
 
     sensors = []
 
@@ -39,33 +45,19 @@ async def async_setup_entry(
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
             # Refill life sensor
-            sensors.append(
-                ThermacellLivRefillSensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivRefillSensor(coordinator, node_id, device_name))
             # System status sensor
-            sensors.append(
-                ThermacellLivSystemStatusSensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivSystemStatusSensor(coordinator, node_id, device_name))
             # System runtime sensor
-            sensors.append(
-                ThermacellLivSystemRuntimeSensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivSystemRuntimeSensor(coordinator, node_id, device_name))
             # Connectivity status sensor
-            sensors.append(
-                ThermacellLivConnectivitySensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivConnectivitySensor(coordinator, node_id, device_name))
             # Error code sensor
-            sensors.append(
-                ThermacellLivErrorCodeSensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivErrorCodeSensor(coordinator, node_id, device_name))
             # Hub ID (Serial) sensor
-            sensors.append(
-                ThermacellLivHubIdSensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivHubIdSensor(coordinator, node_id, device_name))
             # Firmware version sensor
-            sensors.append(
-                ThermacellLivFirmwareSensor(coordinator, node_id, device_name)
-            )
+            sensors.append(ThermacellLivFirmwareSensor(coordinator, node_id, device_name))
 
     async_add_entities(sensors, update_before_add=True)
 
@@ -73,22 +65,22 @@ async def async_setup_entry(
 class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV refill life sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "Refill Life"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_refill_life"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_native_unit_of_measurement = "%"
-        self._attr_icon = "mdi:battery"
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:battery"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -105,10 +97,7 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def native_value(self) -> float | None:
@@ -120,21 +109,21 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
 class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV system status sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "System Status"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_status"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_system_status"
-        self._attr_icon = "mdi:power"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:power"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -151,10 +140,7 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def native_value(self) -> str | None:
@@ -165,7 +151,7 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
         return "Unknown"
 
     @property
-    def extra_state_attributes(self) -> dict[str, any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         if device_data:
@@ -180,24 +166,29 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
 class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV system runtime sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "System Runtime"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_runtime"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_system_runtime"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
-        self._attr_suggested_unit_of_measurement = UnitOfTime.HOURS
-        self._attr_icon = "mdi:timer-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def suggested_unit_of_measurement(self) -> str:
+        """Return the suggested unit of measurement."""
+        return UnitOfTime.HOURS
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:timer-outline"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -214,10 +205,7 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def native_value(self) -> int | None:
@@ -228,7 +216,7 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         return 0
 
     @property
-    def extra_state_attributes(self) -> dict[str, any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes with human-readable runtime."""
         node_data = self.coordinator.get_node_data(self._node_id)
         if node_data:
@@ -261,21 +249,22 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
 class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV connectivity sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "Connectivity"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_connectivity"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_connectivity"
-        self._attr_icon = "mdi:wifi"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:wifi"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -306,21 +295,22 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
 class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV error code sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "Error Code"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_error_code"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_error_code"
-        self._attr_icon = "mdi:alert-circle-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:alert-circle-outline"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -337,10 +327,7 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def native_value(self) -> int | None:
@@ -349,7 +336,7 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
         return device_data.get("error_code", 0) if device_data else 0
 
     @property
-    def extra_state_attributes(self) -> dict[str, any] | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         if device_data:
@@ -364,21 +351,22 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
 class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV Hub ID (Serial) sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "Hub ID"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_hub_id"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_hub_id"
-        self._attr_icon = "mdi:identifier"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:identifier"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -395,10 +383,7 @@ class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], Sens
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def native_value(self) -> str | None:
@@ -410,21 +395,22 @@ class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], Sens
 class ThermacellLivFirmwareSensor(CoordinatorEntity[ThermacellLivCoordinator], SensorEntity):
     """Representation of a Thermacell LIV firmware version sensor."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._node_id = node_id
         self._device_name = device_name
 
-
         self._attr_has_entity_name = True
         self._attr_name = "Firmware Version"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_firmware"
-        self.entity_id = f"sensor.{DOMAIN}_{device_name}_firmware"
-        self._attr_icon = "mdi:chip"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:chip"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -441,10 +427,7 @@ class ThermacellLivFirmwareSensor(CoordinatorEntity[ThermacellLivCoordinator], S
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
+        return self.coordinator.last_update_success and self.coordinator.is_node_online(self._node_id)
 
     @property
     def native_value(self) -> str | None:

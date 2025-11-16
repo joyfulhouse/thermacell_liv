@@ -5,13 +5,14 @@ Test different methods for setting node parameters to find the correct API struc
 import asyncio
 import base64
 import json
+from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
+
 import aiohttp
-from secrets import THERMACELL_USERNAME, THERMACELL_PASSWORD, THERMACELL_API_BASE_URL
 
 
 class SetParamsMethodTester:
     """Test different methods for setting parameters."""
-    
+
     def __init__(self):
         self.base_url = THERMACELL_API_BASE_URL.rstrip('/')
         self.username = THERMACELL_USERNAME
@@ -19,24 +20,24 @@ class SetParamsMethodTester:
         self.access_token = None
         self.user_id = None
         self.session = None
-    
+
     def _decode_jwt_payload(self, jwt_token: str) -> dict:
         """Decode JWT token payload without verification."""
         try:
             parts = jwt_token.split('.')
             if len(parts) != 3:
                 return {}
-            
+
             payload = parts[1]
             padding = 4 - len(payload) % 4
             if padding != 4:
                 payload += '=' * padding
-            
+
             decoded_bytes = base64.urlsafe_b64decode(payload)
             return json.loads(decoded_bytes.decode('utf-8'))
         except Exception:
             return {}
-    
+
     async def authenticate(self) -> bool:
         """Authenticate and extract tokens."""
         try:
@@ -50,13 +51,13 @@ class SetParamsMethodTester:
                 if response.status == 200:
                     auth_data = await response.json()
                     self.access_token = auth_data.get("accesstoken")
-                    
+
                     id_token = auth_data.get("idtoken")
                     if id_token:
                         id_payload = self._decode_jwt_payload(id_token)
                         if id_payload:
                             self.user_id = id_payload.get("custom:user_id")
-                    
+
                     return self.access_token is not None and self.user_id is not None
                 else:
                     print(f"Authentication failed: {response.status}")
@@ -64,11 +65,11 @@ class SetParamsMethodTester:
         except Exception as e:
             print(f"Authentication error: {e}")
             return False
-    
+
     async def test_different_methods(self, node_id: str):
         """Test different API methods and endpoints for setting parameters."""
         headers = {"Authorization": self.access_token}
-        
+
         # Test different HTTP methods and endpoints
         test_methods = [
             # Method 1: PUT /v1/user/nodes/params (current approach)
@@ -84,7 +85,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 2: POST /v1/user/nodes/params
             {
                 "method": "POST",
@@ -98,10 +99,10 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 3: PUT with nodeid query parameter
             {
-                "method": "PUT", 
+                "method": "PUT",
                 "url": f"{self.base_url}/v1/user/nodes/params?nodeid={node_id}",
                 "payload": {
                     "LIV Hub": {
@@ -109,7 +110,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 4: POST with nodeid query parameter
             {
                 "method": "POST",
@@ -120,7 +121,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 5: Different payload structure - no nesting
             {
                 "method": "PUT",
@@ -132,7 +133,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 6: Try /v1/user2/nodes/params (from docs)
             {
                 "method": "PUT",
@@ -146,7 +147,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 7: Different endpoint pattern
             {
                 "method": "PUT",
@@ -157,7 +158,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Method 8: ESP Rainmaker standard format
             {
                 "method": "PUT",
@@ -171,8 +172,8 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
-            # Method 9: Try with user_id parameter  
+
+            # Method 9: Try with user_id parameter
             {
                 "method": "PUT",
                 "url": f"{self.base_url}/v1/user/nodes/params",
@@ -187,24 +188,24 @@ class SetParamsMethodTester:
                 }
             },
         ]
-        
+
         for i, test_method in enumerate(test_methods, 1):
             print(f"\n🧪 Test {i}: {test_method['method']} {test_method['url'].replace(self.base_url, '')}")
             print(f"   Payload: {json.dumps(test_method['payload'], indent=6)}")
-            
+
             try:
                 timeout = aiohttp.ClientTimeout(total=10)
                 async with self.session.request(
-                    test_method['method'], 
-                    test_method['url'], 
-                    json=test_method['payload'], 
-                    headers=headers, 
+                    test_method['method'],
+                    test_method['url'],
+                    json=test_method['payload'],
+                    headers=headers,
                     timeout=timeout
                 ) as response:
                     print(f"   Status: {response.status}")
-                    
+
                     response_text = await response.text()
-                    
+
                     if response.status in [200, 201, 204]:
                         try:
                             response_data = json.loads(response_text)
@@ -219,21 +220,21 @@ class SetParamsMethodTester:
                             print(f"   ❌ Error: {json.dumps(error_data, indent=6)}")
                         except:
                             print(f"   ❌ Error: {response_text}")
-                
+
                 # Small delay between attempts
                 await asyncio.sleep(0.5)
-                            
+
             except Exception as e:
                 print(f"   ❌ Exception: {e}")
-        
+
         return None
-    
+
     async def test_esp_rainmaker_docs(self, node_id: str):
         """Test based on ESP Rainmaker API documentation patterns."""
         headers = {"Authorization": self.access_token}
-        
+
         print("\n📖 Testing ESP Rainmaker documented patterns...")
-        
+
         # According to ESP Rainmaker docs, try these patterns:
         rainmaker_tests = [
             # Pattern 1: Standard ESP Rainmaker node parameter update
@@ -248,7 +249,7 @@ class SetParamsMethodTester:
                     }
                 }
             },
-            
+
             # Pattern 2: With explicit node_id field
             {
                 "method": "PUT",
@@ -263,24 +264,24 @@ class SetParamsMethodTester:
                 }
             },
         ]
-        
+
         for i, test in enumerate(rainmaker_tests, 1):
             print(f"\n   Rainmaker Pattern {i}: {test['method']} {test['url'].replace(self.base_url, '')}")
             print(f"   Payload: {json.dumps(test['payload'], indent=6)}")
-            
+
             try:
                 timeout = aiohttp.ClientTimeout(total=10)
                 async with self.session.request(
-                    test['method'], 
-                    test['url'], 
-                    json=test['payload'], 
-                    headers=headers, 
+                    test['method'],
+                    test['url'],
+                    json=test['payload'],
+                    headers=headers,
                     timeout=timeout
                 ) as response:
                     print(f"   Status: {response.status}")
-                    
+
                     response_text = await response.text()
-                    
+
                     if response.status in [200, 201, 204]:
                         try:
                             response_data = json.loads(response_text)
@@ -295,10 +296,10 @@ class SetParamsMethodTester:
                             print(f"   ❌ Error: {json.dumps(error_data, indent=6)}")
                         except:
                             print(f"   ❌ Error: {response_text}")
-                            
+
             except Exception as e:
                 print(f"   ❌ Exception: {e}")
-        
+
         return None
 
 
@@ -306,27 +307,27 @@ async def main():
     """Main function to test different parameter setting methods."""
     print("🧪 Thermacell Parameter Setting Method Testing")
     print("=" * 70)
-    
+
     async with aiohttp.ClientSession() as session:
         tester = SetParamsMethodTester()
         tester.session = session
-        
+
         print("🔐 Authenticating...")
         if await tester.authenticate():
             print(f"   ✅ Success! User ID: {tester.user_id}")
-            
+
             # Use the first node for testing
             test_node_id = "JM7UVxmMgPUYUhVJVBWEf6"  # From previous test
-            
+
             print(f"\n🎯 Testing parameter setting methods with node: {test_node_id}")
-            
+
             # Test different methods
             successful_method = await tester.test_different_methods(test_node_id)
-            
+
             if not successful_method:
                 # Try ESP Rainmaker documented patterns
                 successful_method = await tester.test_esp_rainmaker_docs(test_node_id)
-            
+
             if successful_method:
                 print("\n🎉 Found working method!")
                 print(f"   Method: {successful_method['method']}")
@@ -336,7 +337,7 @@ async def main():
                 print("\n❌ No working method found. All requests returned errors.")
         else:
             print("   ❌ Authentication failed")
-    
+
     print("\n✅ Testing completed!")
 
 

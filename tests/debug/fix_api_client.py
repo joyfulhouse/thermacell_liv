@@ -2,8 +2,8 @@
 """
 Fix the API client based on the real API response analysis.
 """
-import json
 import base64
+import json
 
 
 def decode_jwt_payload(jwt_token):
@@ -12,15 +12,15 @@ def decode_jwt_payload(jwt_token):
         parts = jwt_token.split('.')
         if len(parts) != 3:
             return None
-        
+
         payload = parts[1]
         padding = 4 - len(payload) % 4
         if padding != 4:
             payload += '=' * padding
-        
+
         decoded_bytes = base64.urlsafe_b64decode(payload)
         decoded_json = json.loads(decoded_bytes.decode('utf-8'))
-        
+
         return decoded_json
     except Exception as e:
         print(f"Error decoding JWT: {e}")
@@ -31,19 +31,19 @@ def analyze_auth_response():
     """Analyze what needs to be fixed in the API client."""
     print("🔧 API Client Issues Found:")
     print("=" * 50)
-    
+
     print("1. ✅ Authentication endpoint: `/v1/login2` - CORRECT")
     print("   - Request format: {'user_name': username, 'password': password}")
     print("   - Response contains: accesstoken, idtoken, refreshtoken")
     print()
-    
+
     print("2. ❌ User ID extraction: NEEDS FIXING")
     print("   - Current: expects 'user_id' in auth response")
     print("   - Actual: user_id is in idtoken JWT as 'custom:user_id'")
     print("   - Fix: decode idtoken and extract custom:user_id")
     print()
-    
-    print("3. ❌ Get nodes endpoint: NEEDS INVESTIGATION") 
+
+    print("3. ❌ Get nodes endpoint: NEEDS INVESTIGATION")
     print("   - Current: `/v1/user2/nodes?user_id={user_id}`")
     print("   - Status: Returns 400 Bad Request")
     print("   - Possible fixes:")
@@ -51,7 +51,7 @@ def analyze_auth_response():
     print("     b) Try different parameter format")
     print("     c) Check if user has any devices registered")
     print()
-    
+
     print("4. ✅ Headers: CORRECT")
     print("   - Authorization header with access token works")
     print()
@@ -60,7 +60,7 @@ def generate_api_client_fixes():
     """Generate the fixes needed for the API client."""
     print("\n🔧 Recommended API Client Fixes:")
     print("=" * 50)
-    
+
     fixes = """
 1. Fix authenticate() method in api.py:
 

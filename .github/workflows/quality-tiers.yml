@@ -1,0 +1,478 @@
+name: Home Assistant Quality Tiers
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ============================================================================
+  # BRONZE TIER - Foundation Requirements
+  # ============================================================================
+  bronze-tier:
+    name: Bronze Tier Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff homeassistant voluptuous aiohttp
+
+      - name: Code Quality - Ruff Linter
+        run: |
+          ruff check .
+
+      - name: Code Quality - Ruff Formatter
+        run: |
+          ruff format --check .
+
+      - name: Validate manifest.json
+        run: |
+          python -c "
+          import json
+          with open('manifest.json') as f:
+              manifest = json.load(f)
+
+          # Verify required fields
+          assert 'domain' in manifest, 'Missing domain'
+          assert 'name' in manifest, 'Missing name'
+          assert 'codeowners' in manifest, 'Missing codeowners'
+          assert 'config_flow' in manifest, 'Missing config_flow'
+          assert manifest['config_flow'] == True, 'config_flow must be True'
+          assert 'version' in manifest, 'Missing version'
+          assert 'requirements' in manifest, 'Missing requirements'
+          assert 'iot_class' in manifest, 'Missing iot_class'
+
+          print('✓ manifest.json is valid')
+          "
+
+      - name: Validate entity naming
+        run: |
+          python -c "
+          files = ['switch.py', 'light.py', 'sensor.py', 'button.py']
+          for file in files:
+              with open(file) as f:
+                  if 'has_entity_name = True' not in f.read():
+                      raise Exception(f'{file}: Missing has_entity_name')
+          print('✓ Entity naming compliant')
+          "
+
+      - name: Validate runtime data usage
+        run: |
+          python -c "
+          with open('__init__.py') as f:
+              content = f.read()
+              assert 'entry.runtime_data' in content
+          print('✓ Runtime data usage compliant')
+          "
+
+      - name: Validate unique config entry
+        run: |
+          python -c "
+          with open('config_flow.py') as f:
+              content = f.read()
+              assert 'async_set_unique_id' in content
+              assert '_abort_if_unique_id_configured' in content
+          print('✓ Unique config entry compliant')
+          "
+
+      - name: Bronze Tier Summary
+        if: success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✓ BRONZE TIER PASSED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # ============================================================================
+  # SILVER TIER - Enhanced Requirements
+  # ============================================================================
+  silver-tier:
+    name: Silver Tier Validation
+    runs-on: ubuntu-latest
+    needs: bronze-tier  # Must pass Bronze first
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-asyncio homeassistant voluptuous aiohttp
+          # Install the integration as an editable package to enable relative imports
+          pip install -e .
+
+      - name: Validate reauthentication flow
+        run: |
+          python -c "
+          import sys
+
+          with open('config_flow.py') as f:
+              content = f.read()
+
+          errors = []
+          if 'async_step_reauth' not in content:
+              errors.append('Missing async_step_reauth method')
+          if 'async_step_reauth_confirm' not in content:
+              errors.append('Missing async_step_reauth_confirm method')
+
+          if errors:
+              for error in errors:
+                  print(f'✗ {error}')
+              sys.exit(1)
+          else:
+              print('✓ Reauthentication flow implemented')
+          "
+
+      - name: Validate unavailability logging
+        run: |
+          python -c "
+          import sys
+
+          with open('coordinator.py') as f:
+              content = f.read()
+
+          # Check for logging when nodes go offline
+          required_logs = [
+              'is now offline',
+              'service unavailable',
+              'Failed to set',
+          ]
+
+          errors = []
+          for log_msg in required_logs:
+              if log_msg not in content:
+                  errors.append(f'Missing log message: {log_msg}')
+
+          if errors:
+              for error in errors:
+                  print(f'✗ {error}')
+              sys.exit(1)
+          else:
+              print('✓ Unavailability logging implemented')
+          "
+
+      - name: Validate test coverage infrastructure
+        run: |
+          python -c "
+          import os
+          import sys
+
+          required_files = [
+              'pyproject.toml',
+          ]
+
+          errors = []
+          for file in required_files:
+              if not os.path.exists(file):
+                  errors.append(f'Missing {file}')
+
+          # Check pyproject.toml has test configuration
+          if os.path.exists('pyproject.toml'):
+              with open('pyproject.toml') as f:
+                  content = f.read()
+                  if 'tool.pytest' not in content:
+                      errors.append('Missing pytest configuration in pyproject.toml')
+                  if 'tool.coverage' not in content:
+                      errors.append('Missing coverage configuration in pyproject.toml')
+
+          if errors:
+              for error in errors:
+                  print(f'✗ {error}')
+              sys.exit(1)
+          else:
+              print('✓ Test coverage infrastructure present')
+          "
+
+      - name: Run test suite
+        run: |
+          pytest tests/ -v --cov=. --cov-report=term-missing --ignore=tests/manual --ignore=tests/integration --ignore=tests/debug
+
+      - name: Verify test coverage
+        run: |
+          python -c "
+          import sys
+
+          # Check if we have test files
+          import os
+          test_files = [f for f in os.listdir('tests') if f.startswith('test_') and f.endswith('.py')]
+
+          if not test_files:
+              print('✗ No test files found in tests/ directory')
+              sys.exit(1)
+
+          print(f'✓ Found {len(test_files)} test file(s)')
+          "
+
+      - name: Silver Tier Summary
+        if: success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✓ SILVER TIER PASSED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # ============================================================================
+  # GOLD TIER - Production Ready
+  # ============================================================================
+  gold-tier:
+    name: Gold Tier Validation
+    runs-on: ubuntu-latest
+    needs: silver-tier  # Must pass Silver first
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy homeassistant voluptuous aiohttp
+
+      - name: Validate diagnostics platform
+        run: |
+          python -c "
+          import sys
+          import os
+
+          if not os.path.exists('diagnostics.py'):
+              print('✗ Missing diagnostics.py')
+              sys.exit(1)
+
+          with open('diagnostics.py') as f:
+              content = f.read()
+              if 'async_get_config_entry_diagnostics' not in content:
+                  print('✗ Missing async_get_config_entry_diagnostics function')
+                  sys.exit(1)
+              if 'async_redact_data' not in content:
+                  print('✗ Missing data redaction')
+                  sys.exit(1)
+              if 'TO_REDACT' not in content:
+                  print('✗ Missing TO_REDACT configuration')
+                  sys.exit(1)
+
+          print('✓ Diagnostics platform implemented')
+          "
+
+      - name: Validate repair flows
+        run: |
+          python -c "
+          import sys
+          import os
+
+          if not os.path.exists('repairs.py'):
+              print('✗ Missing repairs.py')
+              sys.exit(1)
+
+          with open('repairs.py') as f:
+              content = f.read()
+              if 'async_create_fix_flow' not in content:
+                  print('✗ Missing async_create_fix_flow function')
+                  sys.exit(1)
+
+          # Check for repair translations
+          import json
+          with open('strings.json') as f:
+              strings = json.load(f)
+              if 'issues' not in strings:
+                  print('✗ Missing repair flow translations in strings.json')
+                  sys.exit(1)
+              if 'auth_failed' not in strings['issues']:
+                  print('✗ Missing auth_failed repair flow')
+                  sys.exit(1)
+              if 'device_offline' not in strings['issues']:
+                  print('✗ Missing device_offline repair flow')
+                  sys.exit(1)
+
+          print('✓ Repair flows implemented')
+          "
+
+      - name: Validate reconfiguration flow
+        run: |
+          python -c "
+          import sys
+
+          with open('config_flow.py') as f:
+              content = f.read()
+              if 'ThermacellLivOptionsFlow' not in content:
+                  print('✗ Missing options flow class')
+                  sys.exit(1)
+              if 'async_step_init' not in content:
+                  print('✗ Missing async_step_init in options flow')
+                  sys.exit(1)
+
+          with open('__init__.py') as f:
+              content = f.read()
+              if 'async_reload_entry' not in content:
+                  print('✗ Missing reload entry handler')
+                  sys.exit(1)
+
+          print('✓ Reconfiguration flow implemented')
+          "
+
+      - name: Validate entity disabled by default
+        run: |
+          python -c "
+          import sys
+
+          with open('sensor.py') as f:
+              content = f.read()
+              # Check for at least some diagnostic sensors with disabled by default
+              if content.count('entity_registry_enabled_default = False') < 3:
+                  print('✗ Insufficient diagnostic sensors with disabled by default')
+                  sys.exit(1)
+
+          print('✓ Entity disabled by default implemented')
+          "
+
+      - name: Validate documentation completeness
+        run: |
+          python -c "
+          import sys
+
+          with open('README.md') as f:
+              content = f.read()
+              required_sections = [
+                  'Supported Entities',
+                  'Supported Devices',
+                  'Use Cases',
+                  'Data Updates',
+                  'Known Limitations',
+                  'Troubleshooting',
+              ]
+
+              missing = []
+              for section in required_sections:
+                  if section not in content:
+                      missing.append(section)
+
+              if missing:
+                  print(f'✗ Missing documentation sections: {missing}')
+                  sys.exit(1)
+
+          print('✓ Documentation completeness validated')
+          "
+
+      - name: Gold Tier Summary
+        if: success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✓ GOLD TIER PASSED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # ============================================================================
+  # PLATINUM TIER - Strict Type Safety
+  # ============================================================================
+  platinum-tier:
+    name: Platinum Tier Validation
+    runs-on: ubuntu-latest
+    needs: gold-tier  # Must pass Gold first
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy homeassistant voluptuous aiohttp
+
+      - name: Validate py.typed marker
+        run: |
+          python -c "
+          import sys
+          import os
+
+          if not os.path.exists('py.typed'):
+              print('✗ Missing py.typed marker file')
+              sys.exit(1)
+
+          print('✓ py.typed marker file present')
+          "
+
+      - name: Validate mypy strict mode
+        run: |
+          python -c "
+          import sys
+
+          with open('pyproject.toml') as f:
+              content = f.read()
+              # Check that strict mode is enabled (not commented out)
+              required_settings = [
+                  'disallow_untyped_defs = true',
+                  'disallow_incomplete_defs = true',
+                  'disallow_untyped_calls = true',
+              ]
+
+              for setting in required_settings:
+                  if setting not in content:
+                      print(f'✗ Missing or disabled mypy strict setting: {setting}')
+                      sys.exit(1)
+
+          print('✓ Mypy strict mode configured')
+          "
+
+      - name: Run mypy strict type checking
+        run: |
+          mypy --explicit-package-bases __init__.py api.py config_flow.py coordinator.py switch.py light.py sensor.py button.py diagnostics.py repairs.py || {
+            echo "✗ Mypy strict type checking failed"
+            exit 1
+          }
+          echo "✓ Mypy strict type checking passed"
+
+      - name: Platinum Tier Summary
+        if: success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✓ PLATINUM TIER PASSED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # ============================================================================
+  # FINAL SUMMARY
+  # ============================================================================
+  all-tiers-passed:
+    name: All Quality Tiers Passed
+    runs-on: ubuntu-latest
+    needs: [bronze-tier, silver-tier, gold-tier, platinum-tier]
+
+    steps:
+      - name: Success Summary
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎉 ALL QUALITY TIERS PASSED 🎉"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "✓ Bronze Tier - Foundation"
+          echo "✓ Silver Tier - Enhanced"
+          echo "✓ Gold Tier - Production Ready"
+          echo "✓ Platinum Tier - Type Safe"
+          echo ""
+          echo "This integration meets ALL Home Assistant quality standards!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

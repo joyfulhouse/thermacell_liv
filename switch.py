@@ -1,4 +1,5 @@
 """Platform for switch integration."""
+
 from __future__ import annotations
 
 import logging
@@ -7,83 +8,51 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 try:
     from .const import DOMAIN
     from .coordinator import ThermacellLivCoordinator
+    from .entity import ThermacellLivEntity
 except ImportError:
     from const import DOMAIN
     from coordinator import ThermacellLivCoordinator
+    from entity import ThermacellLivEntity
 
 _LOGGER = logging.getLogger(__name__)
 
+# Limit parallel updates to avoid overwhelming the API
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the switch platform."""
-    coordinator: ThermacellLivCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: ThermacellLivCoordinator = config_entry.runtime_data
 
     switches = []
 
     # Create switch entities for each device in each node
     for node_id, node_data in coordinator.data.items():
         for device_name in node_data.get("devices", {}):
-            switches.append(
-                ThermacellLivSwitch(coordinator, node_id, device_name)
-            )
+            switches.append(ThermacellLivSwitch(coordinator, node_id, device_name))
 
     async_add_entities(switches, update_before_add=True)
 
 
-class ThermacellLivSwitch(CoordinatorEntity[ThermacellLivCoordinator], SwitchEntity):
+class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
     """Representation of a Thermacell LIV switch."""
 
-    def __init__(
-        self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str
-    ) -> None:
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the switch."""
-        super().__init__(coordinator)
-        self._node_id = node_id
-        self._device_name = device_name
-
+        super().__init__(coordinator, node_id, device_name)
 
         self._attr_has_entity_name = True
         self._attr_name = None  # Main switch entity for the device
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
-        self.entity_id = f"switch.{DOMAIN}_{device_name}_switch"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        node_data = self.coordinator.get_node_data(self._node_id)
-        device_info_dict = {
-            "identifiers": {(DOMAIN, self._node_id)},
-            "name": node_data.get("name", "Thermacell LIV"),
-            "manufacturer": "Thermacell",
-            "model": node_data.get("model", "LIV"),
-            "sw_version": node_data.get("fw_version", "Unknown"),
-        }
-
-        # Add serial number if available
-        hub_serial = node_data.get("hub_serial")
-        if hub_serial:
-            device_info_dict["serial_number"] = hub_serial
-
-        return DeviceInfo(**device_info_dict)
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return (
-            self.coordinator.last_update_success
-            and self.coordinator.is_node_online(self._node_id)
-        )
 
     @property
     def is_on(self) -> bool:
@@ -91,14 +60,10 @@ class ThermacellLivSwitch(CoordinatorEntity[ThermacellLivCoordinator], SwitchEnt
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         return device_data.get("power", False) if device_data else False
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
+    async def async_turn_on(self, **_kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.coordinator.async_set_device_power(
-            self._node_id, self._device_name, True
-        )
+        await self.coordinator.async_set_device_power(self._node_id, self._device_name, True)
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **_kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.coordinator.async_set_device_power(
-            self._node_id, self._device_name, False
-        )
+        await self.coordinator.async_set_device_power(self._node_id, self._device_name, False)

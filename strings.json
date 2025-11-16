@@ -1,0 +1,71 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Thermacell LIV",
+        "description": "Enter your Thermacell account credentials to connect your LIV devices.",
+        "data": {
+          "username": "Username/Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate Thermacell LIV",
+        "description": "Your Thermacell credentials have expired. Please enter your username and password to continue.",
+        "data": {
+          "username": "Username/Email",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Thermacell API. Please check your internet connection and try again.",
+      "invalid_auth": "Invalid username or password. Please check your credentials.",
+      "unknown": "An unexpected error occurred. Please try again later."
+    },
+    "abort": {
+      "already_configured": "This Thermacell account is already configured.",
+      "reauth_successful": "Reauthentication successful. Your credentials have been updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thermacell LIV Options",
+        "description": "Configure integration settings",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to poll the Thermacell API for device status (30-300 seconds)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "Authentication Failed",
+      "description": "Your Thermacell credentials are invalid or have expired. Please use the reauthentication flow to update your credentials.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Reauthenticate Thermacell LIV",
+            "description": "Authentication with Thermacell has failed for **{entry_title}**.\n\nTo fix this issue:\n1. Go to **Settings** → **Devices & Services**\n2. Find the **Thermacell LIV** integration\n3. Click the three dots menu and select **Reauthenticate**\n4. Enter your updated credentials\n\nAfter reauthenticating successfully, this issue will be automatically resolved."
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "Device Offline",
+      "description": "Your Thermacell device **{device_name}** is currently offline or unreachable.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Device Offline: {device_name}",
+            "description": "The device **{device_name}** is currently offline or unreachable.\n\n**Troubleshooting steps:**\n1. Check that the device has power\n2. Verify your home network connectivity\n3. Check if the Thermacell cloud service is operational\n4. Try power cycling the device\n5. Check if the device is still registered in your Thermacell account\n\nIf the device comes back online, this issue will be automatically resolved."
+          }
+        }
+      }
+    }
+  }
+}
