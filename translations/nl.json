@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Thermacell LIV instellen",
+        "description": "Voer uw Thermacell-accountgegevens in om uw LIV-apparaten te verbinden.",
+        "data": {
+          "username": "Gebruikersnaam/E-mail",
+          "password": "Wachtwoord"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Thermacell LIV opnieuw verifiëren",
+        "description": "Uw Thermacell-inloggegevens zijn verlopen. Voer uw gebruikersnaam en wachtwoord in om door te gaan.",
+        "data": {
+          "username": "Gebruikersnaam/E-mail",
+          "password": "Wachtwoord"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met Thermacell API. Controleer uw internetverbinding en probeer het opnieuw.",
+      "invalid_auth": "Ongeldige gebruikersnaam of wachtwoord. Controleer uw inloggegevens.",
+      "unknown": "Er is een onverwachte fout opgetreden. Probeer het later opnieuw."
+    },
+    "abort": {
+      "already_configured": "Dit Thermacell-account is al geconfigureerd.",
+      "reauth_successful": "Herverificatie succesvol. Uw inloggegevens zijn bijgewerkt."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thermacell LIV-opties",
+        "description": "Integratie-instellingen configureren",
+        "data": {
+          "scan_interval": "Update-interval (seconden)"
+        },
+        "data_description": {
+          "scan_interval": "Hoe vaak de Thermacell API voor apparaatstatus wordt opgevraagd (30-300 seconden)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "Verificatie mislukt",
+      "description": "Uw Thermacell-inloggegevens zijn ongeldig of verlopen. Gebruik de herverificatiestroom om uw inloggegevens bij te werken.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Thermacell LIV opnieuw verifiëren",
+            "description": "Verificatie met Thermacell is mislukt voor **{entry_title}**.\n\nOm dit probleem op te lossen:\n1. Ga naar **Instellingen** → **Apparaten en diensten**\n2. Zoek de **Thermacell LIV**-integratie\n3. Klik op het menu met drie puntjes en selecteer **Opnieuw verifiëren**\n4. Voer uw bijgewerkte inloggegevens in\n\nNa succesvolle herverificatie wordt dit probleem automatisch opgelost."
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "Apparaat offline",
+      "description": "Uw Thermacell-apparaat **{device_name}** is momenteel offline of onbereikbaar.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Apparaat offline: {device_name}",
+            "description": "Het apparaat **{device_name}** is momenteel offline of onbereikbaar.\n\n**Stappen voor probleemoplossing:**\n1. Controleer of het apparaat van stroom is voorzien\n2. Controleer de verbinding van uw thuisnetwerk\n3. Controleer of de Thermacell-cloudservice operationeel is\n4. Probeer het apparaat opnieuw op te starten\n5. Controleer of het apparaat nog steeds is geregistreerd in uw Thermacell-account\n\nAls het apparaat weer online komt, wordt dit probleem automatisch opgelost."
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Levensduur navulling"
+      },
+      "system_status": {
+        "name": "Systeemstatus",
+        "state": {
+          "protected": "Beschermd",
+          "warming_up": "Opwarmen",
+          "off": "Uit",
+          "error": "Fout",
+          "unknown": "Onbekend"
+        }
+      },
+      "system_runtime": {
+        "name": "Systeemlooptijd"
+      },
+      "connectivity": {
+        "name": "Connectiviteit",
+        "state": {
+          "connected": "Verbonden",
+          "disconnected": "Verbroken"
+        }
+      },
+      "error_code": {
+        "name": "Foutcode"
+      },
+      "hub_id": {
+        "name": "Hub-ID"
+      },
+      "firmware_version": {
+        "name": "Firmwareversie"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Navulling resetten"
+      },
+      "refresh": {
+        "name": "Vernieuwen"
+      }
+    }
+  }
+}

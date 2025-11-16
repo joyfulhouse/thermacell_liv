@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Thermacell LIV をセットアップ",
+        "description": "LIV デバイスを接続するには、Thermacell アカウントの認証情報を入力してください。",
+        "data": {
+          "username": "ユーザー名/メールアドレス",
+          "password": "パスワード"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Thermacell LIV を再認証",
+        "description": "Thermacell の認証情報が期限切れです。続行するには、ユーザー名とパスワードを入力してください。",
+        "data": {
+          "username": "ユーザー名/メールアドレス",
+          "password": "パスワード"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Thermacell API に接続できませんでした。インターネット接続を確認して、もう一度お試しください。",
+      "invalid_auth": "ユーザー名またはパスワードが無効です。認証情報を確認してください。",
+      "unknown": "予期しないエラーが発生しました。後でもう一度お試しください。"
+    },
+    "abort": {
+      "already_configured": "この Thermacell アカウントは既に設定されています。",
+      "reauth_successful": "再認証に成功しました。認証情報が更新されました。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thermacell LIV オプション",
+        "description": "統合設定を構成",
+        "data": {
+          "scan_interval": "更新間隔（秒）"
+        },
+        "data_description": {
+          "scan_interval": "デバイスの状態を取得するために Thermacell API をポーリングする頻度（30～300秒）"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "認証失敗",
+      "description": "Thermacell の認証情報が無効または期限切れです。再認証フローを使用して認証情報を更新してください。",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Thermacell LIV を再認証",
+            "description": "**{entry_title}** の Thermacell 認証が失敗しました。\n\nこの問題を解決するには：\n1. **設定** → **デバイスとサービス** に移動\n2. **Thermacell LIV** 統合を見つける\n3. 三点メニューをクリックして **再認証** を選択\n4. 更新された認証情報を入力\n\n再認証が成功すると、この問題は自動的に解決されます。"
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "デバイスがオフライン",
+      "description": "Thermacell デバイス **{device_name}** は現在オフラインまたはアクセスできません。",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "デバイスがオフライン：{device_name}",
+            "description": "デバイス **{device_name}** は現在オフラインまたはアクセスできません。\n\n**トラブルシューティング手順：**\n1. デバイスに電源が供給されているか確認\n2. ホームネットワークの接続を確認\n3. Thermacell クラウドサービスが稼働しているか確認\n4. デバイスの再起動を試す\n5. デバイスが Thermacell アカウントに登録されているか確認\n\nデバイスがオンラインに戻ると、この問題は自動的に解決されます。"
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "詰め替え残量"
+      },
+      "system_status": {
+        "name": "システムステータス",
+        "state": {
+          "protected": "保護中",
+          "warming_up": "ウォームアップ中",
+          "off": "オフ",
+          "error": "エラー",
+          "unknown": "不明"
+        }
+      },
+      "system_runtime": {
+        "name": "システム稼働時間"
+      },
+      "connectivity": {
+        "name": "接続状態",
+        "state": {
+          "connected": "接続済み",
+          "disconnected": "切断"
+        }
+      },
+      "error_code": {
+        "name": "エラーコード"
+      },
+      "hub_id": {
+        "name": "ハブ ID"
+      },
+      "firmware_version": {
+        "name": "ファームウェアバージョン"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "詰め替えリセット"
+      },
+      "refresh": {
+        "name": "更新"
+      }
+    }
+  }
+}

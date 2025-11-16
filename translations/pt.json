@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Thermacell LIV",
+        "description": "Insira as credenciais da sua conta Thermacell para conectar seus dispositivos LIV.",
+        "data": {
+          "username": "Nome de usuário/E-mail",
+          "password": "Senha"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reautenticar Thermacell LIV",
+        "description": "As suas credenciais Thermacell expiraram. Por favor, insira seu nome de usuário e senha para continuar.",
+        "data": {
+          "username": "Nome de usuário/E-mail",
+          "password": "Senha"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Falha ao conectar à API Thermacell. Verifique sua conexão com a Internet e tente novamente.",
+      "invalid_auth": "Nome de usuário ou senha inválidos. Verifique suas credenciais.",
+      "unknown": "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde."
+    },
+    "abort": {
+      "already_configured": "Esta conta Thermacell já está configurada.",
+      "reauth_successful": "Reautenticação bem-sucedida. Suas credenciais foram atualizadas."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do Thermacell LIV",
+        "description": "Configurar definições de integração",
+        "data": {
+          "scan_interval": "Intervalo de atualização (segundos)"
+        },
+        "data_description": {
+          "scan_interval": "Frequência de consulta à API Thermacell para o estado do dispositivo (30-300 segundos)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "Falha na autenticação",
+      "description": "As suas credenciais Thermacell são inválidas ou expiraram. Use o fluxo de reautenticação para atualizar suas credenciais.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Reautenticar Thermacell LIV",
+            "description": "A autenticação com Thermacell falhou para **{entry_title}**.\n\nPara corrigir este problema:\n1. Vá para **Configurações** → **Dispositivos e serviços**\n2. Encontre a integração **Thermacell LIV**\n3. Clique no menu de três pontos e selecione **Reautenticar**\n4. Insira suas credenciais atualizadas\n\nApós reautenticar com sucesso, este problema será resolvido automaticamente."
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "Dispositivo offline",
+      "description": "O seu dispositivo Thermacell **{device_name}** está atualmente offline ou inacessível.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Dispositivo offline: {device_name}",
+            "description": "O dispositivo **{device_name}** está atualmente offline ou inacessível.\n\n**Passos de resolução de problemas:**\n1. Verifique se o dispositivo está ligado\n2. Verifique a conectividade da sua rede doméstica\n3. Verifique se o serviço na nuvem Thermacell está operacional\n4. Tente reiniciar o dispositivo\n5. Verifique se o dispositivo ainda está registrado na sua conta Thermacell\n\nSe o dispositivo voltar a ficar online, este problema será resolvido automaticamente."
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Vida útil do refil"
+      },
+      "system_status": {
+        "name": "Estado do sistema",
+        "state": {
+          "protected": "Protegido",
+          "warming_up": "Aquecendo",
+          "off": "Desligado",
+          "error": "Erro",
+          "unknown": "Desconhecido"
+        }
+      },
+      "system_runtime": {
+        "name": "Tempo de execução do sistema"
+      },
+      "connectivity": {
+        "name": "Conectividade",
+        "state": {
+          "connected": "Conectado",
+          "disconnected": "Desconectado"
+        }
+      },
+      "error_code": {
+        "name": "Código de erro"
+      },
+      "hub_id": {
+        "name": "ID do hub"
+      },
+      "firmware_version": {
+        "name": "Versão do firmware"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Redefinir refil"
+      },
+      "refresh": {
+        "name": "Atualizar"
+      }
+    }
+  }
+}
