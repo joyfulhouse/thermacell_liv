@@ -103,11 +103,6 @@
         "name": "Firmware Version"
       }
     },
-    "switch": {
-      "thermacell_liv": {
-        "name": "Thermacell LIV"
-      }
-    },
     "light": {
       "led": {
         "name": "LED"

@@ -103,11 +103,6 @@
         "name": "韌體版本"
       }
     },
-    "switch": {
-      "thermacell_liv": {
-        "name": "Thermacell LIV"
-      }
-    },
     "light": {
       "led": {
         "name": "LED 燈"

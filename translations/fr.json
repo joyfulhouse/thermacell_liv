@@ -103,11 +103,6 @@
         "name": "Version du micrologiciel"
       }
     },
-    "switch": {
-      "thermacell_liv": {
-        "name": "Thermacell LIV"
-      }
-    },
     "light": {
       "led": {
         "name": "LED"

@@ -72,7 +72,7 @@ class ThermacellLivRefillSensor(CoordinatorEntity[ThermacellLivCoordinator], Sen
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "Refill Life"
+        self._attr_translation_key = "refill_life"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_native_unit_of_measurement = "%"
@@ -116,7 +116,7 @@ class ThermacellLivSystemStatusSensor(CoordinatorEntity[ThermacellLivCoordinator
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "System Status"
+        self._attr_translation_key = "system_status"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_status"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -173,7 +173,7 @@ class ThermacellLivSystemRuntimeSensor(CoordinatorEntity[ThermacellLivCoordinato
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "System Runtime"
+        self._attr_translation_key = "system_runtime"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_runtime"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
@@ -256,7 +256,7 @@ class ThermacellLivConnectivitySensor(CoordinatorEntity[ThermacellLivCoordinator
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "Connectivity"
+        self._attr_translation_key = "connectivity"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_connectivity"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
@@ -302,7 +302,7 @@ class ThermacellLivErrorCodeSensor(CoordinatorEntity[ThermacellLivCoordinator], 
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "Error Code"
+        self._attr_translation_key = "error_code"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_error_code"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
@@ -358,7 +358,7 @@ class ThermacellLivHubIdSensor(CoordinatorEntity[ThermacellLivCoordinator], Sens
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "Hub ID"
+        self._attr_translation_key = "hub_id"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_hub_id"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
@@ -402,7 +402,7 @@ class ThermacellLivFirmwareSensor(CoordinatorEntity[ThermacellLivCoordinator], S
         self._device_name = device_name
 
         self._attr_has_entity_name = True
-        self._attr_name = "Firmware Version"
+        self._attr_translation_key = "firmware_version"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_firmware"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
