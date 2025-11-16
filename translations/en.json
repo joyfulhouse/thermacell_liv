@@ -28,49 +28,6 @@
       "reauth_successful": "Reauthentication successful. Your credentials have been updated."
     }
   },
-  "entity": {
-    "sensor": {
-      "refill_life": {
-        "name": "Refill life"
-      },
-      "system_status": {
-        "name": "System status"
-      },
-      "system_runtime": {
-        "name": "System runtime"
-      },
-      "connectivity": {
-        "name": "Connectivity"
-      },
-      "error_code": {
-        "name": "Error code"
-      },
-      "hub_id": {
-        "name": "Hub ID"
-      },
-      "firmware": {
-        "name": "Firmware version"
-      }
-    },
-    "switch": {
-      "switch": {
-        "name": "Repeller"
-      }
-    },
-    "light": {
-      "led": {
-        "name": "LED"
-      }
-    },
-    "button": {
-      "reset_refill": {
-        "name": "Reset refill"
-      },
-      "refresh": {
-        "name": "Refresh"
-      }
-    }
-  },
   "options": {
     "step": {
       "init": {
@@ -108,6 +65,60 @@
             "description": "The device **{device_name}** is currently offline or unreachable.\n\n**Troubleshooting steps:**\n1. Check that the device has power\n2. Verify your home network connectivity\n3. Check if the Thermacell cloud service is operational\n4. Try power cycling the device\n5. Check if the device is still registered in your Thermacell account\n\nIf the device comes back online, this issue will be automatically resolved."
           }
         }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Refill Life"
+      },
+      "system_status": {
+        "name": "System Status",
+        "state": {
+          "protected": "Protected",
+          "warming_up": "Warming Up",
+          "off": "Off",
+          "error": "Error",
+          "unknown": "Unknown"
+        }
+      },
+      "system_runtime": {
+        "name": "System Runtime"
+      },
+      "connectivity": {
+        "name": "Connectivity",
+        "state": {
+          "connected": "Connected",
+          "disconnected": "Disconnected"
+        }
+      },
+      "error_code": {
+        "name": "Error Code"
+      },
+      "hub_id": {
+        "name": "Hub ID"
+      },
+      "firmware_version": {
+        "name": "Firmware Version"
+      }
+    },
+    "switch": {
+      "thermacell_liv": {
+        "name": "Thermacell LIV"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Reset Refill"
+      },
+      "refresh": {
+        "name": "Refresh"
       }
     }
   }

@@ -1,0 +1,125 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Thermacell LIV",
+        "description": "Introduce las credenciales de tu cuenta Thermacell para conectar tus dispositivos LIV.",
+        "data": {
+          "username": "Nombre de usuario/Correo electrónico",
+          "password": "Contraseña"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reautenticar Thermacell LIV",
+        "description": "Tus credenciales de Thermacell han caducado. Por favor, introduce tu nombre de usuario y contraseña para continuar.",
+        "data": {
+          "username": "Nombre de usuario/Correo electrónico",
+          "password": "Contraseña"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se pudo conectar a la API de Thermacell. Por favor, verifica tu conexión a Internet e inténtalo de nuevo.",
+      "invalid_auth": "Nombre de usuario o contraseña inválidos. Por favor, verifica tus credenciales.",
+      "unknown": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo más tarde."
+    },
+    "abort": {
+      "already_configured": "Esta cuenta de Thermacell ya está configurada.",
+      "reauth_successful": "Reautenticación exitosa. Tus credenciales han sido actualizadas."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de Thermacell LIV",
+        "description": "Configurar los ajustes de integración",
+        "data": {
+          "scan_interval": "Intervalo de actualización (segundos)"
+        },
+        "data_description": {
+          "scan_interval": "Frecuencia de consulta a la API de Thermacell para el estado del dispositivo (30-300 segundos)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "Fallo de autenticación",
+      "description": "Tus credenciales de Thermacell son inválidas o han caducado. Por favor, usa el flujo de reautenticación para actualizar tus credenciales.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Reautenticar Thermacell LIV",
+            "description": "La autenticación con Thermacell ha fallado para **{entry_title}**.\n\nPara solucionar este problema:\n1. Ve a **Configuración** → **Dispositivos y servicios**\n2. Busca la integración **Thermacell LIV**\n3. Haz clic en el menú de tres puntos y selecciona **Reautenticar**\n4. Introduce tus credenciales actualizadas\n\nDespués de reautenticarte con éxito, este problema se resolverá automáticamente."
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "Dispositivo desconectado",
+      "description": "Tu dispositivo Thermacell **{device_name}** está actualmente desconectado o inaccesible.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Dispositivo desconectado: {device_name}",
+            "description": "El dispositivo **{device_name}** está actualmente desconectado o inaccesible.\n\n**Pasos de solución de problemas:**\n1. Verifica que el dispositivo esté alimentado\n2. Verifica la conectividad de tu red doméstica\n3. Verifica si el servicio en la nube de Thermacell está operativo\n4. Intenta reiniciar el dispositivo\n5. Verifica si el dispositivo todavía está registrado en tu cuenta de Thermacell\n\nSi el dispositivo vuelve a estar en línea, este problema se resolverá automáticamente."
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Vida útil del recambio"
+      },
+      "system_status": {
+        "name": "Estado del sistema",
+        "state": {
+          "protected": "Protegido",
+          "warming_up": "Calentando",
+          "off": "Apagado",
+          "error": "Error",
+          "unknown": "Desconocido"
+        }
+      },
+      "system_runtime": {
+        "name": "Tiempo de ejecución del sistema"
+      },
+      "connectivity": {
+        "name": "Conectividad",
+        "state": {
+          "connected": "Conectado",
+          "disconnected": "Desconectado"
+        }
+      },
+      "error_code": {
+        "name": "Código de error"
+      },
+      "hub_id": {
+        "name": "ID del hub"
+      },
+      "firmware_version": {
+        "name": "Versión del firmware"
+      }
+    },
+    "switch": {
+      "thermacell_liv": {
+        "name": "Thermacell LIV"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Restablecer recambio"
+      },
+      "refresh": {
+        "name": "Actualizar"
+      }
+    }
+  }
+}
