@@ -607,6 +607,14 @@ class TestThermacellLivSystemStatusSensor:
             "enable_repellers": True,
         }
 
+    def test_extra_state_attributes_no_device_data(self, mock_coordinator):
+        """Test sensor extra state attributes with no device data."""
+        mock_coordinator.get_device_data.return_value = None
+        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
+
+        attributes = sensor.extra_state_attributes
+        assert attributes is None
+
     def test_icon(self, mock_coordinator):
         """Test sensor icon."""
         sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
@@ -722,6 +730,13 @@ class TestThermacellLivSystemRuntimeSensor:
         sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
         assert sensor.available is True
 
+    def test_suggested_unit_of_measurement(self, mock_coordinator):
+        """Test sensor suggested unit of measurement."""
+        from homeassistant.const import UnitOfTime
+
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+        assert sensor.suggested_unit_of_measurement == UnitOfTime.HOURS
+
 
 class TestThermacellLivConnectivitySensor:
     """Test the ThermacellLivConnectivitySensor class."""
@@ -750,6 +765,13 @@ class TestThermacellLivConnectivitySensor:
         sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
 
         assert sensor.native_value == "Disconnected"
+
+    def test_native_value_no_node_data(self, mock_coordinator):
+        """Test sensor value with no node data."""
+        mock_coordinator.get_node_data.return_value = None
+        sensor = ThermacellLivConnectivitySensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.native_value == "Unknown"
 
     def test_icon(self, mock_coordinator):
         """Test sensor icon."""
