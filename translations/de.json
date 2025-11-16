@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Thermacell LIV einrichten",
+        "description": "Geben Sie Ihre Thermacell-Kontodaten ein, um Ihre LIV-Geräte zu verbinden.",
+        "data": {
+          "username": "Benutzername/E-Mail",
+          "password": "Passwort"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Thermacell LIV erneut authentifizieren",
+        "description": "Ihre Thermacell-Anmeldedaten sind abgelaufen. Bitte geben Sie Ihren Benutzernamen und Ihr Passwort ein, um fortzufahren.",
+        "data": {
+          "username": "Benutzername/E-Mail",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Thermacell-API fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+      "invalid_auth": "Ungültiger Benutzername oder Passwort. Bitte überprüfen Sie Ihre Anmeldedaten.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
+    },
+    "abort": {
+      "already_configured": "Dieses Thermacell-Konto ist bereits konfiguriert.",
+      "reauth_successful": "Erneute Authentifizierung erfolgreich. Ihre Anmeldedaten wurden aktualisiert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thermacell LIV-Optionen",
+        "description": "Integrationseinstellungen konfigurieren",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft die Thermacell-API für den Gerätestatus abgefragt wird (30-300 Sekunden)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "Authentifizierung fehlgeschlagen",
+      "description": "Ihre Thermacell-Anmeldedaten sind ungültig oder abgelaufen. Bitte verwenden Sie den Ablauf zur erneuten Authentifizierung, um Ihre Anmeldedaten zu aktualisieren.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Thermacell LIV erneut authentifizieren",
+            "description": "Die Authentifizierung mit Thermacell ist für **{entry_title}** fehlgeschlagen.\n\nUm dieses Problem zu beheben:\n1. Gehen Sie zu **Einstellungen** → **Geräte & Dienste**\n2. Suchen Sie die **Thermacell LIV** Integration\n3. Klicken Sie auf das Dreipunkt-Menü und wählen Sie **Erneut authentifizieren**\n4. Geben Sie Ihre aktualisierten Anmeldedaten ein\n\nNach erfolgreicher erneuter Authentifizierung wird dieses Problem automatisch behoben."
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "Gerät offline",
+      "description": "Ihr Thermacell-Gerät **{device_name}** ist derzeit offline oder nicht erreichbar.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Gerät offline: {device_name}",
+            "description": "Das Gerät **{device_name}** ist derzeit offline oder nicht erreichbar.\n\n**Schritte zur Fehlerbehebung:**\n1. Überprüfen Sie, ob das Gerät mit Strom versorgt wird\n2. Überprüfen Sie Ihre Heimnetzwerkverbindung\n3. Überprüfen Sie, ob der Thermacell-Cloud-Dienst betriebsbereit ist\n4. Versuchen Sie, das Gerät neu zu starten\n5. Überprüfen Sie, ob das Gerät noch in Ihrem Thermacell-Konto registriert ist\n\nWenn das Gerät wieder online ist, wird dieses Problem automatisch behoben."
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Nachfülllebensdauer"
+      },
+      "system_status": {
+        "name": "Systemstatus",
+        "state": {
+          "protected": "Geschützt",
+          "warming_up": "Aufwärmen",
+          "off": "Aus",
+          "error": "Fehler",
+          "unknown": "Unbekannt"
+        }
+      },
+      "system_runtime": {
+        "name": "Systemlaufzeit"
+      },
+      "connectivity": {
+        "name": "Konnektivität",
+        "state": {
+          "connected": "Verbunden",
+          "disconnected": "Getrennt"
+        }
+      },
+      "error_code": {
+        "name": "Fehlercode"
+      },
+      "hub_id": {
+        "name": "Hub-ID"
+      },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Nachfüllung zurücksetzen"
+      },
+      "refresh": {
+        "name": "Aktualisieren"
+      }
+    }
+  }
+}

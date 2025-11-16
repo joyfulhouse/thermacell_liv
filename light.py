@@ -57,7 +57,7 @@ class ThermacellLivLight(ThermacellLivEntity, LightEntity):
         super().__init__(coordinator, node_id, device_name)
 
         self._attr_has_entity_name = True
-        self._attr_name = "LED"
+        self._attr_translation_key = "led"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_light"
         self._attr_color_mode = ColorMode.RGB
         self._attr_supported_color_modes = {ColorMode.RGB}

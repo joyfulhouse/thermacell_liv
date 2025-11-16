@@ -53,7 +53,7 @@ class ThermacellLivResetButton(ThermacellLivEntity, ButtonEntity):
         super().__init__(coordinator, node_id, device_name)
 
         self._attr_has_entity_name = True
-        self._attr_name = "Reset Refill"
+        self._attr_translation_key = "reset_refill"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_reset_refill"
         self._attr_icon = "mdi:refresh"
 
@@ -75,7 +75,7 @@ class ThermacellLivRefreshButton(ThermacellLivEntity, ButtonEntity):
         super().__init__(coordinator, node_id, device_name)
 
         self._attr_has_entity_name = True
-        self._attr_name = "Refresh"
+        self._attr_translation_key = "refresh"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refresh"
         self._attr_icon = "mdi:refresh"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC

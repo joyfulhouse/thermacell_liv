@@ -52,6 +52,7 @@ class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
 
         self._attr_has_entity_name = True
         self._attr_name = None  # Main switch entity for the device
+        self._attr_translation_key = None  # No translation key - uses device name
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
 
     @property

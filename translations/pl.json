@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja Thermacell LIV",
+        "description": "Wprowadź dane logowania do konta Thermacell, aby połączyć urządzenia LIV.",
+        "data": {
+          "username": "Nazwa użytkownika/E-mail",
+          "password": "Hasło"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Ponowne uwierzytelnienie Thermacell LIV",
+        "description": "Twoje dane logowania Thermacell wygasły. Wprowadź nazwę użytkownika i hasło, aby kontynuować.",
+        "data": {
+          "username": "Nazwa użytkownika/E-mail",
+          "password": "Hasło"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie udało się połączyć z API Thermacell. Sprawdź połączenie z Internetem i spróbuj ponownie.",
+      "invalid_auth": "Nieprawidłowa nazwa użytkownika lub hasło. Sprawdź swoje dane logowania.",
+      "unknown": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie później."
+    },
+    "abort": {
+      "already_configured": "To konto Thermacell jest już skonfigurowane.",
+      "reauth_successful": "Ponowne uwierzytelnienie powiodło się. Twoje dane logowania zostały zaktualizowane."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje Thermacell LIV",
+        "description": "Konfiguracja ustawień integracji",
+        "data": {
+          "scan_interval": "Interwał aktualizacji (sekundy)"
+        },
+        "data_description": {
+          "scan_interval": "Jak często odpytywać API Thermacell o stan urządzenia (30-300 sekund)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "Błąd uwierzytelnienia",
+      "description": "Twoje dane logowania Thermacell są nieprawidłowe lub wygasły. Użyj procesu ponownego uwierzytelnienia, aby zaktualizować swoje dane logowania.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Ponowne uwierzytelnienie Thermacell LIV",
+            "description": "Uwierzytelnienie z Thermacell nie powiodło się dla **{entry_title}**.\n\nAby rozwiązać ten problem:\n1. Przejdź do **Ustawienia** → **Urządzenia i usługi**\n2. Znajdź integrację **Thermacell LIV**\n3. Kliknij menu z trzema kropkami i wybierz **Ponownie uwierzytelnij**\n4. Wprowadź zaktualizowane dane logowania\n\nPo pomyślnym ponownym uwierzytelnieniu ten problem zostanie automatycznie rozwiązany."
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "Urządzenie offline",
+      "description": "Twoje urządzenie Thermacell **{device_name}** jest obecnie offline lub niedostępne.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Urządzenie offline: {device_name}",
+            "description": "Urządzenie **{device_name}** jest obecnie offline lub niedostępne.\n\n**Kroki rozwiązywania problemów:**\n1. Sprawdź, czy urządzenie jest zasilane\n2. Sprawdź łączność sieci domowej\n3. Sprawdź, czy usługa chmury Thermacell działa\n4. Spróbuj ponownie uruchomić urządzenie\n5. Sprawdź, czy urządzenie jest nadal zarejestrowane na koncie Thermacell\n\nJeśli urządzenie wróci do trybu online, ten problem zostanie automatycznie rozwiązany."
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "Żywotność wkładu"
+      },
+      "system_status": {
+        "name": "Stan systemu",
+        "state": {
+          "protected": "Chroniony",
+          "warming_up": "Rozgrzewanie",
+          "off": "Wyłączony",
+          "error": "Błąd",
+          "unknown": "Nieznany"
+        }
+      },
+      "system_runtime": {
+        "name": "Czas pracy systemu"
+      },
+      "connectivity": {
+        "name": "Łączność",
+        "state": {
+          "connected": "Połączony",
+          "disconnected": "Rozłączony"
+        }
+      },
+      "error_code": {
+        "name": "Kod błędu"
+      },
+      "hub_id": {
+        "name": "Identyfikator koncentratora"
+      },
+      "firmware_version": {
+        "name": "Wersja oprogramowania"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Resetuj wkład"
+      },
+      "refresh": {
+        "name": "Odśwież"
+      }
+    }
+  }
+}

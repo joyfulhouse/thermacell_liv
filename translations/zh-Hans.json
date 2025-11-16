@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "设置 Thermacell LIV",
+        "description": "输入您的 Thermacell 账户凭据以连接您的 LIV 设备。",
+        "data": {
+          "username": "用户名/邮箱",
+          "password": "密码"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新验证 Thermacell LIV",
+        "description": "您的 Thermacell 凭据已过期。请输入您的用户名和密码以继续。",
+        "data": {
+          "username": "用户名/邮箱",
+          "password": "密码"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接到 Thermacell API。请检查您的互联网连接并重试。",
+      "invalid_auth": "用户名或密码无效。请检查您的凭据。",
+      "unknown": "发生意外错误。请稍后再试。"
+    },
+    "abort": {
+      "already_configured": "此 Thermacell 账户已配置。",
+      "reauth_successful": "重新验证成功。您的凭据已更新。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thermacell LIV 选项",
+        "description": "配置集成设置",
+        "data": {
+          "scan_interval": "更新间隔（秒）"
+        },
+        "data_description": {
+          "scan_interval": "轮询 Thermacell API 获取设备状态的频率（30-300 秒）"
+        }
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "身份验证失败",
+      "description": "您的 Thermacell 凭据无效或已过期。请使用重新验证流程更新您的凭据。",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "重新验证 Thermacell LIV",
+            "description": "**{entry_title}** 的 Thermacell 身份验证失败。\n\n要解决此问题：\n1. 转到**设置** → **设备与服务**\n2. 找到 **Thermacell LIV** 集成\n3. 点击三点菜单并选择**重新验证**\n4. 输入您更新的凭据\n\n成功重新验证后，此问题将自动解决。"
+          }
+        }
+      }
+    },
+    "device_offline": {
+      "title": "设备离线",
+      "description": "您的 Thermacell 设备 **{device_name}** 当前离线或无法访问。",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "设备离线：{device_name}",
+            "description": "设备 **{device_name}** 当前离线或无法访问。\n\n**故障排除步骤：**\n1. 检查设备是否有电\n2. 验证您的家庭网络连接\n3. 检查 Thermacell 云服务是否正常运行\n4. 尝试重启设备\n5. 检查设备是否仍在您的 Thermacell 账户中注册\n\n如果设备重新上线，此问题将自动解决。"
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "refill_life": {
+        "name": "补充剂寿命"
+      },
+      "system_status": {
+        "name": "系统状态",
+        "state": {
+          "protected": "防护中",
+          "warming_up": "预热中",
+          "off": "关闭",
+          "error": "错误",
+          "unknown": "未知"
+        }
+      },
+      "system_runtime": {
+        "name": "系统运行时间"
+      },
+      "connectivity": {
+        "name": "连接状态",
+        "state": {
+          "connected": "已连接",
+          "disconnected": "已断开"
+        }
+      },
+      "error_code": {
+        "name": "错误代码"
+      },
+      "hub_id": {
+        "name": "中枢 ID"
+      },
+      "firmware_version": {
+        "name": "固件版本"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED 灯"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "重置补充剂"
+      },
+      "refresh": {
+        "name": "刷新"
+      }
+    }
+  }
+}
