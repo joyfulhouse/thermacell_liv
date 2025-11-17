@@ -1,4 +1,8 @@
-"""Data update coordinator for Thermacell LIV."""
+"""Data update coordinator for Thermacell LIV.
+
+Platinum tier requirement: strict-typing, async-dependency
+This module uses full type annotations and async operations for optimal performance.
+"""
 
 from __future__ import annotations
 
@@ -10,11 +14,15 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import (  # type: ignore[import-not-found]
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
 from homeassistant.util import dt as dt_util
 
 from .api import ThermacellLivAPI
 from .const import DOMAIN
+from .thermacell_types import DeviceParams, NodeData, RGBColor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +35,7 @@ _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = timedelta(seconds=60)
 
 
-def _convert_hsv_to_rgb(hue: int, brightness: int) -> dict[str, int]:
+def _convert_hsv_to_rgb(hue: int, brightness: int) -> RGBColor:
     """Convert HSV values to RGB color dictionary.
 
     Args:
@@ -35,17 +43,17 @@ def _convert_hsv_to_rgb(hue: int, brightness: int) -> dict[str, int]:
         brightness: Brightness value (0-100)
 
     Returns:
-        Dictionary with r, g, b keys (0-255)
+        RGBColor TypedDict with r, g, b keys (0-255)
     """
     h_norm = hue / 360.0 if hue > 0 else 0
     s_norm = 1.0  # Assume full saturation
     v_norm = brightness / 100.0
     r, g, b = colorsys.hsv_to_rgb(h_norm, s_norm, v_norm)
-    return {
-        "r": int(r * 255),
-        "g": int(g * 255),
-        "b": int(b * 255),
-    }
+    return RGBColor(
+        r=int(r * 255),
+        g=int(g * 255),
+        b=int(b * 255),
+    )
 
 
 def _map_system_status(system_status: int, enable_repellers: bool, error: int) -> str:
@@ -82,7 +90,7 @@ def _convert_brightness_to_thermacell(brightness: int) -> int:
     return int((brightness / 255) * 100)
 
 
-class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: ignore[misc]
     """Class to manage fetching Thermacell LIV data from the API.
 
     Polling Strategy:
@@ -128,7 +136,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return fw_version, model
 
-    def _parse_device_params(self, device_params: dict[str, Any], connectivity: dict[str, Any]) -> dict[str, Any]:
+    def _parse_device_params(self, device_params: dict[str, Any], connectivity: dict[str, Any]) -> DeviceParams:
         """Parse device parameters into standardized format.
 
         Args:
@@ -162,18 +170,18 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Calculate LED power state
         led_power = enable_repellers and brightness > 0
 
-        return {
-            "power": enable_repellers,
-            "led_power": led_power,
-            "led_brightness": ha_brightness,
-            "led_brightness_pct": brightness,
-            "led_color": led_color,
-            "refill_life": device_params.get("Refill Life", 0),
-            "system_status": status_text,
-            "system_status_code": system_status,
-            "error_code": error,
-            "last_updated": connectivity.get("timestamp", 0) // 1000,
-        }
+        return DeviceParams(
+            power=enable_repellers,
+            led_power=led_power,
+            led_brightness=ha_brightness,
+            led_brightness_pct=brightness,
+            led_color=led_color,
+            refill_life=device_params.get("Refill Life", 0),
+            system_status=status_text,
+            system_status_code=system_status,
+            error_code=error,
+            last_updated=connectivity.get("timestamp", 0) // 1000,
+        )
 
     def _handle_node_state_change(self, node_id: str, node_name: str, is_online: bool) -> None:
         """Handle node online/offline state transitions.
@@ -207,7 +215,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._node_online_states[node_id] = is_online
 
-    async def _process_node(self, node: dict[str, Any], previous_node_ids: set[str]) -> dict[str, Any] | None:
+    async def _process_node(self, node: dict[str, Any], previous_node_ids: set[str]) -> NodeData | None:
         """Process a single node and return its data.
 
         Args:
@@ -254,17 +262,17 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 system_runtime = device_params.get("System Runtime", 0)
 
         # Build node info
-        node_info = {
-            "id": node_id,
-            "name": node_name,
-            "type": node.get("type", "Thermacell LIV"),
-            "fw_version": fw_version,
-            "model": model,
-            "hub_serial": hub_serial,
-            "system_runtime": system_runtime,
-            "online": connectivity.get("connected", False),
-            "devices": {},
-        }
+        node_info = NodeData(
+            id=node_id,
+            name=node_name,
+            type=node.get("type", "Thermacell LIV"),
+            fw_version=fw_version,
+            model=model,
+            hub_serial=hub_serial,
+            system_runtime=system_runtime,
+            online=connectivity.get("connected", False),
+            devices={},
+        )
 
         # Parse device parameters
         if "LIV Hub" in params:
@@ -309,15 +317,15 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             raise UpdateFailed(f"Error communicating with API: {err}") from err
 
-    def get_node_data(self, node_id: str) -> dict[str, Any] | None:
+    def get_node_data(self, node_id: str) -> NodeData | None:
         """Get data for a specific node."""
-        return self.data.get(node_id) if self.data else None
+        return self.data.get(node_id) if self.data else None  # type: ignore[return-value]
 
-    def get_device_data(self, node_id: str, device_name: str) -> dict[str, Any] | None:
+    def get_device_data(self, node_id: str, device_name: str) -> DeviceParams | None:
         """Get data for a specific device within a node."""
         node_data = self.get_node_data(node_id)
         if node_data:
-            return node_data.get("devices", {}).get(device_name)
+            return node_data.get("devices", {}).get(device_name)  # type: ignore[return-value]
         return None
 
     def is_node_online(self, node_id: str) -> bool:
@@ -325,20 +333,20 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         node_data = self.get_node_data(node_id)
         return node_data.get("online", False) if node_data else False
 
-    def _get_device_data_safe(self, node_id: str, device_name: str) -> dict[str, Any] | None:
+    def _get_device_data_safe(self, node_id: str, device_name: str) -> DeviceParams | None:
         """Safely get device data with null checks."""
         if not self.data or node_id not in self.data:
             return None
         devices = self.data[node_id].get("devices", {})
-        return devices.get(device_name)
+        return devices.get(device_name)  # type: ignore[return-value]
 
     async def _optimistic_update(
         self,
         node_id: str,
         device_name: str,
-        update_fn: Callable[[dict[str, Any]], None],
+        update_fn: Callable[[DeviceParams], None],
         api_call: Callable[[], Awaitable[bool]],
-        revert_fn: Callable[[dict[str, Any]], None],
+        revert_fn: Callable[[DeviceParams], None],
         operation_name: str,
     ) -> bool:
         """Generic optimistic update handler.
@@ -380,12 +388,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def async_set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
         """Set device power with optimistic update."""
 
-        def update(data: dict[str, Any]) -> None:
+        def update(data: DeviceParams) -> None:
             data["power"] = power_on
             brightness = data.get("led_brightness", 0)
             data["led_power"] = power_on and brightness > 0
 
-        def revert(data: dict[str, Any]) -> None:
+        def revert(data: DeviceParams) -> None:
             data["power"] = not power_on
             brightness = data.get("led_brightness", 0)
             data["led_power"] = (not power_on) and brightness > 0
@@ -403,14 +411,14 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Set device LED power with optimistic update."""
         original_led_power = False
 
-        def update(data: dict[str, Any]) -> None:
+        def update(data: DeviceParams) -> None:
             nonlocal original_led_power
             original_led_power = data.get("led_power", False)
             hub_powered = data.get("power", False)
             brightness = data.get("led_brightness", 0)
             data["led_power"] = led_on and hub_powered and brightness > 0
 
-        def revert(data: dict[str, Any]) -> None:
+        def revert(data: DeviceParams) -> None:
             data["led_power"] = original_led_power
 
         return await self._optimistic_update(
@@ -426,14 +434,14 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self, node_id: str, device_name: str, *, red: int, green: int, blue: int
     ) -> bool:
         """Set device LED color with optimistic update."""
-        original_color = None
+        original_color: RGBColor | None = None
 
-        def update(data: dict[str, Any]) -> None:
+        def update(data: DeviceParams) -> None:
             nonlocal original_color
-            original_color = data.get("led_color", {"r": 255, "g": 255, "b": 255}).copy()
-            data["led_color"] = {"r": red, "g": green, "b": blue}
+            original_color = data.get("led_color", RGBColor(r=255, g=255, b=255)).copy()  # type: ignore[misc]
+            data["led_color"] = RGBColor(r=red, g=green, b=blue)
 
-        def revert(data: dict[str, Any]) -> None:
+        def revert(data: DeviceParams) -> None:
             if original_color:
                 data["led_color"] = original_color
 
@@ -448,11 +456,11 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
         """Set device LED brightness with optimistic update."""
-        original_brightness = None
-        original_brightness_pct = None
-        original_led_power = None
+        original_brightness: int | None = None
+        original_brightness_pct: int | None = None
+        original_led_power: bool | None = None
 
-        def update(data: dict[str, Any]) -> None:
+        def update(data: DeviceParams) -> None:
             nonlocal original_brightness, original_brightness_pct, original_led_power
             original_brightness = data.get("led_brightness", 255)
             original_brightness_pct = data.get("led_brightness_pct", 100)
@@ -463,11 +471,11 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hub_powered = data.get("power", False)
             data["led_power"] = hub_powered and brightness > 0
 
-        def revert(data: dict[str, Any]) -> None:
+        def revert(data: DeviceParams) -> None:
             if original_brightness is not None:
                 data["led_brightness"] = original_brightness
-                data["led_brightness_pct"] = original_brightness_pct
-                data["led_power"] = original_led_power
+                data["led_brightness_pct"] = original_brightness_pct  # type: ignore[typeddict-item]
+                data["led_power"] = original_led_power  # type: ignore[typeddict-item]
 
         return await self._optimistic_update(
             node_id,
