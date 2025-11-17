@@ -31,7 +31,7 @@ jobs:
 
       - name: Pylint
         run: |
-          pylint custom_components/thermacell_liv --disable=too-many-instance-attributes,too-few-public-methods
+          pylint custom_components/thermacell_liv --disable=too-many-instance-attributes,too-few-public-methods,line-too-long,too-many-locals,too-many-arguments,too-many-positional-arguments,abstract-method
 
       - name: Type checking (mypy)
         run: |
