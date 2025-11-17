@@ -9,14 +9,13 @@ import pytest
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from datetime import UTC
 
-from button import ThermacellLivRefreshButton, ThermacellLivResetButton
-from const import DOMAIN
-from coordinator import ThermacellLivCoordinator
-from light import ThermacellLivLight
-from sensor import (
+from custom_components.thermacell_liv.button import ThermacellLivRefreshButton, ThermacellLivResetButton
+from custom_components.thermacell_liv.const import DOMAIN
+from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.light import ThermacellLivLight
+from custom_components.thermacell_liv.sensor import (
     ThermacellLivConnectivitySensor,
     ThermacellLivErrorCodeSensor,
     ThermacellLivFirmwareSensor,
@@ -25,7 +24,7 @@ from sensor import (
     ThermacellLivSystemRuntimeSensor,
     ThermacellLivSystemStatusSensor,
 )
-from switch import ThermacellLivSwitch
+from custom_components.thermacell_liv.switch import ThermacellLivSwitch
 
 
 @pytest.fixture
@@ -189,7 +188,7 @@ class TestThermacellLivLight:
 
         assert light._node_id == "node1"
         assert light._device_name == "Device1"
-        assert light._attr_name == "LED"
+        assert light._attr_translation_key == "led"
         assert light._attr_unique_id == f"{DOMAIN}_node1_Device1_light"
         # entity_id is set by HA entity registry, not during __init__
         assert light.entity_id is None
@@ -294,7 +293,7 @@ class TestThermacellLivRefillSensor:
 
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Refill Life"
+        assert sensor._attr_translation_key == "refill_life"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_refill_life"
         # entity_id is set by HA entity registry, not during __init__
         assert sensor.entity_id is None
@@ -370,7 +369,7 @@ class TestThermacellLivResetButton:
 
         assert button._node_id == "node1"
         assert button._device_name == "Device1"
-        assert button._attr_name == "Reset Refill"
+        assert button._attr_translation_key == "reset_refill"
         assert button._attr_unique_id == f"{DOMAIN}_node1_Device1_reset_refill"
         # entity_id is set by HA entity registry, not during __init__
         assert button.entity_id is None
@@ -414,7 +413,7 @@ class TestEntityPlatformSetup:
     @pytest.mark.asyncio
     async def test_switch_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test switch platform setup."""
-        from switch import async_setup_entry
+        from custom_components.thermacell_liv.switch import async_setup_entry
 
         config_entry.runtime_data = mock_coordinator
 
@@ -428,7 +427,7 @@ class TestEntityPlatformSetup:
     @pytest.mark.asyncio
     async def test_light_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test light platform setup."""
-        from light import async_setup_entry
+        from custom_components.thermacell_liv.light import async_setup_entry
 
         config_entry.runtime_data = mock_coordinator
 
@@ -442,7 +441,7 @@ class TestEntityPlatformSetup:
     @pytest.mark.asyncio
     async def test_sensor_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test sensor platform setup."""
-        from sensor import async_setup_entry
+        from custom_components.thermacell_liv.sensor import async_setup_entry
 
         config_entry.runtime_data = mock_coordinator
 
@@ -464,7 +463,7 @@ class TestEntityPlatformSetup:
     @pytest.mark.asyncio
     async def test_button_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test button platform setup."""
-        from button import async_setup_entry
+        from custom_components.thermacell_liv.button import async_setup_entry
 
         config_entry.runtime_data = mock_coordinator
 
@@ -480,7 +479,7 @@ class TestEntityPlatformSetup:
     @pytest.mark.asyncio
     async def test_setup_entry_multiple_devices(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test platform setup with multiple devices."""
-        from switch import async_setup_entry
+        from custom_components.thermacell_liv.switch import async_setup_entry
 
         # Add another device to the coordinator data
         mock_coordinator.data["node1"]["devices"]["Device2"] = {
@@ -500,7 +499,7 @@ class TestEntityPlatformSetup:
     @pytest.mark.asyncio
     async def test_setup_entry_multiple_nodes(self, hass, config_entry, mock_coordinator, mock_add_entities):
         """Test platform setup with multiple nodes."""
-        from switch import async_setup_entry
+        from custom_components.thermacell_liv.switch import async_setup_entry
 
         # Add another node to the coordinator data
         mock_coordinator.data["node2"] = {
@@ -527,7 +526,7 @@ class TestThermacellLivSystemStatusSensor:
         assert sensor._node_id == "test_node"
         assert sensor._device_name == "test_device"
         assert sensor._attr_unique_id == f"{DOMAIN}_test_node_test_device_system_status"
-        assert sensor._attr_name == "System Status"
+        assert sensor._attr_translation_key == "system_status"
 
     def test_native_value_protected(self, mock_coordinator):
         """Test sensor value when system is protected (operational)."""
@@ -649,7 +648,7 @@ class TestThermacellLivSystemRuntimeSensor:
 
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "System Runtime"
+        assert sensor._attr_translation_key == "system_runtime"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_system_runtime"
         # entity_id is set by HA entity registry, not during __init__
         assert sensor.entity_id is None
@@ -747,7 +746,7 @@ class TestThermacellLivConnectivitySensor:
 
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Connectivity"
+        assert sensor._attr_translation_key == "connectivity"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_connectivity"
         # entity_id is set by HA entity registry, not during __init__
         assert sensor.entity_id is None
@@ -801,7 +800,7 @@ class TestThermacellLivErrorCodeSensor:
 
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Error Code"
+        assert sensor._attr_translation_key == "error_code"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_error_code"
         # entity_id is set by HA entity registry, not during __init__
         assert sensor.entity_id is None
@@ -883,7 +882,7 @@ class TestThermacellLivHubIdSensor:
 
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Hub ID"
+        assert sensor._attr_translation_key == "hub_id"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_hub_id"
         # entity_id is set by HA entity registry, not during __init__
         assert sensor.entity_id is None
@@ -930,7 +929,7 @@ class TestThermacellLivFirmwareSensor:
 
         assert sensor._node_id == "node1"
         assert sensor._device_name == "Device1"
-        assert sensor._attr_name == "Firmware Version"
+        assert sensor._attr_translation_key == "firmware_version"
         assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_firmware"
         # entity_id is set by HA entity registry, not during __init__
         assert sensor.entity_id is None
@@ -977,7 +976,7 @@ class TestThermacellLivRefreshButton:
 
         assert button._node_id == "node1"
         assert button._device_name == "Device1"
-        assert button._attr_name == "Refresh"
+        assert button._attr_translation_key == "refresh"
         assert button._attr_unique_id == f"{DOMAIN}_node1_Device1_refresh"
         # entity_id is set by HA entity registry, not during __init__
         assert button.entity_id is None

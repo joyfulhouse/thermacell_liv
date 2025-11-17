@@ -61,10 +61,10 @@ class ThermacellLivResetButton(ThermacellLivEntity, ButtonEntity):
         """Handle the button press."""
         success = await self.coordinator.async_reset_refill_life(self._node_id, self._device_name)
         if success:
-            _LOGGER.info("Reset refill life for %s", self._attr_name)
+            _LOGGER.info("Reset refill life for %s %s", self._node_id, self._device_name)
             await self.coordinator.async_request_refresh()
         else:
-            _LOGGER.error("Failed to reset refill life for %s", self._attr_name)
+            _LOGGER.error("Failed to reset refill life for %s %s", self._node_id, self._device_name)
 
 
 class ThermacellLivRefreshButton(ThermacellLivEntity, ButtonEntity):
@@ -82,5 +82,5 @@ class ThermacellLivRefreshButton(ThermacellLivEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        _LOGGER.info("Refresh requested for %s", self._attr_name)
+        _LOGGER.info("Refresh requested for %s %s", self._node_id, self._device_name)
         await self.coordinator.async_request_refresh()

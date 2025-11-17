@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 
 import aiohttp
 
-from api import ThermacellLivAPI
-from coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.api import ThermacellLivAPI
+from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
 
 
 class BrightnessIntegrationTest:

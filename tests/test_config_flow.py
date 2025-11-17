@@ -5,14 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from config_flow import (
+from custom_components.thermacell_liv.config_flow import (
     CannotConnect,
     ConfigFlow,
     InvalidAuth,
     ThermacellLivOptionsFlow,
     validate_input,
 )
-from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from custom_components.thermacell_liv.const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 
 class TestValidateInput:
@@ -24,7 +24,7 @@ class TestValidateInput:
         hass = MagicMock()
         data = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("config_flow.ThermacellLivAPI") as mock_api_class:
+        with patch("custom_components.thermacell_liv.config_flow.ThermacellLivAPI") as mock_api_class:
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
             mock_api.test_connection.return_value = True
@@ -42,7 +42,7 @@ class TestValidateInput:
         hass = MagicMock()
         data = {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrongpass"}
 
-        with patch("config_flow.ThermacellLivAPI") as mock_api_class:
+        with patch("custom_components.thermacell_liv.config_flow.ThermacellLivAPI") as mock_api_class:
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = False
             mock_api_class.return_value = mock_api
@@ -56,7 +56,7 @@ class TestValidateInput:
         hass = MagicMock()
         data = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("config_flow.ThermacellLivAPI") as mock_api_class:
+        with patch("custom_components.thermacell_liv.config_flow.ThermacellLivAPI") as mock_api_class:
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
             mock_api.test_connection.return_value = False
@@ -92,7 +92,7 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("config_flow.validate_input", return_value={"title": "Thermacell LIV"}):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}):
             # Mock unique_id methods
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
@@ -113,7 +113,7 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrongpass"}
 
-        with patch("config_flow.validate_input", side_effect=InvalidAuth):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=InvalidAuth):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
@@ -134,7 +134,7 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("config_flow.validate_input", side_effect=CannotConnect):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=CannotConnect):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
@@ -155,7 +155,7 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("config_flow.validate_input", side_effect=Exception("Unexpected error")):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=Exception("Unexpected error")):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
             flow.async_show_form = MagicMock(return_value={"type": "form"})
@@ -208,7 +208,7 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "newpassword"}
 
-        with patch("config_flow.validate_input", return_value={"title": "Thermacell LIV"}):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}):
             flow.async_abort = MagicMock(return_value={"type": "abort"})
 
             result = await flow.async_step_reauth_confirm(user_input=user_input)
@@ -230,7 +230,7 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "wrongpass"}
 
-        with patch("config_flow.validate_input", side_effect=InvalidAuth):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=InvalidAuth):
             flow.async_show_form = MagicMock(return_value={"type": "form"})
 
             await flow.async_step_reauth_confirm(user_input=user_input)

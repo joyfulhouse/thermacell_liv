@@ -7,7 +7,7 @@ import asyncio
 from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
 from unittest.mock import MagicMock
 
-from api import ThermacellLivAPI
+from custom_components.thermacell_liv.api import ThermacellLivAPI
 
 
 async def test_real_api():

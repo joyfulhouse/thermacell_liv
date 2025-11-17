@@ -10,9 +10,8 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from api import ThermacellLivAPI
-from coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.api import ThermacellLivAPI
+from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
 
 
 @pytest.fixture

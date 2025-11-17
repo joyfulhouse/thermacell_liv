@@ -9,7 +9,7 @@ norecursedirs = ["tests/manual", "tests/integration", "tests/debug"]
 
 # Coverage settings for Silver tier >95% requirement
 [tool.coverage.run]
-source = ["."]
+source = ["custom_components/thermacell_liv"]
 omit = [
     "tests/*",
     "setup.py",

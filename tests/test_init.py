@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import __init__ as init_module
-from const import DOMAIN
+import custom_components.thermacell_liv as init_module
+from custom_components.thermacell_liv.const import DOMAIN
 
 
 class TestAsyncSetupEntry:
@@ -23,8 +23,8 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("__init__.ThermacellLivAPI") as mock_api_class,
-            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
+            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             # Setup mocks
             mock_api = AsyncMock()
@@ -58,7 +58,7 @@ class TestAsyncSetupEntry:
         entry = MagicMock()
         entry.data = {"username": "test@example.com", "password": "wrongpass"}
 
-        with patch("__init__.ThermacellLivAPI") as mock_api_class:
+        with patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class:
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = False
             mock_api_class.return_value = mock_api
@@ -77,8 +77,8 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("__init__.ThermacellLivAPI") as mock_api_class,
-            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
+            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
@@ -109,8 +109,8 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("__init__.ThermacellLivAPI") as mock_api_class,
-            patch("__init__.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
+            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             mock_api = AsyncMock()
             mock_api.authenticate.return_value = True
@@ -163,9 +163,9 @@ class TestAsyncCleanupStaleDevices:
         device3.id = "device3_id"
 
         with (
-            patch("__init__.dr.async_get", return_value=device_registry),
+            patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
             patch(
-                "__init__.dr.async_entries_for_config_entry",
+                "custom_components.thermacell_liv.dr.async_entries_for_config_entry",
                 return_value=[device1, device2, device3],
             ),
         ):
@@ -193,8 +193,8 @@ class TestAsyncCleanupStaleDevices:
         device2.identifiers = {(DOMAIN, "node2")}
 
         with (
-            patch("__init__.dr.async_get", return_value=device_registry),
-            patch("__init__.dr.async_entries_for_config_entry", return_value=[device1, device2]),
+            patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
+            patch("custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1, device2]),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 
@@ -218,8 +218,8 @@ class TestAsyncCleanupStaleDevices:
         device1.id = "device1_id"
 
         with (
-            patch("__init__.dr.async_get", return_value=device_registry),
-            patch("__init__.dr.async_entries_for_config_entry", return_value=[device1]),
+            patch("custom_components.thermacell_liv.dr.async_get", return_value=device_registry),
+            patch("custom_components.thermacell_liv.dr.async_entries_for_config_entry", return_value=[device1]),
         ):
             init_module._async_cleanup_stale_devices(hass, entry)
 

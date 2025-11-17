@@ -10,8 +10,7 @@ import pytest
 
 from homeassistant.core import HomeAssistant
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from api import ThermacellLivAPI
+from custom_components.thermacell_liv.api import ThermacellLivAPI
 
 
 @pytest.fixture
@@ -31,7 +30,7 @@ def mock_session():
 @pytest.fixture
 def api_client(hass, mock_session):
     """Return an API client with mocked session."""
-    with patch("api.async_get_clientsession", return_value=mock_session):
+    with patch("custom_components.thermacell_liv.api.async_get_clientsession", return_value=mock_session):
         client = ThermacellLivAPI(hass, "test_user", "test_pass", "https://api.test.com")
         return client
 
@@ -42,7 +41,7 @@ class TestThermacellLivAPI:
     @pytest.mark.asyncio
     async def test_init(self, hass, mock_session):
         """Test API client initialization."""
-        with patch("api.async_get_clientsession", return_value=mock_session):
+        with patch("custom_components.thermacell_liv.api.async_get_clientsession", return_value=mock_session):
             api = ThermacellLivAPI(hass, "test_user", "test_pass", "https://api.test.com/")
 
             assert api.username == "test_user"

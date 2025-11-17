@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
-from diagnostics import TO_REDACT, async_get_config_entry_diagnostics
+from custom_components.thermacell_liv.const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from custom_components.thermacell_liv.diagnostics import TO_REDACT, async_get_config_entry_diagnostics
 
 
 class TestDiagnostics:

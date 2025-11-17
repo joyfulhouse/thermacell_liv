@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 import aiohttp
 
-from api import ThermacellLivAPI
+from custom_components.thermacell_liv.api import ThermacellLivAPI
 
 
 async def investigate_extended_runtime(session):

@@ -12,7 +12,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
 
 
 class TestMultiDeviceSupport:
