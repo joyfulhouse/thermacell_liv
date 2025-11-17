@@ -1,12 +1,12 @@
 [run]
-source = .
+source = ../custom_components/thermacell_liv
 omit =
-    tests/*
-    setup.py
+    ../*.py
     */__pycache__/*
-    */tests/debug/*
-    */tests/manual/*
-    */tests/integration/*
+    */debug/*
+    */manual/*
+    */integration/*
+    */secrets.py
 
 [report]
 precision = 2
