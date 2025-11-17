@@ -17,12 +17,8 @@ from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-try:
-    from .const import DOMAIN
-    from .coordinator import ThermacellLivCoordinator
-except ImportError:
-    from const import DOMAIN
-    from coordinator import ThermacellLivCoordinator
+from .const import DOMAIN
+from .coordinator import ThermacellLivCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

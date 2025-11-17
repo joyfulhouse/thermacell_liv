@@ -14,10 +14,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-try:
-    from .const import DEFAULT_API_BASE_URL
-except ImportError:
-    from const import DEFAULT_API_BASE_URL
+from .const import DEFAULT_API_BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
 

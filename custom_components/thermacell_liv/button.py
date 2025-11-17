@@ -10,14 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-try:
-    from .const import DOMAIN
-    from .coordinator import ThermacellLivCoordinator
-    from .entity import ThermacellLivEntity
-except ImportError:
-    from const import DOMAIN
-    from coordinator import ThermacellLivCoordinator
-    from entity import ThermacellLivEntity
+from .const import DOMAIN
+from .coordinator import ThermacellLivCoordinator
+from .entity import ThermacellLivEntity
 
 _LOGGER = logging.getLogger(__name__)
 
