@@ -8,19 +8,19 @@
 [![Project Maintenance][maintenance-shield]][user_profile]
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
-![Quality Scale](https://img.shields.io/badge/Quality%20Scale-Silver%20100%25-success?style=flat-square)
-![Quality Scale](https://img.shields.io/badge/Overall-71%25%20(39%2F55)-blue?style=flat-square)
+[![Quality Scale - Platinum][quality-platinum-badge]][quality-scale-docs]
+[![Overall Quality Score][quality-overall-badge]][quality-scale-docs]
 
 A powerful 🏠 Home Assistant integration for controlling and monitoring 🦟 Thermacell LIV mosquito repellers through their cloud API.
 
 ### 🏆 Quality Scale Achievement
 
 This integration adheres to [Home Assistant's Integration Quality Scale](https://developers.home-assistant.io/docs/core/integration-quality-scale/):
+- ✅ **Platinum Tier**: 100% COMPLETE (3/3 rules) - Type-safe with strict typing
 - ✅ **Silver Tier**: 100% COMPLETE (10/10 rules) - Production ready
 - 🟡 **Bronze Tier**: 84% (16/19 rules) - Strong foundation
 - 🟡 **Gold Tier**: 57% (13/23 rules) - Advanced features implemented
-- 🟡 **Platinum Tier**: 67% (2/3 rules) - Type-safe with strict typing
-- 📊 **Overall Compliance**: 71% (39/55 rules)
+- 📊 **Overall Compliance**: 73% (40/55 rules)
 
 **Key Quality Features:**
 - Type-safe codebase with mypy strict mode
@@ -893,3 +893,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [releases-shield]: https://img.shields.io/github/v/release/joyfulhouse/thermacell_liv?style=for-the-badge
 [releases]: https://github.com/joyfulhouse/thermacell_liv/releases
 [user_profile]: https://github.com/joyfulhouse
+[quality-platinum-badge]: https://img.shields.io/badge/Quality%20Scale-Platinum%20100%25-brightgreen?style=for-the-badge
+[quality-overall-badge]: https://img.shields.io/badge/Overall-73%25%20(40%2F55)-blue?style=for-the-badge
+[quality-scale-docs]: https://developers.home-assistant.io/docs/core/integration-quality-scale/
