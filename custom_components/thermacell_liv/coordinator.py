@@ -13,12 +13,8 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-try:
-    from .api import ThermacellLivAPI
-    from .const import DOMAIN
-except ImportError:
-    from api import ThermacellLivAPI
-    from const import DOMAIN
+from .api import ThermacellLivAPI
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 

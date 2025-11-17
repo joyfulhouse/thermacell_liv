@@ -12,12 +12,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
-try:
-    from .api import ThermacellLivAPI
-    from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
-except ImportError:
-    from api import ThermacellLivAPI
-    from const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .api import ThermacellLivAPI
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 

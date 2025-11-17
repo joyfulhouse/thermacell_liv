@@ -14,9 +14,19 @@ if project_root not in sys.path:
 
 # Patch frame helper functions at module level before any imports
 # This prevents RuntimeError when frame helper tries to check _hass.hass
-patch("homeassistant.helpers.frame.report_usage", return_value=None).start()
-patch("homeassistant.helpers.frame.warn_use", return_value=None).start()
-patch("homeassistant.helpers.frame.report_non_thread_safe_operation", return_value=None).start()
+# Only patch if the attributes exist to maintain compatibility across HA versions
+try:
+    import homeassistant.helpers.frame as frame_module
+
+    if hasattr(frame_module, "report_usage"):
+        patch("homeassistant.helpers.frame.report_usage", return_value=None).start()
+    if hasattr(frame_module, "warn_use"):
+        patch("homeassistant.helpers.frame.warn_use", return_value=None).start()
+    if hasattr(frame_module, "report_non_thread_safe_operation"):
+        patch("homeassistant.helpers.frame.report_non_thread_safe_operation", return_value=None).start()
+except ImportError:
+    # Frame module doesn't exist in this HA version, skip patching
+    pass
 
 
 @pytest.fixture(autouse=True)
