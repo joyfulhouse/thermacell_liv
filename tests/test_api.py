@@ -8,9 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import aiohttp
 import pytest
 
-from homeassistant.core import HomeAssistant
-
 from custom_components.thermacell_liv.api import ThermacellLivAPI
+from homeassistant.core import HomeAssistant
 
 
 @pytest.fixture

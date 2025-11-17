@@ -1,15 +1,11 @@
 """Tests for Thermacell LIV entity classes."""
 
+from datetime import UTC
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-
-from datetime import UTC
 
 from custom_components.thermacell_liv.button import ThermacellLivRefreshButton, ThermacellLivResetButton
 from custom_components.thermacell_liv.const import DOMAIN
@@ -25,6 +21,8 @@ from custom_components.thermacell_liv.sensor import (
     ThermacellLivSystemStatusSensor,
 )
 from custom_components.thermacell_liv.switch import ThermacellLivSwitch
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 
 
 @pytest.fixture

@@ -7,11 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import UpdateFailed
-
 from custom_components.thermacell_liv.api import ThermacellLivAPI
 from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 
 @pytest.fixture
