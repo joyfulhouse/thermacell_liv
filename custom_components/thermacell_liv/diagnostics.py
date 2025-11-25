@@ -25,7 +25,7 @@ TO_REDACT = {
 
 async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data["coordinator"]
 
     # Gather all diagnostic data
     diagnostics_data = {

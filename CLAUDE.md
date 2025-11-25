@@ -12,6 +12,7 @@ This is a **production-ready** Home Assistant custom component for integrating T
 - 🔗 **Multi-device Support**: Single integration manages multiple hubs
 - 📱 **HACS Compatible**: Easy installation via Home Assistant Community Store
 - ✨ **Professional Entity Naming**: Clean display names following HA conventions
+- 📦 **pythermacell Library**: Uses the dedicated pythermacell Python library for API communication
 
 ## Component Structure
 
@@ -118,18 +119,22 @@ Each Thermacell LIV hub supports the following entities:
 ```
 thermacell_liv/
 ├── __init__.py           # Component setup and platform loading
-├── api.py               # ESP Rainmaker API client with JWT auth
-├── coordinator.py        # Data coordinator with optimistic updates
+├── coordinator.py        # Data coordinator with optimistic updates (uses pythermacell)
 ├── config_flow.py        # Configuration flow with real API validation
 ├── const.py             # Constants and configuration keys
 ├── switch.py            # Switch platform with instant response
 ├── light.py             # Light platform with RGB/brightness control
 ├── sensor.py            # Multi-sensor platform (refill, diagnostics)
 ├── button.py            # Button platform (refill reset, manual refresh)
-├── manifest.json        # Component metadata with GitHub icon URL
+├── entity.py            # Base entity class
+├── thermacell_types.py   # TypedDict definitions for type safety
+├── manifest.json        # Component metadata (pythermacell>=0.2.2 dependency)
 ├── README.md            # User documentation with HACS support
 └── CLAUDE.md           # This specification file
 ```
+
+### External Dependencies
+- **pythermacell**: Python library for Thermacell API communication (https://github.com/joyfulhouse/pythermacell)
 
 ## Development Tasks
 
@@ -229,6 +234,17 @@ thermacell_liv/
    - ✅ **Linting Compliance**: Fixed trailing whitespace, unused variables, import organization
    - ✅ **Professional Code Standards**: All files properly formatted and validated
    - ✅ **Stable Production Release**: Ready for widespread deployment
+
+15. **Version 2.0.0 - pythermacell Refactor** ✅ **(Major Refactor)**
+   - ✅ **pythermacell Integration**: Replaced custom api.py with pythermacell library
+   - ✅ **Cleaner Architecture**: ThermacellClient handles all API communication
+   - ✅ **ThermacellDevice Objects**: Device state managed through pythermacell device objects
+   - ✅ **Coordinator Update**: Uses pythermacell's get_devices() and device methods
+   - ✅ **Context Manager Support**: Proper client lifecycle with async context manager
+   - ✅ **Removed Files**: api.py removed (functionality moved to pythermacell)
+   - ✅ **Test Suite Update**: 161 tests passing with new pythermacell mocks
+   - ✅ **runtime_data Format**: Changed to dict `{"coordinator": ..., "client": ...}`
+   - ✅ **Dependency Update**: manifest.json now requires `pythermacell>=0.2.2`
 
 ## Technical Implementation Details
 

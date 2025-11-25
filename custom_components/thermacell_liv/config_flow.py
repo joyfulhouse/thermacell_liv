@@ -5,14 +5,15 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from pythermacell import AuthenticationError, ThermacellClient, ThermacellConnectionError
 import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import ThermacellLivAPI
 from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     Test-before-setup validation (Bronze tier requirement):
     1. Authenticate with credentials to verify they are valid
-    2. Test API connectivity by fetching user nodes
+    2. Test API connectivity by fetching user devices
     3. Only proceed to setup if both tests pass
 
     Raises:
@@ -40,20 +41,52 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     Returns:
         dict: Validation info with integration title
     """
-    api = ThermacellLivAPI(hass, data[CONF_USERNAME], data[CONF_PASSWORD])
+    session = async_get_clientsession(hass)
 
-    # Step 1: Test authentication (validates credentials)
-    if not await api.authenticate():
-        _LOGGER.error("Authentication failed - invalid credentials for user: %s", data[CONF_USERNAME])
-        raise InvalidAuth
+    try:
+        async with ThermacellClient(
+            username=data[CONF_USERNAME],
+            password=data[CONF_PASSWORD],
+            session=session,
+        ) as client:
+            # Test authentication and connection by fetching devices
+            devices = await client.get_devices()
 
-    # Step 2: Test connection (validates API access and user has devices)
-    if not await api.test_connection():
-        _LOGGER.error("Connection test failed - unable to fetch nodes for user: %s", data[CONF_USERNAME])
-        raise CannotConnect
+            if not devices:
+                _LOGGER.error(
+                    "Connection test failed - no devices found for user: %s",
+                    data[CONF_USERNAME],
+                )
+                raise CannotConnect
 
-    _LOGGER.info("Validation successful for user: %s", data[CONF_USERNAME])
-    return {"title": "Thermacell LIV"}
+            _LOGGER.info(
+                "Validation successful for user: %s (%d devices)",
+                data[CONF_USERNAME],
+                len(devices),
+            )
+            return {"title": "Thermacell LIV"}
+
+    except AuthenticationError as err:
+        _LOGGER.error(
+            "Authentication failed - invalid credentials for user: %s - %s",
+            data[CONF_USERNAME],
+            err,
+        )
+        raise InvalidAuth from err
+    except ThermacellConnectionError as err:
+        _LOGGER.error(
+            "Connection test failed - unable to reach Thermacell API for user: %s - %s",
+            data[CONF_USERNAME],
+            err,
+        )
+        raise CannotConnect from err
+    except Exception as err:
+        _LOGGER.error(
+            "Unexpected error during validation for user: %s - %s",
+            data[CONF_USERNAME],
+            err,
+        )
+        raise CannotConnect from err
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]

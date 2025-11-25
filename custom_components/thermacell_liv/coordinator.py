@@ -6,47 +6,46 @@ This module uses full type annotations and async operations for optimal performa
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
 import colorsys
 from datetime import datetime, timedelta
 import logging
 from typing import Any
 
+from pythermacell import (
+    AuthenticationError,
+    ThermacellClient,
+    ThermacellConnectionError,
+    ThermacellDevice,
+    ThermacellTimeoutError,
+)
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.update_coordinator import (  # type: ignore[import-not-found]
+from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
 from homeassistant.util import dt as dt_util
 
-from .api import ThermacellLivAPI
 from .const import DOMAIN
 from .thermacell_types import DeviceParams, NodeData, RGBColor
 
 _LOGGER = logging.getLogger(__name__)
 
-# Default polling interval: 60 seconds
-# Justification (appropriate-polling Bronze requirement):
-# - Thermacell API has no published rate limits; conservative 60s avoids potential issues
-# - AC-powered devices with infrequent state changes don't require aggressive polling
-# - Optimistic updates provide instant UI feedback, making polling interval less critical
-# - User-configurable via options flow (30-300s range) for flexibility
-UPDATE_INTERVAL = timedelta(seconds=60)
 
-
-def _convert_hsv_to_rgb(hue: int, brightness: int) -> RGBColor:
+def _convert_hsv_to_rgb(hue: int, saturation: int, brightness: int) -> RGBColor:
     """Convert HSV values to RGB color dictionary.
 
     Args:
         hue: Hue value (0-360)
+        saturation: Saturation value (0-100)
         brightness: Brightness value (0-100)
 
     Returns:
         RGBColor TypedDict with r, g, b keys (0-255)
     """
     h_norm = hue / 360.0 if hue > 0 else 0
-    s_norm = 1.0  # Assume full saturation
+    s_norm = saturation / 100.0 if saturation > 0 else 1.0
     v_norm = brightness / 100.0
     r, g, b = colorsys.hsv_to_rgb(h_norm, s_norm, v_norm)
     return RGBColor(
@@ -90,7 +89,7 @@ def _convert_brightness_to_thermacell(brightness: int) -> int:
     return int((brightness / 255) * 100)
 
 
-class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: ignore[misc]
+class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Thermacell LIV data from the API.
 
     Polling Strategy:
@@ -99,12 +98,12 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: 
     - Optimistic updates provide immediate UI feedback independent of polling
     """
 
-    def __init__(self, hass: HomeAssistant, api: ThermacellLivAPI, scan_interval: int = 60) -> None:
+    def __init__(self, hass: HomeAssistant, client: ThermacellClient, scan_interval: int = 60) -> None:
         """Initialize the coordinator.
 
         Args:
             hass: Home Assistant instance
-            api: Thermacell API client
+            client: pythermacell ThermacellClient instance
             scan_interval: Polling interval in seconds (default: 60, range: 30-300)
         """
         super().__init__(
@@ -113,74 +112,71 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: 
             name=DOMAIN,
             update_interval=timedelta(seconds=scan_interval),
         )
-        self.api = api
+        self.client = client
         self.nodes: dict[str, dict[str, Any]] = {}
         self.last_update_success_time: datetime | None = None
         self._node_online_states: dict[str, bool] = {}  # Track online/offline transitions
+        self._devices: dict[str, ThermacellDevice] = {}  # Cache ThermacellDevice objects
 
-    def _extract_device_info(self, config_data: dict[str, Any] | None) -> tuple[str, str]:
-        """Extract firmware version and model from config data.
-
-        Returns:
-            Tuple of (firmware_version, model_name)
-        """
-        fw_version = "Unknown"
-        model = "Thermacell LIV"
-
-        if config_data and "info" in config_data:
-            info = config_data["info"]
-            fw_version = info.get("fw_version", "Unknown")
-            raw_model = info.get("model", "thermacell-hub")
-            # Convert technical model name to user-friendly display name
-            model = "Thermacell LIV Hub" if raw_model == "thermacell-hub" else raw_model
-
-        return fw_version, model
-
-    def _parse_device_params(self, device_params: dict[str, Any], connectivity: dict[str, Any]) -> DeviceParams:
-        """Parse device parameters into standardized format.
+    def _device_to_node_data(self, device: ThermacellDevice) -> NodeData:
+        """Convert a ThermacellDevice to our NodeData format.
 
         Args:
-            device_params: Raw device parameters from API
-            connectivity: Connectivity data for timestamp
+            device: ThermacellDevice from pythermacell
 
         Returns:
-            Standardized device data dictionary
+            NodeData TypedDict for internal use
         """
-        # Extract parameters
-        hue = device_params.get("LED Hue", 0)
-        brightness = device_params.get("LED Brightness", 100)
-        system_status = device_params.get("System Status", 1)
-        enable_repellers = device_params.get("Enable Repellers", False)
-        error = device_params.get("Error", 0)
-
-        # Convert color space
-        led_color = _convert_hsv_to_rgb(hue, brightness)
+        # Get device state properties
+        is_online = device.is_online
+        is_powered = device.is_powered_on
+        error = device.error or 0
+        system_status = device.system_status or 1
 
         # Check if node is offline first - override all other status
-        is_connected = connectivity.get("connected", False)
-        if not is_connected:
-            status_text = "Not Connected"
-        else:
-            # Map status based on device state
-            status_text = _map_system_status(system_status, enable_repellers, error)
+        status_text = "Not Connected" if not is_online else _map_system_status(system_status, is_powered, error)
 
-        # Convert brightness
-        ha_brightness = _convert_brightness_to_ha(brightness)
+        # Get LED properties
+        led_brightness = device.led_brightness or 0
+        led_hue = device.led_hue or 0
+        led_saturation = device.led_saturation or 100
+
+        # Convert brightness and color
+        ha_brightness = _convert_brightness_to_ha(led_brightness)
+        led_color = _convert_hsv_to_rgb(led_hue, led_saturation, led_brightness)
 
         # Calculate LED power state
-        led_power = enable_repellers and brightness > 0
+        led_power = is_powered and led_brightness > 0
 
-        return DeviceParams(
-            power=enable_repellers,
+        # Build device params
+        device_params = DeviceParams(
+            power=is_powered,
             led_power=led_power,
             led_brightness=ha_brightness,
-            led_brightness_pct=brightness,
+            led_brightness_pct=led_brightness,
             led_color=led_color,
-            refill_life=device_params.get("Refill Life", 0),
+            refill_life=int(device.refill_life or 0),
             system_status=status_text,
             system_status_code=system_status,
             error_code=error,
-            last_updated=connectivity.get("timestamp", 0) // 1000,
+            last_updated=0,  # Not available from device object
+        )
+
+        # Get device info
+        model = device.model or "Thermacell LIV"
+        if model == "thermacell-hub":
+            model = "Thermacell LIV Hub"
+
+        return NodeData(
+            id=device.node_id,
+            name=device.name,
+            type="Thermacell LIV",
+            fw_version=device.firmware_version or "Unknown",
+            model=model,
+            hub_serial=device.serial_number,
+            system_runtime=device.system_runtime,
+            online=is_online,
+            devices={device.name: device_params},
         )
 
     def _handle_node_state_change(self, node_id: str, node_name: str, is_online: bool) -> None:
@@ -215,100 +211,54 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: 
 
         self._node_online_states[node_id] = is_online
 
-    async def _process_node(self, node: dict[str, Any], previous_node_ids: set[str]) -> NodeData | None:
-        """Process a single node and return its data.
-
-        Args:
-            node: Raw node data from API
-            previous_node_ids: Set of previously known node IDs
-
-        Returns:
-            Processed node data or None if processing failed
-        """
-        node_id = node.get("id")
-        if not node_id:
-            return None
-
-        node_name = node.get("node_name", f"Unknown Node {node_id}")
-
-        # Log new device discovery
-        if node_id not in previous_node_ids:
-            _LOGGER.info(
-                "New Thermacell device discovered: %s (node_id: %s) - will be added automatically",
-                node_name,
-                node_id,
-            )
-
-        # Fetch node status and config
-        status_data = await self.api.get_node_status(node_id)
-        config_data = await self.api.get_node_config(node_id)
-
-        if not status_data:
-            return None
-
-        # Extract basic info
-        connectivity = status_data.get("connectivity", {})
-        fw_version, model = self._extract_device_info(config_data)
-
-        # Extract hub metadata from params
-        params = node.get("params", {})
-        hub_serial = None
-        system_runtime = None
-
-        if "LIV Hub" in params:
-            device_params = params["LIV Hub"]
-            if isinstance(device_params, dict):
-                hub_serial = device_params.get("Hub ID")
-                system_runtime = device_params.get("System Runtime", 0)
-
-        # Build node info
-        node_info = NodeData(
-            id=node_id,
-            name=node_name,
-            type=node.get("type", "Thermacell LIV"),
-            fw_version=fw_version,
-            model=model,
-            hub_serial=hub_serial,
-            system_runtime=system_runtime,
-            online=connectivity.get("connected", False),
-            devices={},
-        )
-
-        # Parse device parameters
-        if "LIV Hub" in params:
-            device_params = params["LIV Hub"]
-            if isinstance(device_params, dict):
-                device_name = device_params.get("Name", "LIV Hub")
-                node_info["devices"][device_name] = self._parse_device_params(device_params, connectivity)
-
-        # Handle state transitions
-        self._handle_node_state_change(node_id, node_name, node_info["online"])
-
-        return node_info
-
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
-            # Get all nodes from API
-            nodes_data = await self.api.get_user_nodes()
+            # Get all devices from pythermacell client
+            devices = await self.client.get_devices()
 
-            if not nodes_data:
-                raise UpdateFailed("No nodes found")
+            if not devices:
+                raise UpdateFailed("No devices found")
 
-            updated_data = {}
+            updated_data: dict[str, Any] = {}
             previous_node_ids = set(self.nodes.keys()) if self.nodes else set()
 
-            # Process each node
-            for node in nodes_data:
-                node_info = await self._process_node(node, previous_node_ids)
-                if node_info:
-                    updated_data[node_info["id"]] = node_info
+            # Process each device
+            for device in devices:
+                node_id = device.node_id
+
+                # Log new device discovery
+                if node_id not in previous_node_ids:
+                    _LOGGER.info(
+                        "New Thermacell device discovered: %s (node_id: %s) - will be added automatically",
+                        device.name,
+                        node_id,
+                    )
+
+                # Cache the device object for later control operations
+                self._devices[node_id] = device
+
+                # Convert to our internal format
+                node_data = self._device_to_node_data(device)
+                updated_data[node_id] = node_data
+
+                # Handle state transitions
+                self._handle_node_state_change(node_id, device.name, device.is_online)
 
             self.nodes = updated_data
             self.last_update_success_time = dt_util.utcnow()
-            _LOGGER.debug("Successfully updated data for %d node(s)", len(updated_data))
+            _LOGGER.debug("Successfully updated data for %d device(s)", len(updated_data))
             return updated_data
 
+        except AuthenticationError as err:
+            _LOGGER.error("Authentication failed with Thermacell API: %s", err)
+            raise UpdateFailed(f"Authentication failed: {err}") from err
+        except ThermacellConnectionError as err:
+            _LOGGER.error("Connection error with Thermacell API: %s", err)
+            raise UpdateFailed(f"Connection error: {err}") from err
+        except ThermacellTimeoutError as err:
+            _LOGGER.error("Timeout communicating with Thermacell API: %s", err)
+            raise UpdateFailed(f"Timeout: {err}") from err
         except Exception as err:
             _LOGGER.error(
                 "Error communicating with Thermacell API - integration unavailable: %s",
@@ -333,6 +283,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: 
         node_data = self.get_node_data(node_id)
         return node_data.get("online", False) if node_data else False
 
+    def _get_device(self, node_id: str) -> ThermacellDevice | None:
+        """Get the ThermacellDevice object for a node."""
+        return self._devices.get(node_id)
+
     def _get_device_data_safe(self, node_id: str, device_name: str) -> DeviceParams | None:
         """Safely get device data with null checks."""
         if not self.data or node_id not in self.data:
@@ -340,161 +294,207 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):  # type: 
         devices = self.data[node_id].get("devices", {})
         return devices.get(device_name)  # type: ignore[return-value]
 
-    async def _optimistic_update(
-        self,
-        node_id: str,
-        device_name: str,
-        update_fn: Callable[[DeviceParams], None],
-        api_call: Callable[[], Awaitable[bool]],
-        revert_fn: Callable[[DeviceParams], None],
-        operation_name: str,
-    ) -> bool:
-        """Generic optimistic update handler.
-
-        Args:
-            node_id: Node identifier
-            device_name: Device name
-            update_fn: Function to apply optimistic update to device_data dict
-            api_call: Async function to call API
-            revert_fn: Function to revert changes on failure
-            operation_name: Human-readable operation name for logging
-
-        Returns:
-            True if API call succeeded, False otherwise
-        """
-        # Apply optimistic update
-        device_data = self._get_device_data_safe(node_id, device_name)
-        if device_data:
-            update_fn(device_data)
+    def _update_local_state(self, node_id: str, device: ThermacellDevice) -> None:
+        """Update local state from device object after operation."""
+        if self.data and node_id in self.data:
+            node_data = self._device_to_node_data(device)
+            self.data[node_id] = node_data
             self.async_update_listeners()
-
-        # Make API call
-        success = await api_call()
-
-        # Revert on failure
-        if not success:
-            _LOGGER.warning(
-                "Failed to set %s for device %s (node %s) - service unavailable", operation_name, device_name, node_id
-            )
-            device_data = self._get_device_data_safe(node_id, device_name)
-            if device_data:
-                revert_fn(device_data)
-                self.async_update_listeners()
-        else:
-            _LOGGER.debug("Successfully set %s for device %s", operation_name, device_name)
-
-        return success
 
     async def async_set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
         """Set device power with optimistic update."""
+        device = self._get_device(node_id)
+        if not device:
+            _LOGGER.warning("Device not found for node %s", node_id)
+            return False
 
-        def update(data: DeviceParams) -> None:
-            data["power"] = power_on
-            brightness = data.get("led_brightness", 0)
-            data["led_power"] = power_on and brightness > 0
+        # Apply optimistic update
+        device_data = self._get_device_data_safe(node_id, device_name)
+        original_power = device_data.get("power", False) if device_data else False
 
-        def revert(data: DeviceParams) -> None:
-            data["power"] = not power_on
-            brightness = data.get("led_brightness", 0)
-            data["led_power"] = (not power_on) and brightness > 0
+        if device_data:
+            device_data["power"] = power_on
+            brightness = device_data.get("led_brightness", 0)
+            device_data["led_power"] = power_on and brightness > 0
+            self.async_update_listeners()
 
-        return await self._optimistic_update(
-            node_id,
-            device_name,
-            update,
-            lambda: self.api.set_device_power(node_id, device_name, power_on),
-            revert,
-            f"set power to {'on' if power_on else 'off'}",
-        )
+        # Make API call
+        try:
+            await device.set_power(power_on)
+            _LOGGER.debug("Successfully set power to %s for device %s", power_on, device_name)
+            return True
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to set power for device %s (node %s): %s - service unavailable",
+                device_name,
+                node_id,
+                err,
+            )
+            # Revert optimistic update
+            if device_data:
+                device_data["power"] = original_power
+                brightness = device_data.get("led_brightness", 0)
+                device_data["led_power"] = original_power and brightness > 0
+                self.async_update_listeners()
+            return False
 
     async def async_set_device_led_power(self, node_id: str, device_name: str, led_on: bool) -> bool:
         """Set device LED power with optimistic update."""
-        original_led_power = False
+        device = self._get_device(node_id)
+        if not device:
+            _LOGGER.warning("Device not found for node %s", node_id)
+            return False
 
-        def update(data: DeviceParams) -> None:
-            nonlocal original_led_power
-            original_led_power = data.get("led_power", False)
-            hub_powered = data.get("power", False)
-            brightness = data.get("led_brightness", 0)
-            data["led_power"] = led_on and hub_powered and brightness > 0
+        # Apply optimistic update
+        device_data = self._get_device_data_safe(node_id, device_name)
+        original_led_power = device_data.get("led_power", False) if device_data else False
 
-        def revert(data: DeviceParams) -> None:
-            data["led_power"] = original_led_power
+        if device_data:
+            hub_powered = device_data.get("power", False)
+            brightness = device_data.get("led_brightness", 0)
+            device_data["led_power"] = led_on and hub_powered and brightness > 0
+            self.async_update_listeners()
 
-        return await self._optimistic_update(
-            node_id,
-            device_name,
-            update,
-            lambda: self.api.set_device_led_power(node_id, device_name, led_on),
-            revert,
-            f"set LED power to {'on' if led_on else 'off'}",
-        )
+        # Make API call
+        try:
+            await device.set_led_power(led_on)
+            _LOGGER.debug("Successfully set LED power to %s for device %s", led_on, device_name)
+            return True
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to set LED power for device %s (node %s): %s - service unavailable",
+                device_name,
+                node_id,
+                err,
+            )
+            # Revert optimistic update
+            if device_data:
+                device_data["led_power"] = original_led_power
+                self.async_update_listeners()
+            return False
 
     async def async_set_device_led_color(
         self, node_id: str, device_name: str, *, red: int, green: int, blue: int
     ) -> bool:
         """Set device LED color with optimistic update."""
+        device = self._get_device(node_id)
+        if not device:
+            _LOGGER.warning("Device not found for node %s", node_id)
+            return False
+
+        # Convert RGB to HSV
+        r_norm, g_norm, b_norm = red / 255.0, green / 255.0, blue / 255.0
+        hue_val, sat_val, brightness_val = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
+        hue = int(hue_val * 360)
+        saturation = int(sat_val * 100)
+        brightness = int(brightness_val * 100)
+
+        # Apply optimistic update
+        device_data = self._get_device_data_safe(node_id, device_name)
         original_color: RGBColor | None = None
 
-        def update(data: DeviceParams) -> None:
-            nonlocal original_color
-            original_color = data.get("led_color", RGBColor(r=255, g=255, b=255)).copy()  # type: ignore[misc]
-            data["led_color"] = RGBColor(r=red, g=green, b=blue)
+        if device_data:
+            original_color = device_data.get("led_color", RGBColor(r=255, g=255, b=255)).copy()  # type: ignore[misc]
+            device_data["led_color"] = RGBColor(r=red, g=green, b=blue)
+            self.async_update_listeners()
 
-        def revert(data: DeviceParams) -> None:
-            if original_color:
-                data["led_color"] = original_color
-
-        return await self._optimistic_update(
-            node_id,
-            device_name,
-            update,
-            lambda: self.api.set_device_led_color(node_id, device_name, red=red, green=green, blue=blue),
-            revert,
-            f"set LED color to RGB({red}, {green}, {blue})",
-        )
+        # Make API call
+        try:
+            await device.set_led_color(hue=hue, saturation=saturation, brightness=brightness)
+            _LOGGER.debug(
+                "Successfully set LED color to RGB(%d, %d, %d) for device %s",
+                red,
+                green,
+                blue,
+                device_name,
+            )
+            return True
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to set LED color for device %s (node %s): %s - service unavailable",
+                device_name,
+                node_id,
+                err,
+            )
+            # Revert optimistic update
+            if device_data and original_color:
+                device_data["led_color"] = original_color
+                self.async_update_listeners()
+            return False
 
     async def async_set_device_led_brightness(self, node_id: str, device_name: str, brightness: int) -> bool:
         """Set device LED brightness with optimistic update."""
+        device = self._get_device(node_id)
+        if not device:
+            _LOGGER.warning("Device not found for node %s", node_id)
+            return False
+
+        # Convert HA brightness (0-255) to Thermacell (0-100)
+        thermacell_brightness = _convert_brightness_to_thermacell(brightness)
+
+        # Apply optimistic update
+        device_data = self._get_device_data_safe(node_id, device_name)
         original_brightness: int | None = None
         original_brightness_pct: int | None = None
         original_led_power: bool | None = None
 
-        def update(data: DeviceParams) -> None:
-            nonlocal original_brightness, original_brightness_pct, original_led_power
-            original_brightness = data.get("led_brightness", 255)
-            original_brightness_pct = data.get("led_brightness_pct", 100)
-            original_led_power = data.get("led_power", False)
+        if device_data:
+            original_brightness = device_data.get("led_brightness", 255)
+            original_brightness_pct = device_data.get("led_brightness_pct", 100)
+            original_led_power = device_data.get("led_power", False)
 
-            data["led_brightness"] = brightness
-            data["led_brightness_pct"] = _convert_brightness_to_thermacell(brightness)
-            hub_powered = data.get("power", False)
-            data["led_power"] = hub_powered and brightness > 0
+            device_data["led_brightness"] = brightness
+            device_data["led_brightness_pct"] = thermacell_brightness
+            hub_powered = device_data.get("power", False)
+            device_data["led_power"] = hub_powered and brightness > 0
+            self.async_update_listeners()
 
-        def revert(data: DeviceParams) -> None:
-            if original_brightness is not None:
-                data["led_brightness"] = original_brightness
-                data["led_brightness_pct"] = original_brightness_pct  # type: ignore[typeddict-item]
-                data["led_power"] = original_led_power  # type: ignore[typeddict-item]
-
-        return await self._optimistic_update(
-            node_id,
-            device_name,
-            update,
-            lambda: self.api.set_device_led_brightness(node_id, device_name, brightness),
-            revert,
-            f"set LED brightness to {brightness}",
-        )
+        # Make API call
+        try:
+            await device.set_led_brightness(thermacell_brightness)
+            _LOGGER.debug(
+                "Successfully set LED brightness to %d for device %s",
+                brightness,
+                device_name,
+            )
+            return True
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to set LED brightness for device %s (node %s): %s - service unavailable",
+                device_name,
+                node_id,
+                err,
+            )
+            # Revert optimistic update
+            if device_data and original_brightness is not None:
+                device_data["led_brightness"] = original_brightness
+                device_data["led_brightness_pct"] = original_brightness_pct  # type: ignore[typeddict-item]
+                device_data["led_power"] = original_led_power  # type: ignore[typeddict-item]
+                self.async_update_listeners()
+            return False
 
     async def async_reset_refill_life(self, node_id: str, device_name: str) -> bool:
         """Reset refill life and update local data."""
-        success = await self.api.reset_refill_life(node_id, device_name)
-        if success:
+        device = self._get_device(node_id)
+        if not device:
+            _LOGGER.warning("Device not found for node %s", node_id)
+            return False
+
+        try:
+            await device.reset_refill()
             _LOGGER.info("Successfully reset refill life for device %s", device_name)
+
             # Update local cache immediately
             if self.data and node_id in self.data:
                 device_data = self.data[node_id].get("devices", {}).get(device_name, {})
                 device_data["refill_life"] = 100  # Assume 100% after reset
-        else:
-            _LOGGER.warning("Failed to reset refill life for device %s - service unavailable", device_name)
-        return success
+                self.async_update_listeners()
+
+            return True
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to reset refill life for device %s: %s - service unavailable",
+                device_name,
+                err,
+            )
+            return False

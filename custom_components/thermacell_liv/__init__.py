@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import logging
 
+from pythermacell import AuthenticationError, ThermacellClient
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import ThermacellLivAPI
 from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 from .coordinator import ThermacellLivCoordinator
 
@@ -24,22 +26,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
 
-    # Initialize API client
-    api = ThermacellLivAPI(hass, username, password)
+    # Get the shared aiohttp session
+    session = async_get_clientsession(hass)
 
-    # Test authentication
-    if not await api.authenticate():
-        raise ConfigEntryNotReady("Failed to authenticate with Thermacell API")
+    # Initialize pythermacell client with shared session
+    client = ThermacellClient(
+        username=username,
+        password=password,
+        session=session,
+    )
+
+    # Enter the client context (handles authentication)
+    try:
+        await client.__aenter__()
+    except AuthenticationError as err:
+        raise ConfigEntryAuthFailed(f"Failed to authenticate with Thermacell API: {err}") from err
+    except Exception as err:
+        raise ConfigEntryNotReady(f"Failed to connect to Thermacell API: {err}") from err
 
     # Initialize coordinator with configurable scan interval
     scan_interval = entry.options.get("scan_interval", 60)
-    coordinator = ThermacellLivCoordinator(hass, api, scan_interval=scan_interval)
+    coordinator = ThermacellLivCoordinator(hass, client, scan_interval=scan_interval)
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
 
-    # Store coordinator in runtime_data (HA 2024.x+ best practice)
-    entry.runtime_data = coordinator
+    # Store coordinator and client in runtime_data (HA 2024.x+ best practice)
+    entry.runtime_data = {"coordinator": coordinator, "client": client}
 
     # Setup options update listener
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
@@ -73,7 +86,7 @@ def _async_cleanup_stale_devices(hass: HomeAssistant, entry: ConfigEntry) -> Non
     Automatically removes devices from HA when they're removed from the user's
     Thermacell account. This keeps the device list in sync with the account.
     """
-    coordinator: ThermacellLivCoordinator = entry.runtime_data
+    coordinator: ThermacellLivCoordinator = entry.runtime_data["coordinator"]
     device_registry = dr.async_get(hass)
 
     # Get all devices for this integration
@@ -108,5 +121,16 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    # Unload platforms - runtime_data is automatically cleared by HA
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    # Unload platforms
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+    # Clean up the client context
+    if unload_ok and entry.runtime_data:
+        client: ThermacellClient = entry.runtime_data.get("client")
+        if client:
+            try:
+                await client.__aexit__(None, None, None)
+            except Exception as err:
+                _LOGGER.debug("Error closing Thermacell client: %s", err)
+
+    return unload_ok

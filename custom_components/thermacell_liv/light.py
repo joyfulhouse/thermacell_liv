@@ -32,7 +32,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the light platform."""
-    coordinator: ThermacellLivCoordinator = config_entry.runtime_data
+    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
 
     lights = []
 

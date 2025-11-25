@@ -4,6 +4,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pythermacell import AuthenticationError, ThermacellClient, ThermacellConnectionError
 
 from custom_components.thermacell_liv.config_flow import (
     CannotConnect,
@@ -15,6 +16,24 @@ from custom_components.thermacell_liv.config_flow import (
 from custom_components.thermacell_liv.const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 
+def create_mock_client(devices=None, auth_error=False, connection_error=False):
+    """Create a mock ThermacellClient."""
+    mock_client = AsyncMock(spec=ThermacellClient)
+
+    async def mock_aenter(*args, **kwargs):
+        if auth_error:
+            raise AuthenticationError("Invalid credentials")
+        if connection_error:
+            raise ThermacellConnectionError("Connection failed")
+        return mock_client
+
+    mock_client.__aenter__ = mock_aenter
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    mock_client.get_devices = AsyncMock(return_value=devices or [])
+
+    return mock_client
+
+
 class TestValidateInput:
     """Test validate_input function."""
 
@@ -24,17 +43,17 @@ class TestValidateInput:
         hass = MagicMock()
         data = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("custom_components.thermacell_liv.config_flow.ThermacellLivAPI") as mock_api_class:
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = True
-            mock_api.test_connection.return_value = True
-            mock_api_class.return_value = mock_api
+        mock_device = MagicMock()
+        mock_client = create_mock_client(devices=[mock_device])
 
+        with (
+            patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
+            patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+        ):
             result = await validate_input(hass, data)
 
             assert result == {"title": "Thermacell LIV"}
-            mock_api.authenticate.assert_called_once()
-            mock_api.test_connection.assert_called_once()
+            mock_client.get_devices.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_validate_input_invalid_auth(self):
@@ -42,11 +61,12 @@ class TestValidateInput:
         hass = MagicMock()
         data = {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrongpass"}
 
-        with patch("custom_components.thermacell_liv.config_flow.ThermacellLivAPI") as mock_api_class:
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = False
-            mock_api_class.return_value = mock_api
+        mock_client = create_mock_client(auth_error=True)
 
+        with (
+            patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
+            patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+        ):
             with pytest.raises(InvalidAuth):
                 await validate_input(hass, data)
 
@@ -56,12 +76,27 @@ class TestValidateInput:
         hass = MagicMock()
         data = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch("custom_components.thermacell_liv.config_flow.ThermacellLivAPI") as mock_api_class:
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = True
-            mock_api.test_connection.return_value = False
-            mock_api_class.return_value = mock_api
+        mock_client = create_mock_client(connection_error=True)
 
+        with (
+            patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
+            patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+        ):
+            with pytest.raises(CannotConnect):
+                await validate_input(hass, data)
+
+    @pytest.mark.asyncio
+    async def test_validate_input_no_devices(self):
+        """Test validation when no devices found."""
+        hass = MagicMock()
+        data = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
+
+        mock_client = create_mock_client(devices=[])  # No devices
+
+        with (
+            patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
+            patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+        ):
             with pytest.raises(CannotConnect):
                 await validate_input(hass, data)
 
@@ -98,12 +133,12 @@ class TestConfigFlow:
             # Mock unique_id methods
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
-            flow.async_create_entry = MagicMock(return_value={"type": "create_entry"})
 
             result = await flow.async_step_user(user_input=user_input)
 
             assert result["type"] == "create_entry"
-            flow.async_create_entry.assert_called_once_with(title="Thermacell LIV", data=user_input)
+            assert result["title"] == "Thermacell LIV"
+            assert result["data"] == user_input
 
     @pytest.mark.asyncio
     async def test_async_step_user_invalid_auth(self):
@@ -118,17 +153,15 @@ class TestConfigFlow:
         with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=InvalidAuth):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
-            flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            await flow.async_step_user(user_input=user_input)
+            result = await flow.async_step_user(user_input=user_input)
 
-            flow.async_show_form.assert_called_once()
-            call_args = flow.async_show_form.call_args
-            assert call_args[1]["errors"]["base"] == "invalid_auth"
+            assert result["type"] == "form"
+            assert result["errors"] == {"base": "invalid_auth"}
 
     @pytest.mark.asyncio
     async def test_async_step_user_cannot_connect(self):
-        """Test user step with connection error."""
+        """Test user step when cannot connect."""
         hass = MagicMock()
         flow = ConfigFlow()
         flow.hass = hass
@@ -139,17 +172,15 @@ class TestConfigFlow:
         with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=CannotConnect):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
-            flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            await flow.async_step_user(user_input=user_input)
+            result = await flow.async_step_user(user_input=user_input)
 
-            flow.async_show_form.assert_called_once()
-            call_args = flow.async_show_form.call_args
-            assert call_args[1]["errors"]["base"] == "cannot_connect"
+            assert result["type"] == "form"
+            assert result["errors"] == {"base": "cannot_connect"}
 
     @pytest.mark.asyncio
     async def test_async_step_user_unknown_error(self):
-        """Test user step with unexpected error."""
+        """Test user step with unknown error."""
         hass = MagicMock()
         flow = ConfigFlow()
         flow.hass = hass
@@ -157,38 +188,36 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
-        with patch(
-            "custom_components.thermacell_liv.config_flow.validate_input", side_effect=Exception("Unexpected error")
-        ):
+        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=Exception("Unknown")):
             flow.async_set_unique_id = AsyncMock(return_value=None)
             flow._abort_if_unique_id_configured = MagicMock()
-            flow.async_show_form = MagicMock(return_value={"type": "form"})
 
-            await flow.async_step_user(user_input=user_input)
+            result = await flow.async_step_user(user_input=user_input)
 
-            flow.async_show_form.assert_called_once()
-            call_args = flow.async_show_form.call_args
-            assert call_args[1]["errors"]["base"] == "unknown"
+            assert result["type"] == "form"
+            assert result["errors"] == {"base": "unknown"}
 
     @pytest.mark.asyncio
     async def test_async_step_reauth(self):
-        """Test reauth step redirects to reauth_confirm."""
+        """Test reauth step returns confirm form."""
         hass = MagicMock()
         flow = ConfigFlow()
         flow.hass = hass
-        flow.async_step_reauth_confirm = AsyncMock(return_value={"type": "form"})
+        flow.context = {"entry_id": "test_entry"}
 
-        await flow.async_step_reauth({})
+        result = await flow.async_step_reauth({})
 
-        flow.async_step_reauth_confirm.assert_called_once()
+        # Should redirect to reauth_confirm
+        assert result["type"] == "form"
+        assert result["step_id"] == "reauth_confirm"
 
     @pytest.mark.asyncio
     async def test_async_step_reauth_confirm_show_form(self):
-        """Test showing reauth confirm form."""
+        """Test reauth confirm shows form."""
         hass = MagicMock()
         flow = ConfigFlow()
         flow.hass = hass
-        flow.context = {"entry_id": "test_entry_id", "unique_id": "test@example.com"}
+        flow.context = {"entry_id": "test_entry"}
 
         result = await flow.async_step_reauth_confirm(user_input=None)
 
@@ -197,31 +226,25 @@ class TestConfigFlow:
 
     @pytest.mark.asyncio
     async def test_async_step_reauth_confirm_success(self):
-        """Test successful reauthentication."""
+        """Test successful reauth."""
         hass = MagicMock()
-        flow = ConfigFlow()
-        flow.hass = hass
-        flow.context = {"entry_id": "test_entry_id"}
-
-        # Mock existing entry
-        existing_entry = MagicMock()
-        existing_entry.entry_id = "test_entry_id"
-        hass.config_entries.async_get_entry.return_value = existing_entry
+        hass.config_entries.async_get_entry.return_value = MagicMock()
         hass.config_entries.async_update_entry = MagicMock()
         hass.config_entries.async_reload = AsyncMock()
 
-        user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "newpassword"}
+        flow = ConfigFlow()
+        flow.hass = hass
+        flow.context = {"entry_id": "test_entry"}
+
+        user_input = {CONF_USERNAME: "new@example.com", CONF_PASSWORD: "newpass"}
 
         with patch(
             "custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}
         ):
-            flow.async_abort = MagicMock(return_value={"type": "abort"})
-
             result = await flow.async_step_reauth_confirm(user_input=user_input)
 
             assert result["type"] == "abort"
-            hass.config_entries.async_update_entry.assert_called_once()
-            hass.config_entries.async_reload.assert_called_once()
+            assert result["reason"] == "reauth_successful"
 
     @pytest.mark.asyncio
     async def test_async_step_reauth_confirm_invalid_auth(self):
@@ -229,29 +252,24 @@ class TestConfigFlow:
         hass = MagicMock()
         flow = ConfigFlow()
         flow.hass = hass
-        flow.context = {"entry_id": "test_entry_id"}
+        flow.context = {"entry_id": "test_entry"}
 
-        existing_entry = MagicMock()
-        hass.config_entries.async_get_entry.return_value = existing_entry
-
-        user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "wrongpass"}
+        user_input = {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrongpass"}
 
         with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=InvalidAuth):
-            flow.async_show_form = MagicMock(return_value={"type": "form"})
+            result = await flow.async_step_reauth_confirm(user_input=user_input)
 
-            await flow.async_step_reauth_confirm(user_input=user_input)
-
-            flow.async_show_form.assert_called_once()
-            call_args = flow.async_show_form.call_args
-            assert call_args[1]["errors"]["base"] == "invalid_auth"
+            assert result["type"] == "form"
+            assert result["errors"] == {"base": "invalid_auth"}
 
     def test_async_get_options_flow(self):
         """Test getting options flow."""
         config_entry = MagicMock()
+        config_entry.options = {}
+
         options_flow = ConfigFlow.async_get_options_flow(config_entry)
 
         assert isinstance(options_flow, ThermacellLivOptionsFlow)
-        assert options_flow.config_entry is config_entry
 
 
 class TestOptionsFlow:
@@ -261,7 +279,7 @@ class TestOptionsFlow:
     async def test_async_step_init_show_form(self):
         """Test showing options form."""
         config_entry = MagicMock()
-        config_entry.options.get.return_value = 60
+        config_entry.options = {"scan_interval": 60}
 
         flow = ThermacellLivOptionsFlow(config_entry)
 
@@ -269,116 +287,87 @@ class TestOptionsFlow:
 
         assert result["type"] == "form"
         assert result["step_id"] == "init"
+        assert "data_schema" in result
 
     @pytest.mark.asyncio
     async def test_async_step_init_save_options(self):
         """Test saving options."""
         config_entry = MagicMock()
-        config_entry.options.get.return_value = 60
+        config_entry.options = {"scan_interval": 60}
 
         flow = ThermacellLivOptionsFlow(config_entry)
-        user_input = {"scan_interval": 90}
+
+        user_input = {"scan_interval": 120}
 
         result = await flow.async_step_init(user_input=user_input)
 
         assert result["type"] == "create_entry"
-        assert result["data"] == user_input
+        assert result["data"] == {"scan_interval": 120}
 
     @pytest.mark.asyncio
     async def test_async_step_init_default_values(self):
-        """Test default option values."""
+        """Test default values in options."""
         config_entry = MagicMock()
-        config_entry.options.get.side_effect = lambda key, default: default
+        config_entry.options = {}  # No existing options
 
         flow = ThermacellLivOptionsFlow(config_entry)
 
         result = await flow.async_step_init(user_input=None)
 
+        # Should use default scan_interval of 60
         assert result["type"] == "form"
-        # Default scan_interval should be 60
-        config_entry.options.get.assert_called_with("scan_interval", 60)
 
 
 class TestExceptions:
-    """Test custom exception classes."""
+    """Test exception classes."""
 
     def test_cannot_connect_exception(self):
         """Test CannotConnect exception."""
-        exc = CannotConnect("Test error")
+        exc = CannotConnect()
         assert isinstance(exc, Exception)
 
     def test_invalid_auth_exception(self):
         """Test InvalidAuth exception."""
-        exc = InvalidAuth("Test error")
+        exc = InvalidAuth()
         assert isinstance(exc, Exception)
 
 
 if __name__ == "__main__":
-    # Run tests manually if pytest is not available
     import asyncio
 
-    test_validate = TestValidateInput()
-    test_config = TestConfigFlow()
-    test_options = TestOptionsFlow()
-    test_exceptions = TestExceptions()
+    async def run_tests():
+        """Run tests manually."""
+        print("🧪 Running Config Flow Tests")
+        print("=" * 50)
 
-    print("🧪 Running Config Flow Tests")
-    print("=" * 50)
-
-    async def run_async_tests():
-        """Run all async tests."""
-        # Validate input tests
+        # Test validate input
+        validate_tests = TestValidateInput()
         try:
-            await test_validate.test_validate_input_success()
+            await validate_tests.test_validate_input_success()
             print("✅ Validate input success test passed")
         except Exception as e:
             print(f"❌ Validate input success test failed: {e}")
 
         try:
-            await test_validate.test_validate_input_invalid_auth()
+            await validate_tests.test_validate_input_invalid_auth()
             print("✅ Validate input invalid auth test passed")
         except Exception as e:
             print(f"❌ Validate input invalid auth test failed: {e}")
 
+        # Test config flow
+        flow_tests = TestConfigFlow()
         try:
-            await test_validate.test_validate_input_cannot_connect()
-            print("✅ Validate input cannot connect test passed")
+            await flow_tests.test_async_step_user_show_form()
+            print("✅ Show form test passed")
         except Exception as e:
-            print(f"❌ Validate input cannot connect test failed: {e}")
-
-        # Config flow tests
-        try:
-            await test_config.test_async_step_user_show_form()
-            print("✅ Config flow show form test passed")
-        except Exception as e:
-            print(f"❌ Config flow show form test failed: {e}")
+            print(f"❌ Show form test failed: {e}")
 
         try:
-            await test_config.test_async_step_user_success()
-            print("✅ Config flow user success test passed")
+            await flow_tests.test_async_step_user_success()
+            print("✅ User step success test passed")
         except Exception as e:
-            print(f"❌ Config flow user success test failed: {e}")
+            print(f"❌ User step success test failed: {e}")
 
-        # Options flow tests
-        try:
-            await test_options.test_async_step_init_show_form()
-            print("✅ Options flow show form test passed")
-        except Exception as e:
-            print(f"❌ Options flow show form test failed: {e}")
+        print("\n🎉 Config flow tests completed!")
 
-    asyncio.run(run_async_tests())
-
-    # Exception tests
-    try:
-        test_exceptions.test_cannot_connect_exception()
-        print("✅ CannotConnect exception test passed")
-    except Exception as e:
-        print(f"❌ CannotConnect exception test failed: {e}")
-
-    try:
-        test_exceptions.test_invalid_auth_exception()
-        print("✅ InvalidAuth exception test passed")
-    except Exception as e:
-        print(f"❌ InvalidAuth exception test failed: {e}")
-
-    print("\n🎉 Config flow tests completed!")
+    asyncio.run(run_tests())

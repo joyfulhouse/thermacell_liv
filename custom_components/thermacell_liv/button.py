@@ -27,7 +27,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the button platform."""
-    coordinator: ThermacellLivCoordinator = config_entry.runtime_data
+    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
 
     buttons = []
 

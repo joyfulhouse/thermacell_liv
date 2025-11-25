@@ -30,7 +30,7 @@ class TestDiagnostics:
         coordinator.update_interval = timedelta(seconds=60)
         coordinator.data = {}
 
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         # Mock hass
         hass = MagicMock()
@@ -95,7 +95,7 @@ class TestDiagnostics:
             }
         }
 
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         # Mock hass
         hass = MagicMock()
@@ -162,7 +162,7 @@ class TestDiagnostics:
             },
         }
 
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         # Mock hass
         hass = MagicMock()
@@ -194,7 +194,7 @@ class TestDiagnostics:
         coordinator.update_interval = timedelta(seconds=60)
         coordinator.data = None
 
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         # Mock hass
         hass = MagicMock()

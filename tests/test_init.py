@@ -4,6 +4,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pythermacell import AuthenticationError, ThermacellClient
 
 import custom_components.thermacell_liv as init_module
 from custom_components.thermacell_liv.const import DOMAIN
@@ -23,13 +24,15 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
+            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
             patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
             # Setup mocks
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = True
-            mock_api_class.return_value = mock_api
+            mock_client = AsyncMock(spec=ThermacellClient)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client_class.return_value = mock_client
 
             mock_coordinator = MagicMock()
             mock_coordinator.data = {"node1": {}}
@@ -44,26 +47,28 @@ class TestAsyncSetupEntry:
 
             # Verify
             assert result is True
-            mock_api.authenticate.assert_called_once()
             mock_coordinator.async_config_entry_first_refresh.assert_called_once()
-            assert entry.runtime_data is mock_coordinator
+            assert entry.runtime_data == {"coordinator": mock_coordinator, "client": mock_client}
             hass.config_entries.async_forward_entry_setups.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_async_setup_entry_auth_failure(self):
         """Test setup with authentication failure."""
-        from homeassistant.exceptions import ConfigEntryNotReady
+        from homeassistant.exceptions import ConfigEntryAuthFailed
 
         hass = MagicMock()
         entry = MagicMock()
         entry.data = {"username": "test@example.com", "password": "wrongpass"}
 
-        with patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class:
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = False
-            mock_api_class.return_value = mock_api
+        with (
+            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
+        ):
+            mock_client = AsyncMock(spec=ThermacellClient)
+            mock_client.__aenter__ = AsyncMock(side_effect=AuthenticationError("Invalid credentials"))
+            mock_client_class.return_value = mock_client
 
-            with pytest.raises(ConfigEntryNotReady):
+            with pytest.raises(ConfigEntryAuthFailed):
                 await init_module.async_setup_entry(hass, entry)
 
     @pytest.mark.asyncio
@@ -77,12 +82,14 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
+            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
             patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = True
-            mock_api_class.return_value = mock_api
+            mock_client = AsyncMock(spec=ThermacellClient)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client_class.return_value = mock_client
 
             mock_coordinator = MagicMock()
             mock_coordinator.data = {}
@@ -95,7 +102,7 @@ class TestAsyncSetupEntry:
             result = await init_module.async_setup_entry(hass, entry)
 
             # Verify custom scan interval was used
-            mock_coordinator_class.assert_called_once_with(hass, mock_api, scan_interval=120)
+            mock_coordinator_class.assert_called_once_with(hass, mock_client, scan_interval=120)
             assert result is True
 
     @pytest.mark.asyncio
@@ -109,12 +116,14 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.ThermacellLivAPI") as mock_api_class,
+            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
             patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
-            mock_api = AsyncMock()
-            mock_api.authenticate.return_value = True
-            mock_api_class.return_value = mock_api
+            mock_client = AsyncMock(spec=ThermacellClient)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client_class.return_value = mock_client
 
             mock_coordinator = MagicMock()
             mock_coordinator.data = {}
@@ -143,7 +152,7 @@ class TestAsyncCleanupStaleDevices:
         # Mock coordinator with current nodes
         coordinator = MagicMock()
         coordinator.data = {"node1": {}, "node2": {}}  # Only node1 and node2 exist
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         # Mock device registry
         device_registry = MagicMock()
@@ -182,7 +191,7 @@ class TestAsyncCleanupStaleDevices:
 
         coordinator = MagicMock()
         coordinator.data = {"node1": {}, "node2": {}}
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         device_registry = MagicMock()
 
@@ -211,7 +220,7 @@ class TestAsyncCleanupStaleDevices:
 
         coordinator = MagicMock()
         coordinator.data = None
-        entry.runtime_data = coordinator
+        entry.runtime_data = {"coordinator": coordinator}
 
         device_registry = MagicMock()
 
@@ -255,12 +264,17 @@ class TestAsyncUnloadEntry:
         hass = MagicMock()
         hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
 
+        mock_client = AsyncMock(spec=ThermacellClient)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+
         entry = MagicMock()
+        entry.runtime_data = {"coordinator": MagicMock(), "client": mock_client}
 
         result = await init_module.async_unload_entry(hass, entry)
 
         assert result is True
         hass.config_entries.async_unload_platforms.assert_called_once()
+        mock_client.__aexit__.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_async_unload_entry_failure(self):
@@ -269,6 +283,7 @@ class TestAsyncUnloadEntry:
         hass.config_entries.async_unload_platforms = AsyncMock(return_value=False)
 
         entry = MagicMock()
+        entry.runtime_data = None
 
         result = await init_module.async_unload_entry(hass, entry)
 

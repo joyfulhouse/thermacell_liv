@@ -413,7 +413,7 @@ class TestEntityPlatformSetup:
         """Test switch platform setup."""
         from custom_components.thermacell_liv.switch import async_setup_entry
 
-        config_entry.runtime_data = mock_coordinator
+        config_entry.runtime_data = {"coordinator": mock_coordinator}
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
@@ -427,7 +427,7 @@ class TestEntityPlatformSetup:
         """Test light platform setup."""
         from custom_components.thermacell_liv.light import async_setup_entry
 
-        config_entry.runtime_data = mock_coordinator
+        config_entry.runtime_data = {"coordinator": mock_coordinator}
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
@@ -441,7 +441,7 @@ class TestEntityPlatformSetup:
         """Test sensor platform setup."""
         from custom_components.thermacell_liv.sensor import async_setup_entry
 
-        config_entry.runtime_data = mock_coordinator
+        config_entry.runtime_data = {"coordinator": mock_coordinator}
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
@@ -463,7 +463,7 @@ class TestEntityPlatformSetup:
         """Test button platform setup."""
         from custom_components.thermacell_liv.button import async_setup_entry
 
-        config_entry.runtime_data = mock_coordinator
+        config_entry.runtime_data = {"coordinator": mock_coordinator}
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
@@ -487,7 +487,7 @@ class TestEntityPlatformSetup:
             "refill_life": 50,
         }
 
-        config_entry.runtime_data = mock_coordinator
+        config_entry.runtime_data = {"coordinator": mock_coordinator}
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
@@ -506,7 +506,7 @@ class TestEntityPlatformSetup:
             "devices": {"Device1": {"power": False, "refill_life": 25}},
         }
 
-        config_entry.runtime_data = mock_coordinator
+        config_entry.runtime_data = {"coordinator": mock_coordinator}
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
