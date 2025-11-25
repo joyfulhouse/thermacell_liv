@@ -1,141 +1,85 @@
 #!/usr/bin/env python3
 """
-Test the fixed API client with real endpoints.
+Test the pythermacell client with real endpoints.
+Validates that the library correctly handles authentication and device data.
 """
+
 import asyncio
-import json
-from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
-from unittest.mock import MagicMock
+from secrets import THERMACELL_PASSWORD, THERMACELL_USERNAME
 
 import aiohttp
+from pythermacell import AuthenticationError, ThermacellClient, ThermacellConnectionError
 
-from custom_components.thermacell_liv.api import ThermacellLivAPI
 
-
-async def test_fixed_api():
-    """Test the fixed API client."""
-    print("🔧 Testing Fixed Thermacell LIV API Client")
+async def test_pythermacell_client():
+    """Test the pythermacell client."""
+    print("Testing pythermacell Client")
     print("=" * 60)
     print(f"Username: {THERMACELL_USERNAME}")
-    print(f"API Base URL: {THERMACELL_API_BASE_URL}")
     print()
 
-    # Create a mock Home Assistant instance
-    mock_hass = MagicMock()
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Test 1: Authentication and device discovery
+            print("1. Testing Authentication and Device Discovery...")
+            async with ThermacellClient(
+                username=THERMACELL_USERNAME,
+                password=THERMACELL_PASSWORD,
+                session=session,
+            ) as client:
+                devices = await client.get_devices()
+                print(f"   Found {len(devices)} devices")
 
-    # Create API client
-    api = ThermacellLivAPI(mock_hass, THERMACELL_USERNAME, THERMACELL_PASSWORD, THERMACELL_API_BASE_URL)
+                if devices:
+                    print("   Device details:")
+                    for device in devices:
+                        print(f"     - {device.name} ({device.node_id})")
+                        print(f"       Online: {device.is_online}, Power: {device.is_powered_on}")
 
-    try:
-        # Test 1: Authentication with fixed JWT parsing
-        print("1️⃣ Testing Fixed Authentication...")
-        auth_success = await api.authenticate()
-        print(f"   Authentication result: {auth_success}")
+                    # Test 2: Detailed device info (read-only operations)
+                    print("\n2. Testing Device Properties...")
+                    device = devices[0]
+                    properties = {
+                        "node_id": device.node_id,
+                        "name": device.name,
+                        "model": device.model,
+                        "fw_version": device.fw_version,
+                        "hub_serial": device.hub_serial,
+                        "is_online": device.is_online,
+                        "is_powered_on": device.is_powered_on,
+                        "led_power": device.led_power,
+                        "led_brightness": device.led_brightness,
+                        "led_hue": device.led_hue,
+                        "led_saturation": device.led_saturation,
+                        "led_value": device.led_value,
+                        "refill_life": device.refill_life,
+                        "system_status": device.system_status,
+                        "system_runtime": device.system_runtime,
+                        "error_code": device.error_code,
+                    }
 
-        if auth_success:
-            print(f"   Access token: {api.access_token[:20]}..." if api.access_token else "   No access token")
-            print(f"   User ID: {api.user_id}")
-        else:
-            print("   ❌ Authentication failed!")
-            return
+                    for prop, value in properties.items():
+                        print(f"     {prop}: {value}")
 
-        print()
+                    print("\n   All properties retrieved successfully!")
+                else:
+                    print("   No devices found - this could mean:")
+                    print("     - No devices are registered to this account")
+                    print("     - Devices are offline")
 
-        # Test 2: Try different node endpoints
-        print("2️⃣ Testing Different Node Endpoints...")
+                print()
+                print("Testing completed!")
 
-        # Try endpoint variations manually to find the working one
-        endpoints_to_try = [
-            f"/v1/user/nodes?user_id={api.user_id}",
-            "/v1/user/nodes",
-            "/v1/user2/nodes",
-            f"/v1/user2/nodes?user_id={api.user_id}",
-            "/v1/nodes",
-            "/user/nodes",
-            "/nodes"
-        ]
+        except AuthenticationError as e:
+            print(f"Authentication failed: {e}")
+        except ThermacellConnectionError as e:
+            print(f"Connection error: {e}")
+        except Exception as e:
+            print(f"Error during testing: {e}")
+            import traceback
 
-        headers = {"Authorization": api.access_token}
-        working_endpoint = None
-
-        for endpoint in endpoints_to_try:
-            url = f"{api.base_url}{endpoint}"
-            print(f"   Trying: {endpoint}")
-
-            try:
-                timeout = aiohttp.ClientTimeout(total=10)
-                async with api.session.get(url, headers=headers, timeout=timeout) as response:
-                    print(f"     Status: {response.status}")
-
-                    if response.status == 200:
-                        data = await response.json()
-                        print(f"     ✅ SUCCESS! Response: {json.dumps(data, indent=6)}")
-                        working_endpoint = endpoint
-                        break
-                    elif response.status in [400, 401, 403, 404]:
-                        error_text = await response.text()
-                        print(f"     ❌ Error: {error_text}")
-                    else:
-                        print(f"     ⚠️  Unexpected status: {response.status}")
-
-            except Exception as e:
-                print(f"     ❌ Exception: {e}")
-
-        if working_endpoint:
-            print(f"\n✅ Working endpoint found: {working_endpoint}")
-
-            # Test node status if we have nodes
-            # For now, we'll skip since we need actual node data
-        else:
-            print("\n⚠️  No working node endpoint found. This could mean:")
-            print("   - No devices are registered to this account")
-            print("   - Different API authentication scope needed")
-            print("   - API has different endpoint structure")
-
-        print()
-
-        # Test 3: Check what other endpoints work
-        print("3️⃣ Testing Other Endpoints...")
-
-        other_endpoints = [
-            "/v1/user/info",
-            "/v1/user/profile",
-            "/v1/user/devices",
-            "/v1/user",
-            "/v1/me",
-            "/me",
-            "/user"
-        ]
-
-        for endpoint in other_endpoints:
-            url = f"{api.base_url}{endpoint}"
-            print(f"   Trying: {endpoint}")
-
-            try:
-                timeout = aiohttp.ClientTimeout(total=10)
-                async with api.session.get(url, headers=headers, timeout=timeout) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        print(f"     ✅ SUCCESS! Response keys: {list(data.keys()) if isinstance(data, dict) else type(data)}")
-                    else:
-                        print(f"     Status: {response.status}")
-
-            except Exception as e:
-                print(f"     Exception: {e}")
-
-        print()
-        print("✅ API testing completed!")
-
-    except Exception as e:
-        print(f"❌ Error during API testing: {e}")
-        import traceback
-        traceback.print_exc()
-
-    finally:
-        # Clean up session if it exists
-        if hasattr(api, 'session') and api.session:
-            await api.session.close()
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
-    asyncio.run(test_fixed_api())
+    asyncio.run(test_pythermacell_client())

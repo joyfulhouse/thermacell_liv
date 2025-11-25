@@ -1,166 +1,81 @@
 #!/usr/bin/env python3
 """
-Test node details and status endpoints with discovered node IDs.
+Test node details using pythermacell library.
 """
+
 import asyncio
-import base64
-import json
-from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
+from secrets import THERMACELL_PASSWORD, THERMACELL_USERNAME
 
 import aiohttp
+from pythermacell import ThermacellClient
 
 
-class NodeDetailsTester:
-    """Test node details endpoints."""
+async def test_node_details():
+    """Test node details via pythermacell."""
+    print("Thermacell Node Details Testing")
+    print("=" * 60)
 
-    def __init__(self):
-        self.base_url = THERMACELL_API_BASE_URL.rstrip('/')
-        self.username = THERMACELL_USERNAME
-        self.password = THERMACELL_PASSWORD
-        self.access_token = None
-        self.user_id = None
-        self.session = None
+    async with aiohttp.ClientSession() as session:
+        print("Authenticating...")
+        async with ThermacellClient(
+            username=THERMACELL_USERNAME,
+            password=THERMACELL_PASSWORD,
+            session=session,
+        ) as client:
+            print("   Success!")
+            print()
 
-    def _decode_jwt_payload(self, jwt_token: str) -> dict:
-        """Decode JWT token payload without verification."""
-        try:
-            parts = jwt_token.split('.')
-            if len(parts) != 3:
-                return {}
+            print("Getting Devices...")
+            devices = await client.get_devices()
+            print(f"   Found {len(devices)} device(s)")
+            print()
 
-            payload = parts[1]
-            padding = 4 - len(payload) % 4
-            if padding != 4:
-                payload += '=' * padding
+            for i, device in enumerate(devices, 1):
+                print(f"Device {i}: {device.name}")
+                print("=" * 50)
 
-            decoded_bytes = base64.urlsafe_b64decode(payload)
-            return json.loads(decoded_bytes.decode('utf-8'))
-        except Exception:
-            return {}
+                # Basic info
+                print("\nBasic Information:")
+                print(f"   Node ID: {device.node_id}")
+                print(f"   Name: {device.name}")
+                print(f"   Model: {device.model}")
 
-    async def authenticate(self) -> bool:
-        """Authenticate and extract tokens."""
-        try:
-            url = f"{self.base_url}/v1/login2"
-            data = {
-                "user_name": self.username,
-                "password": self.password,
-            }
+                # Firmware and hardware
+                print("\nFirmware/Hardware:")
+                print(f"   Firmware Version: {device.fw_version}")
+                print(f"   Hub Serial: {device.hub_serial}")
 
-            async with self.session.post(url, json=data) as response:
-                if response.status == 200:
-                    auth_data = await response.json()
+                # Status
+                print("\nStatus:")
+                print(f"   Online: {device.is_online}")
+                print(f"   Powered On: {device.is_powered_on}")
+                print(f"   System Status: {device.system_status}")
+                print(f"   Error Code: {device.error_code}")
 
-                    self.access_token = auth_data.get("accesstoken")
+                # Runtime
+                print("\nRuntime:")
+                print(f"   System Runtime: {device.system_runtime} minutes")
 
-                    id_token = auth_data.get("idtoken")
-                    if id_token:
-                        id_payload = self._decode_jwt_payload(id_token)
-                        if id_payload:
-                            self.user_id = id_payload.get("custom:user_id")
+                # LED
+                print("\nLED Configuration:")
+                print(f"   Power: {device.led_power}")
+                print(f"   Brightness: {device.led_brightness}")
+                print(f"   Hue: {device.led_hue}")
+                print(f"   Saturation: {device.led_saturation}")
+                print(f"   Value: {device.led_value}")
 
-                    return self.access_token is not None and self.user_id is not None
-                else:
-                    return False
-        except Exception:
-            return False
+                # Refill
+                print("\nRefill:")
+                print(f"   Life: {device.refill_life}%")
 
-    async def test_node_details(self):
-        """Test node details and status endpoints."""
-        headers = {"Authorization": self.access_token}
+                print()
 
-        # Get nodes list
-        print("1️⃣ Getting Nodes List...")
-        nodes_url = f"{self.base_url}/v1/user/nodes"
-        async with self.session.get(nodes_url, headers=headers) as response:
-            if response.status == 200:
-                nodes_data = await response.json()
-                print(f"   Response: {json.dumps(nodes_data, indent=2)}")
-
-                node_ids = nodes_data.get("nodes", [])
-                print(f"   Found {len(node_ids)} nodes: {node_ids}")
-
-                # Test each node
-                for i, node_id in enumerate(node_ids):
-                    await self._test_node_endpoints(node_id, i+1, headers)
-
-    async def _test_node_endpoints(self, node_id: str, node_num: int, headers: dict):
-        """Test various endpoints for a specific node."""
-        print(f"\n{node_num}️⃣ Testing Node: {node_id}")
-
-        # Try different node detail endpoints
-        node_endpoints = [
-            f"/v1/user/nodes/{node_id}",
-            f"/v1/user/nodes/details?nodeid={node_id}",
-            f"/v1/user/nodes/status?nodeid={node_id}",
-            f"/v1/user/nodes/params?nodeid={node_id}",
-            f"/v1/nodes/{node_id}",
-            f"/v1/nodes/{node_id}/status",
-            f"/v1/nodes/{node_id}/params",
-        ]
-
-        for endpoint in node_endpoints:
-            await self._test_endpoint("GET", endpoint, headers, detailed=True)
-
-    async def _test_endpoint(self, method: str, endpoint: str, headers: dict, detailed: bool = False):
-        """Test a single endpoint."""
-        url = f"{self.base_url}{endpoint}"
-        print(f"   📡 {method} {endpoint}")
-
-        try:
-            timeout = aiohttp.ClientTimeout(total=15)
-            async with self.session.request(method, url, headers=headers, timeout=timeout) as response:
-                print(f"      Status: {response.status}")
-
-                if response.status == 200:
-                    try:
-                        data = await response.json()
-                        print("      ✅ SUCCESS!")
-
-                        if detailed:
-                            response_str = json.dumps(data, indent=8)
-                            if len(response_str) > 1000:
-                                print(f"      Data (truncated): {response_str[:1000]}...")
-                            else:
-                                print(f"      Data: {response_str}")
-                        else:
-                            print(f"      Keys: {list(data.keys()) if isinstance(data, dict) else f'List[{len(data)}]'}")
-
-                    except json.JSONDecodeError:
-                        text = await response.text()
-                        print(f"      ✅ SUCCESS! (non-JSON): {text[:200]}...")
-
-                elif response.status in [400, 401, 403, 404, 405]:
-                    try:
-                        error_data = await response.json()
-                        print(f"      ❌ {error_data}")
-                    except:
-                        error_text = await response.text()
-                        print(f"      ❌ {error_text}")
-                else:
-                    print(f"      ⚠️ Status {response.status}")
-
-        except Exception as e:
-            print(f"      ❌ Exception: {e}")
+    print("Testing completed!")
 
 
 async def main():
     """Main function."""
-    print("🔍 Thermacell Node Details Testing")
-    print("=" * 60)
-
-    async with aiohttp.ClientSession() as session:
-        tester = NodeDetailsTester()
-        tester.session = session
-
-        print("🔐 Authenticating...")
-        if await tester.authenticate():
-            print(f"   ✅ Success! User ID: {tester.user_id}")
-            await tester.test_node_details()
-        else:
-            print("   ❌ Authentication failed")
-
-    print("\n✅ Testing completed!")
+    await test_node_details()
 
 
 if __name__ == "__main__":

@@ -269,13 +269,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def get_node_data(self, node_id: str) -> NodeData | None:
         """Get data for a specific node."""
-        return self.data.get(node_id) if self.data else None  # type: ignore[return-value]
+        return self.data.get(node_id) if self.data else None
 
     def get_device_data(self, node_id: str, device_name: str) -> DeviceParams | None:
         """Get data for a specific device within a node."""
         node_data = self.get_node_data(node_id)
         if node_data:
-            return node_data.get("devices", {}).get(device_name)  # type: ignore[return-value]
+            return node_data.get("devices", {}).get(device_name)
         return None
 
     def is_node_online(self, node_id: str) -> bool:
@@ -292,7 +292,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not self.data or node_id not in self.data:
             return None
         devices = self.data[node_id].get("devices", {})
-        return devices.get(device_name)  # type: ignore[return-value]
+        return devices.get(device_name)
 
     def _update_local_state(self, node_id: str, device: ThermacellDevice) -> None:
         """Update local state from device object after operation."""
@@ -384,9 +384,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         # Convert RGB to HSV
         r_norm, g_norm, b_norm = red / 255.0, green / 255.0, blue / 255.0
-        hue_val, sat_val, brightness_val = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
+        hue_val, _, brightness_val = colorsys.rgb_to_hsv(r_norm, g_norm, b_norm)
         hue = int(hue_val * 360)
-        saturation = int(sat_val * 100)
         brightness = int(brightness_val * 100)
 
         # Apply optimistic update
@@ -394,13 +393,13 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         original_color: RGBColor | None = None
 
         if device_data:
-            original_color = device_data.get("led_color", RGBColor(r=255, g=255, b=255)).copy()  # type: ignore[misc]
+            original_color = device_data.get("led_color", RGBColor(r=255, g=255, b=255)).copy()
             device_data["led_color"] = RGBColor(r=red, g=green, b=blue)
             self.async_update_listeners()
 
         # Make API call
         try:
-            await device.set_led_color(hue=hue, saturation=saturation, brightness=brightness)
+            await device.set_led_color(hue=hue, brightness=brightness)
             _LOGGER.debug(
                 "Successfully set LED color to RGB(%d, %d, %d) for device %s",
                 red,

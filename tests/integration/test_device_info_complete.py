@@ -1,153 +1,123 @@
 #!/usr/bin/env python3
 """
-Test the complete device information and new sensors functionality.
+Test the complete device information and sensors functionality via pythermacell.
 """
+
 import asyncio
-from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
-from unittest.mock import MagicMock
+from secrets import THERMACELL_PASSWORD, THERMACELL_USERNAME
 
 import aiohttp
+from pythermacell import ThermacellClient
 
-from custom_components.thermacell_liv.api import ThermacellLivAPI
 
-
-async def test_device_info_and_sensors(session):
+async def test_device_info_and_sensors():
     """Test the complete device info and sensor functionality."""
-    print("🧪 Testing Complete Device Info and Sensors")
+    print("Testing Complete Device Info and Sensors")
     print("=" * 60)
 
-    hass = MagicMock()
-    api = ThermacellLivAPI(hass, THERMACELL_USERNAME, THERMACELL_PASSWORD, THERMACELL_API_BASE_URL)
-    api.session = session
+    async with aiohttp.ClientSession() as session:
+        print("Authenticating...")
+        async with ThermacellClient(
+            username=THERMACELL_USERNAME,
+            password=THERMACELL_PASSWORD,
+            session=session,
+        ) as client:
+            print("Authentication successful\n")
 
-    node_id = "JM7UVxmMgPUYUhVJVBWEf6"
+            devices = await client.get_devices()
 
-    print("🔐 Authenticating...")
-    auth_success = await api.authenticate()
-    if not auth_success:
-        print("❌ Authentication failed")
-        return
+            if not devices:
+                print("No devices found")
+                return
 
-    print("✅ Authentication successful")
+            device = devices[0]
+            print(f"Testing device: {device.name}")
+            print("-" * 40)
 
-    # Test get_node_config method
-    print("\n📊 Testing get_node_config method...")
-    config_data = await api.get_node_config(node_id)
+            # Test device info properties
+            print("\n1. Device Info Properties:")
+            print(f"   Node ID: {device.node_id}")
+            print(f"   Name: {device.name}")
+            print(f"   Model: {device.model}")
+            print(f"   Firmware Version: {device.fw_version}")
+            print(f"   Hub Serial: {device.hub_serial}")
 
-    if config_data:
-        print("✅ Node config retrieved successfully")
+            # Test connectivity
+            print("\n2. Connectivity Status:")
+            print(f"   Online: {device.is_online}")
 
-        # Check firmware version
-        if "info" in config_data:
-            info = config_data["info"]
-            fw_version = info.get("fw_version")
-            model = info.get("model")
-            project_name = info.get("project_name")
+            # Test power state
+            print("\n3. Power State:")
+            print(f"   Powered On: {device.is_powered_on}")
+            print(f"   System Status Code: {device.system_status}")
 
-            print("📊 Device Info:")
-            print(f"   Firmware Version: {fw_version}")
-            print(f"   Model: {model}")
-            print(f"   Project Name: {project_name}")
+            # Interpret system status
+            status_text = "Unknown"
+            if device.error_code and device.error_code > 0:
+                status_text = "Error"
+            elif not device.is_powered_on or device.system_status == 1:
+                status_text = "Off"
+            elif device.system_status == 2:
+                status_text = "Warming Up"
+            elif device.system_status == 3:
+                status_text = "Protected"
+            print(f"   Status Text: {status_text}")
 
-            if fw_version == "5.3.2":
-                print("✅ Firmware version matches expected 5.3.2")
-            else:
-                print(f"⚠️  Firmware version is {fw_version}, expected 5.3.2")
-    else:
-        print("❌ Failed to retrieve node config")
+            # Test runtime
+            print("\n4. System Runtime:")
+            runtime = device.system_runtime or 0
+            days = runtime // (24 * 60)
+            hours = (runtime % (24 * 60)) // 60
+            minutes = runtime % 60
 
-    # Test get_user_nodes with enhanced data
-    print("\n📊 Testing enhanced node data...")
-    nodes = await api.get_user_nodes()
+            runtime_parts = []
+            if days > 0:
+                runtime_parts.append(f"{days} day{'s' if days != 1 else ''}")
+            if hours > 0:
+                runtime_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            if minutes > 0:
+                runtime_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
 
-    if nodes:
-        for node in nodes:
-            if node["id"] == node_id:
-                print(f"📊 Node Data for {node_id}:")
-                print(f"   ID: {node['id']}")
-                print(f"   Name: {node['node_name']}")
-                print(f"   Type: {node['type']}")
+            formatted_runtime = ", ".join(runtime_parts) if runtime_parts else "0 minutes"
+            print(f"   Raw Runtime: {runtime} minutes")
+            print(f"   Formatted: {formatted_runtime}")
+            print(f"   Total Hours: {round(runtime / 60, 1)}")
+            print(f"   Total Days: {round(runtime / (24 * 60), 2)}")
 
-                # Check for the key parameters
-                params = node.get("params", {})
-                if "LIV Hub" in params:
-                    device_params = params["LIV Hub"]
+            # Test LED state
+            print("\n5. LED State:")
+            print(f"   Power: {device.led_power}")
+            print(f"   Brightness: {device.led_brightness}")
+            print(f"   Hue: {device.led_hue}")
+            print(f"   Saturation: {device.led_saturation}")
+            print(f"   Value: {device.led_value}")
 
-                    hub_id = device_params.get("Hub ID")
-                    system_runtime = device_params.get("System Runtime")
+            # Test refill and error
+            print("\n6. Refill and Error:")
+            print(f"   Refill Life: {device.refill_life}%")
+            print(f"   Error Code: {device.error_code}")
 
-                    print("📊 Device Parameters:")
-                    print(f"   Hub ID (Serial): {hub_id}")
-                    print(f"   System Runtime: {system_runtime} minutes")
+            # Summary
+            print("\n" + "=" * 60)
+            print("Summary of Findings:")
+            print("   Device config working: Yes")
+            print(f"   Firmware version available: {device.fw_version}")
+            print(f"   Hub serial available: {device.hub_serial}")
+            print(f"   System runtime available: {runtime} minutes")
+            print(f"   Node ID available: {device.node_id}")
 
-                    if system_runtime:
-                        # Test runtime formatting (like the sensor would do)
-                        days = system_runtime // (24 * 60)
-                        hours = (system_runtime % (24 * 60)) // 60
-                        minutes = system_runtime % 60
+            print("\nWhat this enables in Home Assistant:")
+            print(f"   Device info will show firmware version {device.fw_version}")
+            print(f"   Device info will show serial number {device.hub_serial}")
+            print("   System Runtime sensor will show formatted runtime")
+            print("   All entities will have proper device grouping")
 
-                        runtime_str = []
-                        if days > 0:
-                            runtime_str.append(f"{days} day{'s' if days != 1 else ''}")
-                        if hours > 0:
-                            runtime_str.append(f"{hours} hour{'s' if hours != 1 else ''}")
-                        if minutes > 0:
-                            runtime_str.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
-
-                        formatted_runtime = ", ".join(runtime_str) if runtime_str else "0 minutes"
-
-                        print(f"   Formatted Runtime: {formatted_runtime}")
-                        print(f"   Total Hours: {round(system_runtime / 60, 1)}")
-                        print(f"   Total Days: {round(system_runtime / (24 * 60), 2)}")
-
-                        # Check if this matches expected ~3 days 2 hours 36 minutes
-                        expected_minutes = (3 * 24 * 60) + (2 * 60) + 36  # ~4476 minutes
-                        if abs(system_runtime - expected_minutes) < 120:  # Within 2 hours
-                            print("✅ Runtime is approximately 3 days 2 hours as expected")
-                        else:
-                            print(f"⚠️  Runtime is {formatted_runtime}, expected ~3 days 2 hours 36 minutes")
-
-                    # Test other important parameters
-                    important_params = {
-                        "System Status": device_params.get("System Status"),
-                        "System State": device_params.get("System State"),
-                        "Enable Repellers": device_params.get("Enable Repellers"),
-                        "LED Brightness": device_params.get("LED Brightness"),
-                        "LED Hue": device_params.get("LED Hue"),
-                        "Refill Life": device_params.get("Refill Life"),
-                        "Hub Temperature": device_params.get("Hub Temperature"),
-                        "RSSI": device_params.get("RSSI"),
-                    }
-
-                    print("\n📊 Key Device Parameters:")
-                    for param, value in important_params.items():
-                        if value is not None:
-                            print(f"   {param}: {value}")
-
-                break
-    else:
-        print("❌ Failed to retrieve nodes")
-
-    print("\n🎯 Summary of Findings:")
-    print("   ✅ Device config endpoint working")
-    print("   ✅ Firmware version available: 5.3.2")
-    print("   ✅ Hub serial number available: N03HA31924B9062")
-    print("   ✅ System runtime available: ~715 minutes")
-    print(f"   ✅ Node ID available: {node_id}")
-
-    print("\n📋 What this enables in Home Assistant:")
-    print("   🔧 Device info will show firmware version 5.3.2")
-    print("   🔢 Device info will show serial number N03HA31924B9062")
-    print("   ⏰ System Runtime sensor will show formatted runtime")
-    print("   📊 All entities will have proper device grouping")
+    print("\nDevice info and sensors test completed!")
 
 
 async def main():
     """Run the device info and sensor test."""
-    async with aiohttp.ClientSession() as session:
-        await test_device_info_and_sensors(session)
-
-    print("\n🎉 Device info and sensors test completed!")
+    await test_device_info_and_sensors()
 
 
 if __name__ == "__main__":

@@ -1,215 +1,139 @@
 #!/usr/bin/env python3
 """
 Detailed test to understand all possible System Status values.
+
+NOTE: This test is READ-ONLY and monitors current status only.
+The original test had excessive on/off calls which has been removed.
+To test state transitions, use the Home Assistant integration directly.
 """
+
 import asyncio
-import base64
-import json
-from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
+from secrets import THERMACELL_PASSWORD, THERMACELL_USERNAME
 
 import aiohttp
+from pythermacell import ThermacellClient
 
 
-class DetailedStatusTester:
-    """Detailed System Status testing."""
-
-    def __init__(self):
-        self.base_url = THERMACELL_API_BASE_URL.rstrip('/')
-        self.username = THERMACELL_USERNAME
-        self.password = THERMACELL_PASSWORD
-        self.access_token = None
-        self.user_id = None
-        self.session = None
-
-    def _decode_jwt_payload(self, jwt_token: str) -> dict:
-        """Decode JWT token payload without verification."""
-        try:
-            parts = jwt_token.split('.')
-            if len(parts) != 3:
-                return {}
-
-            payload = parts[1]
-            padding = 4 - len(payload) % 4
-            if padding != 4:
-                payload += '=' * padding
-
-            decoded_bytes = base64.urlsafe_b64decode(payload)
-            return json.loads(decoded_bytes.decode('utf-8'))
-        except Exception:
-            return {}
-
-    async def authenticate(self) -> bool:
-        """Authenticate and extract tokens."""
-        try:
-            url = f"{self.base_url}/v1/login2"
-            data = {
-                "user_name": self.username,
-                "password": self.password,
-            }
-
-            async with self.session.post(url, json=data) as response:
-                if response.status == 200:
-                    auth_data = await response.json()
-                    self.access_token = auth_data.get("accesstoken")
-
-                    id_token = auth_data.get("idtoken")
-                    if id_token:
-                        id_payload = self._decode_jwt_payload(id_token)
-                        if id_payload:
-                            self.user_id = id_payload.get("custom:user_id")
-
-                    return self.access_token is not None and self.user_id is not None
-                else:
-                    return False
-        except Exception:
-            return False
-
-    async def get_status(self, node_id: str) -> dict:
-        """Get current status parameters."""
-        headers = {"Authorization": self.access_token}
-
-        params_url = f"{self.base_url}/v1/user/nodes/params?nodeid={node_id}"
-
-        async with self.session.get(params_url, headers=headers) as response:
-            if response.status == 200:
-                params_data = await response.json()
-                liv_hub_params = params_data.get("LIV Hub", {})
-
-                return {
-                    "system_status": liv_hub_params.get("System Status", None),
-                    "system_state": liv_hub_params.get("System State", None),
-                    "enable_repellers": liv_hub_params.get("Enable Repellers", False),
-                    "error": liv_hub_params.get("Error", None),
-                    "current_runtime": liv_hub_params.get("Current Runtime", None),
-                    "daily_runtime": liv_hub_params.get("Daily Runtime", None),
-                    "system_runtime": liv_hub_params.get("System Runtime", None),
-                    "warming_timeout": liv_hub_params.get("Warming Timeout", None),
-                    "hub_temperature": liv_hub_params.get("Hub Temperature", None),
-                }
-        return {}
-
-    def interpret_system_status(self, status: dict) -> str:
-        """Interpret system status based on parameters."""
-        system_status = status.get("system_status")
-        system_state = status.get("system_state")
-        enable_repellers = status.get("enable_repellers", False)
-        error = status.get("error", 0)
-
-        # Based on observation and common IoT patterns
-        if error and error > 0:
-            return "Error"
-        elif not enable_repellers:
-            return "Off"
-        elif enable_repellers and system_status == 1:
-            return "Off"  # Device commanded off
-        elif enable_repellers and system_status == 2:
-            return "Warming Up"  # Transitioning/warming
-        elif enable_repellers and system_status == 3:
-            return "On"  # Fully operational
-        elif system_status == 4:
-            return "Standby"  # Standby mode
-        else:
-            return f"Unknown (Status: {system_status}, State: {system_state})"
-
-    async def monitor_status_changes(self, node_id: str, duration: int = 30):
-        """Monitor status changes over time."""
-        print(f"🔄 Monitoring status changes for {duration} seconds...")
-
-        start_time = asyncio.get_event_loop().time()
-        last_status = None
-
-        while (asyncio.get_event_loop().time() - start_time) < duration:
-            current_status = await self.get_status(node_id)
-            interpreted = self.interpret_system_status(current_status)
-
-            if current_status != last_status:
-                elapsed = int(asyncio.get_event_loop().time() - start_time)
-                print(f"   [{elapsed:2d}s] Status: {interpreted}")
-                print(f"         System Status: {current_status.get('system_status')}")
-                print(f"         System State: {current_status.get('system_state')}")
-                print(f"         Enable Repellers: {current_status.get('enable_repellers')}")
-                print(f"         Current Runtime: {current_status.get('current_runtime')}")
-                print(f"         Temperature: {current_status.get('hub_temperature')}°C")
-                last_status = current_status.copy()
-
-            await asyncio.sleep(2)  # Check every 2 seconds
-
-    async def set_repeller_power(self, node_id: str, power_on: bool) -> bool:
-        """Set repeller power."""
-        headers = {"Authorization": self.access_token}
-
-        url = f"{self.base_url}/v1/user/nodes/params?nodeid={node_id}"
-        payload = {
-            "LIV Hub": {
-                "Enable Repellers": power_on
-            }
-        }
-
-        try:
-            async with self.session.put(url, json=payload, headers=headers) as response:
-                if response.status == 200:
-                    action = "ON" if power_on else "OFF"
-                    print(f"   ✅ Repeller turned {action}")
-                    return True
-                else:
-                    print("   ❌ Failed to set power")
-                    return False
-        except Exception as e:
-            print(f"   ❌ Exception: {e}")
-            return False
-
-    async def comprehensive_status_test(self, node_id: str):
-        """Comprehensive test to understand all status codes."""
-        print("🔬 Comprehensive Status Test")
-        print("=" * 60)
-
-        # Start with system OFF
-        print("\n1️⃣ Ensuring system is OFF...")
-        await self.set_repeller_power(node_id, False)
-        await asyncio.sleep(5)
-
-        print("\n📊 OFF State monitoring:")
-        await self.monitor_status_changes(node_id, 10)
-
-        # Turn system ON and monitor warmup
-        print("\n2️⃣ Turning system ON and monitoring warmup...")
-        await self.set_repeller_power(node_id, True)
-
-        print("\n📊 Warmup and Running State monitoring:")
-        await self.monitor_status_changes(node_id, 60)  # Monitor for 1 minute
-
-        # Turn system OFF
-        print("\n3️⃣ Turning system OFF...")
-        await self.set_repeller_power(node_id, False)
-
-        print("\n📊 Shutdown monitoring:")
-        await self.monitor_status_changes(node_id, 15)
-
-        print("\n✅ Comprehensive test completed!")
+def interpret_system_status(
+    system_status: int | None,
+    is_powered_on: bool,
+    error_code: int | None,
+) -> str:
+    """Interpret system status based on parameters."""
+    if error_code and error_code > 0:
+        return "Error"
+    elif not is_powered_on or system_status == 1:
+        return "Off"
+    elif system_status == 2:
+        return "Warming Up"
+    elif system_status == 3:
+        return "Protected"
+    elif system_status == 4:
+        return "Standby"
+    else:
+        return f"Unknown (Status: {system_status})"
 
 
-async def main():
-    """Main function for detailed status testing."""
-    print("🔬 Thermacell Detailed System Status Analysis")
+async def detailed_status_analysis():
+    """Detailed analysis of current device status (read-only)."""
+    print("Thermacell Detailed System Status Analysis")
     print("=" * 70)
 
     async with aiohttp.ClientSession() as session:
-        tester = DetailedStatusTester()
-        tester.session = session
+        print("Authenticating...")
+        async with ThermacellClient(
+            username=THERMACELL_USERNAME,
+            password=THERMACELL_PASSWORD,
+            session=session,
+        ) as client:
+            print("   Success!")
+            print()
 
-        print("🔐 Authenticating...")
-        if await tester.authenticate():
-            print(f"   ✅ Success! User ID: {tester.user_id}")
+            devices = await client.get_devices()
 
-            # Test with known node
-            test_node_id = "JM7UVxmMgPUYUhVJVBWEf6"
+            if not devices:
+                print("No devices found")
+                return
 
-            # Run comprehensive test
-            await tester.comprehensive_status_test(test_node_id)
-        else:
-            print("   ❌ Authentication failed")
+            for device in devices:
+                print(f"Device: {device.name}")
+                print("=" * 50)
 
-    print("\n🎉 Detailed analysis completed!")
+                # Device identification
+                print("\n1. Device Identification:")
+                print(f"   Node ID: {device.node_id}")
+                print(f"   Name: {device.name}")
+                print(f"   Model: {device.model}")
+                print(f"   Firmware: {device.fw_version}")
+                print(f"   Hub Serial: {device.hub_serial}")
+
+                # Connectivity
+                print("\n2. Connectivity:")
+                print(f"   Online: {device.is_online}")
+
+                # Power and status
+                print("\n3. Power and Status:")
+                print(f"   Powered On: {device.is_powered_on}")
+                print(f"   System Status Code: {device.system_status}")
+                print(f"   Error Code: {device.error_code}")
+
+                status_text = interpret_system_status(
+                    device.system_status,
+                    device.is_powered_on,
+                    device.error_code,
+                )
+                print(f"   Interpreted Status: {status_text}")
+
+                # Runtime
+                print("\n4. Runtime:")
+                runtime = device.system_runtime or 0
+                days = runtime // (24 * 60)
+                hours = (runtime % (24 * 60)) // 60
+                minutes = runtime % 60
+
+                runtime_parts = []
+                if days > 0:
+                    runtime_parts.append(f"{days}d")
+                if hours > 0:
+                    runtime_parts.append(f"{hours}h")
+                if minutes > 0:
+                    runtime_parts.append(f"{minutes}m")
+
+                formatted = " ".join(runtime_parts) if runtime_parts else "0m"
+                print(f"   System Runtime: {runtime} minutes ({formatted})")
+
+                # LED
+                print("\n5. LED State:")
+                print(f"   LED Power: {device.led_power}")
+                print(f"   LED Brightness: {device.led_brightness}")
+                print(f"   LED Hue: {device.led_hue}")
+                print(f"   LED Saturation: {device.led_saturation}")
+                print(f"   LED Value: {device.led_value}")
+
+                # Refill
+                print("\n6. Refill:")
+                print(f"   Refill Life: {device.refill_life}%")
+
+                print()
+
+            # Reference information
+            print("=" * 70)
+            print("Status Code Reference:")
+            print("-" * 50)
+            print("   OFF State:      is_powered_on=False, status=1")
+            print("   Warming Up:     is_powered_on=True, status=2")
+            print("   Protected:      is_powered_on=True, status=3")
+            print("   Error:          error_code > 0")
+            print()
+            print("NOTE: To test state transitions, toggle power via")
+            print("      Home Assistant or the Thermacell mobile app.")
+
+    print("\nDetailed analysis completed!")
+
+
+async def main():
+    """Main function for detailed status analysis."""
+    await detailed_status_analysis()
 
 
 if __name__ == "__main__":

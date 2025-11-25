@@ -24,7 +24,7 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.async_get_clientsession"),
             patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
             patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
@@ -61,7 +61,7 @@ class TestAsyncSetupEntry:
         entry.data = {"username": "test@example.com", "password": "wrongpass"}
 
         with (
-            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.async_get_clientsession"),
             patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
         ):
             mock_client = AsyncMock(spec=ThermacellClient)
@@ -82,7 +82,7 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.async_get_clientsession"),
             patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
             patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):
@@ -116,7 +116,7 @@ class TestAsyncSetupEntry:
         entry.async_on_unload = MagicMock()
 
         with (
-            patch("custom_components.thermacell_liv.async_get_clientsession") as mock_session,
+            patch("custom_components.thermacell_liv.async_get_clientsession"),
             patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
             patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
         ):

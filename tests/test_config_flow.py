@@ -66,9 +66,9 @@ class TestValidateInput:
         with (
             patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
             patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+            pytest.raises(InvalidAuth),
         ):
-            with pytest.raises(InvalidAuth):
-                await validate_input(hass, data)
+            await validate_input(hass, data)
 
     @pytest.mark.asyncio
     async def test_validate_input_cannot_connect(self):
@@ -81,9 +81,9 @@ class TestValidateInput:
         with (
             patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
             patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+            pytest.raises(CannotConnect),
         ):
-            with pytest.raises(CannotConnect):
-                await validate_input(hass, data)
+            await validate_input(hass, data)
 
     @pytest.mark.asyncio
     async def test_validate_input_no_devices(self):
@@ -96,9 +96,9 @@ class TestValidateInput:
         with (
             patch("custom_components.thermacell_liv.config_flow.async_get_clientsession"),
             patch("custom_components.thermacell_liv.config_flow.ThermacellClient", return_value=mock_client),
+            pytest.raises(CannotConnect),
         ):
-            with pytest.raises(CannotConnect):
-                await validate_input(hass, data)
+            await validate_input(hass, data)
 
 
 class TestConfigFlow:

@@ -1,139 +1,87 @@
 #!/usr/bin/env python3
 """
-Investigate device information available in the API.
+Investigate device information available through pythermacell library.
 """
+
 import asyncio
-import json
-from secrets import THERMACELL_API_BASE_URL, THERMACELL_PASSWORD, THERMACELL_USERNAME
-from unittest.mock import MagicMock
+from secrets import THERMACELL_PASSWORD, THERMACELL_USERNAME
 
 import aiohttp
+from pythermacell import ThermacellClient
 
-from custom_components.thermacell_liv.api import ThermacellLivAPI
 
-
-async def investigate_device_info(session):
+async def investigate_device_info():
     """Investigate all available device information."""
-    print("🔍 Investigating Device Information in API")
+    print("Investigating Device Information via pythermacell")
     print("=" * 60)
 
-    hass = MagicMock()
-    api = ThermacellLivAPI(hass, THERMACELL_USERNAME, THERMACELL_PASSWORD, THERMACELL_API_BASE_URL)
-    api.session = session
+    async with aiohttp.ClientSession() as session:
+        print("Authenticating...")
+        async with ThermacellClient(
+            username=THERMACELL_USERNAME,
+            password=THERMACELL_PASSWORD,
+            session=session,
+        ) as client:
+            print("Authentication successful")
 
-    node_id = "JM7UVxmMgPUYUhVJVBWEf6"
+            devices = await client.get_devices()
+            print(f"\nFound {len(devices)} device(s)")
 
-    print("🔐 Authenticating...")
-    if not await api.authenticate():
-        print("❌ Authentication failed")
-        return
+            for device in devices:
+                print(f"\nDevice: {device.name} ({device.node_id})")
+                print("-" * 40)
 
-    print("✅ Authentication successful")
+                # Display all available device properties
+                print("\nBasic Info:")
+                print(f"  Node ID: {device.node_id}")
+                print(f"  Name: {device.name}")
+                print(f"  Model: {device.model}")
+                print(f"  Firmware Version: {device.fw_version}")
+                print(f"  Hub Serial: {device.hub_serial}")
 
-    # Get user nodes (includes basic device info)
-    print("\n📊 Getting user nodes...")
-    nodes = await api.get_user_nodes()
+                print("\nConnectivity:")
+                print(f"  Online: {device.is_online}")
 
-    if nodes:
-        for node in nodes:
-            if node["id"] == node_id:
-                print(f"\n🏷️  NODE DATA for {node_id}:")
-                print(json.dumps(node, indent=2))
+                print("\nPower State:")
+                print(f"  Powered On: {device.is_powered_on}")
+                print(f"  System Status: {device.system_status}")
+                print(f"  System Runtime: {device.system_runtime} minutes")
 
-                # Look specifically for firmware info
-                print("\n🔍 Searching for firmware version...")
-                for key, value in node.items():
-                    if "fw" in key.lower() or "firmware" in key.lower() or "version" in key.lower():
-                        print(f"   {key}: {value}")
+                print("\nLED State:")
+                print(f"  LED Power: {device.led_power}")
+                print(f"  LED Brightness: {device.led_brightness}")
+                print(f"  LED Hue: {device.led_hue}")
+                print(f"  LED Saturation: {device.led_saturation}")
+                print(f"  LED Value: {device.led_value}")
 
-                # Check params for additional info
-                params = node.get("params", {})
-                if "LIV Hub" in params:
-                    liv_params = params["LIV Hub"]
-                    print("\n🔍 LIV Hub Parameters:")
+                print("\nRefill & Error:")
+                print(f"  Refill Life: {device.refill_life}%")
+                print(f"  Error Code: {device.error_code}")
 
-                    # Look for runtime, serial, system ID
-                    runtime_keys = []
-                    serial_keys = []
-                    system_keys = []
-                    version_keys = []
+                # Format runtime
+                if device.system_runtime:
+                    runtime = device.system_runtime
+                    days = runtime // (24 * 60)
+                    hours = (runtime % (24 * 60)) // 60
+                    minutes = runtime % 60
 
-                    for key, value in liv_params.items():
-                        key_lower = key.lower()
-                        print(f"   {key}: {value}")
+                    runtime_parts = []
+                    if days > 0:
+                        runtime_parts.append(f"{days} day{'s' if days != 1 else ''}")
+                    if hours > 0:
+                        runtime_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+                    if minutes > 0:
+                        runtime_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
 
-                        if any(term in key_lower for term in ['runtime', 'uptime', 'time', 'hours', 'days']):
-                            runtime_keys.append((key, value))
-                        elif any(term in key_lower for term in ['serial', 'sn', 'number']):
-                            serial_keys.append((key, value))
-                        elif any(term in key_lower for term in ['system', 'id', 'uuid', 'guid']):
-                            system_keys.append((key, value))
-                        elif any(term in key_lower for term in ['version', 'fw', 'firmware', 'ver']):
-                            version_keys.append((key, value))
+                    formatted_runtime = ", ".join(runtime_parts) if runtime_parts else "0 minutes"
+                    print(f"\nFormatted Runtime: {formatted_runtime}")
 
-                    print("\n📊 POTENTIAL MATCHES:")
-                    if version_keys:
-                        print(f"   Firmware/Version keys: {version_keys}")
-                    if runtime_keys:
-                        print(f"   Runtime keys: {runtime_keys}")
-                    if serial_keys:
-                        print(f"   Serial keys: {serial_keys}")
-                    if system_keys:
-                        print(f"   System ID keys: {system_keys}")
-                break
-
-    # Get node status (might contain additional info)
-    print("\n📊 Getting node status...")
-    status = await api.get_node_status(node_id)
-
-    if status:
-        print(f"\n🏷️  NODE STATUS for {node_id}:")
-        print(json.dumps(status, indent=2))
-
-        # Look for firmware info in status
-        print("\n🔍 Searching status for firmware/device info...")
-
-        def search_nested(data, path=""):
-            for key, value in data.items() if isinstance(data, dict) else []:
-                current_path = f"{path}.{key}" if path else key
-                key_lower = key.lower()
-
-                if any(term in key_lower for term in ['fw', 'firmware', 'version', 'ver', 'runtime', 'uptime', 'serial', 'sn', 'system', 'id']):
-                    print(f"   {current_path}: {value}")
-
-                if isinstance(value, dict):
-                    search_nested(value, current_path)
-
-        search_nested(status)
-
-    # Try to get additional device endpoints
-    print("\n🔍 Trying additional API endpoints...")
-
-    # Try device info endpoint
-    try:
-        device_info_response = await api._make_request("GET", f"/user/nodes/info?nodeid={node_id}")
-        if device_info_response:
-            print("\n📊 DEVICE INFO ENDPOINT:")
-            print(json.dumps(device_info_response, indent=2))
-    except:
-        print("   No /user/nodes/info endpoint")
-
-    # Try config endpoint
-    try:
-        config_response = await api._make_request("GET", f"/user/nodes/config?nodeid={node_id}")
-        if config_response:
-            print("\n📊 DEVICE CONFIG ENDPOINT:")
-            print(json.dumps(config_response, indent=2))
-    except:
-        print("   No /user/nodes/config endpoint")
+    print("\nDevice information investigation completed!")
 
 
 async def main():
     """Run device info investigation."""
-    async with aiohttp.ClientSession() as session:
-        await investigate_device_info(session)
-
-    print("\n🎉 Device information investigation completed!")
+    await investigate_device_info()
 
 
 if __name__ == "__main__":
