@@ -98,9 +98,9 @@ jobs:
             exit 1
           fi
 
-          # Verify async dependency (aiohttp)
-          if grep -q "aiohttp" custom_components/thermacell_liv/manifest.json; then
-            echo "✅ Async dependency (aiohttp) declared"
+          # Verify async dependency (pythermacell includes aiohttp)
+          if grep -q "pythermacell" custom_components/thermacell_liv/manifest.json; then
+            echo "✅ Async dependency (pythermacell) declared"
           else
             echo "❌ Async dependency not found"
             exit 1
