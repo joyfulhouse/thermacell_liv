@@ -14,7 +14,14 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .const import (
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,8 +96,12 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         raise CannotConnect from err
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
-    """Handle a config flow for Thermacell LIV."""
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Thermacell LIV.
+
+    Note: The domain= class argument is handled by Home Assistant's ConfigFlow
+    metaclass for automatic registration. This is the standard HA pattern.
+    """
 
     VERSION = 1
 
@@ -181,7 +192,7 @@ class ThermacellLivOptionsFlow(config_entries.OptionsFlow):
 
         # Get current options or use defaults
         options = {
-            "scan_interval": self.config_entry.options.get("scan_interval", 60),
+            "scan_interval": self.config_entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL),
         }
 
         return self.async_show_form(
@@ -191,7 +202,7 @@ class ThermacellLivOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         "scan_interval",
                         default=options["scan_interval"],
-                    ): vol.All(vol.Coerce(int), vol.Range(min=30, max=300)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)),
                 }
             ),
         )

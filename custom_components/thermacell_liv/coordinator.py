@@ -6,10 +6,11 @@ This module uses full type annotations and async operations for optimal performa
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 import colorsys
 from datetime import datetime, timedelta
 import logging
-from typing import Any
+from typing import Any, TypeVar
 
 from pythermacell import (
     AuthenticationError,
@@ -27,8 +28,19 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import (
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    STATUS_ERROR,
+    STATUS_NOT_CONNECTED,
+    STATUS_OFF,
+    STATUS_PROTECTED,
+    STATUS_UNKNOWN,
+    STATUS_WARMING_UP,
+)
 from .thermacell_types import DeviceParams, NodeData, RGBColor
+
+T = TypeVar("T")
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,19 +76,19 @@ def _map_system_status(system_status: int, enable_repellers: bool, error: int) -
         error: Error code (0 = no error)
 
     Returns:
-        Status text: "Error", "Off", "Warming Up", "Protected", or "Unknown"
+        Status text constant from const.py
     """
     if error > 0:
-        return "Error"
+        return STATUS_ERROR
     if not enable_repellers:
-        return "Off"
+        return STATUS_OFF
     if system_status == 1:
-        return "Off"
+        return STATUS_OFF
     if system_status == 2:
-        return "Warming Up"
+        return STATUS_WARMING_UP
     if system_status == 3:
-        return "Protected"
-    return "Unknown"
+        return STATUS_PROTECTED
+    return STATUS_UNKNOWN
 
 
 def _convert_brightness_to_ha(brightness: int) -> int:
@@ -98,7 +110,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     - Optimistic updates provide immediate UI feedback independent of polling
     """
 
-    def __init__(self, hass: HomeAssistant, client: ThermacellClient, scan_interval: int = 60) -> None:
+    def __init__(
+        self, hass: HomeAssistant, client: ThermacellClient, scan_interval: int = DEFAULT_SCAN_INTERVAL
+    ) -> None:
         """Initialize the coordinator.
 
         Args:
@@ -134,7 +148,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         system_status = device.system_status or 1
 
         # Check if node is offline first - override all other status
-        status_text = "Not Connected" if not is_online else _map_system_status(system_status, is_powered, error)
+        status_text = STATUS_NOT_CONNECTED if not is_online else _map_system_status(system_status, is_powered, error)
 
         # Get LED properties
         led_brightness = device.led_brightness or 0
@@ -300,6 +314,66 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             node_data = self._device_to_node_data(device)
             self.data[node_id] = node_data
             self.async_update_listeners()
+
+    async def _async_optimistic_update(
+        self,
+        node_id: str,
+        device_name: str,
+        apply_update: Callable[[DeviceParams], dict[str, Any]],
+        api_call: Callable[[ThermacellDevice], Awaitable[None]],
+        operation_name: str,
+    ) -> bool:
+        """Execute an optimistic update pattern.
+
+        This helper handles the common pattern of:
+        1. Get device and check it exists
+        2. Save current state
+        3. Apply optimistic update and notify listeners
+        4. Make API call
+        5. Revert on failure
+
+        Args:
+            node_id: The node identifier
+            device_name: The device name within the node
+            apply_update: Callable that takes device_data and returns dict of original values
+            api_call: Async callable that takes ThermacellDevice and makes API call
+            operation_name: Human-readable operation name for logging
+
+        Returns:
+            True if successful, False otherwise
+        """
+        device = self._get_device(node_id)
+        if not device:
+            _LOGGER.warning("Device not found for node %s", node_id)
+            return False
+
+        device_data = self._get_device_data_safe(node_id, device_name)
+        original_values: dict[str, Any] = {}
+
+        if device_data:
+            # Apply optimistic update and save original values
+            original_values = apply_update(device_data)
+            self.async_update_listeners()
+
+        # Make API call
+        try:
+            await api_call(device)
+            _LOGGER.debug("Successfully %s for device %s", operation_name, device_name)
+            return True
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to %s for device %s (node %s): %s - service unavailable",
+                operation_name,
+                device_name,
+                node_id,
+                err,
+            )
+            # Revert optimistic update
+            if device_data and original_values:
+                for key, value in original_values.items():
+                    device_data[key] = value
+                self.async_update_listeners()
+            return False
 
     async def async_set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
         """Set device power with optimistic update."""

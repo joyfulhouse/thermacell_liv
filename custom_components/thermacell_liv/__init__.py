@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import ThermacellLivCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,7 +36,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         session=session,
     )
 
-    # Enter the client context (handles authentication)
+    # Authenticate with the API
+    # Note: We call __aenter__/__aexit__ directly because the client lifecycle
+    # spans setup/unload rather than a single async with scope
     try:
         await client.__aenter__()
     except AuthenticationError as err:
@@ -45,7 +47,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Failed to connect to Thermacell API: {err}") from err
 
     # Initialize coordinator with configurable scan interval
-    scan_interval = entry.options.get("scan_interval", 60)
+    scan_interval = entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)
     coordinator = ThermacellLivCoordinator(hass, client, scan_interval=scan_interval)
 
     # Fetch initial data
