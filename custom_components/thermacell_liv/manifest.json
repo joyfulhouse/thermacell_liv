@@ -9,6 +9,6 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/joyfulhouse/thermacell_liv/issues",
   "quality_scale": "platinum",
-  "requirements": ["pythermacell>=0.2.2"],
-  "version": "2.0.0-beta.3"
+  "requirements": ["pythermacell>=0.2.3"],
+  "version": "2.0.0-beta.4"
 }

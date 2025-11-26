@@ -14,6 +14,30 @@ This is a **production-ready** Home Assistant custom component for integrating T
 - ✨ **Professional Entity Naming**: Clean display names following HA conventions
 - 📦 **pythermacell Library**: Uses the dedicated pythermacell Python library for API communication
 
+## Development
+
+### Testing & Linting
+Use `uv` for running tests and managing dependencies (provides proper Home Assistant typing):
+
+```bash
+# Install/sync dependencies (with dev extras including homeassistant)
+uv sync --extra dev --prerelease=allow
+
+# Run tests
+uv run pytest tests/ -v
+
+# Run linting
+uv run ruff check custom_components/thermacell_liv/
+
+# Run type checking (with HA types)
+uv run mypy custom_components/thermacell_liv/ --ignore-missing-imports
+```
+
+### Dependencies
+- **pythermacell**: `>=0.2.3` - Python library for Thermacell API communication
+- **homeassistant**: `>=2025.11.0` - Dev dependency for proper typing support
+- **requires-python**: `>=3.13.2` - Required for HA 2025.11+ compatibility
+
 ## Component Structure
 
 ### Domain: `thermacell_liv`
