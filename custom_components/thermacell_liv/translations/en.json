@@ -1,4 +1,42 @@
 {
+  "entity": {
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "sensor": {
+      "refill_life": {
+        "name": "Refill life"
+      },
+      "system_status": {
+        "name": "System status"
+      },
+      "system_runtime": {
+        "name": "System runtime"
+      },
+      "connectivity": {
+        "name": "Connectivity"
+      },
+      "error_code": {
+        "name": "Error code"
+      },
+      "hub_id": {
+        "name": "Hub ID"
+      },
+      "firmware_version": {
+        "name": "Firmware version"
+      }
+    },
+    "button": {
+      "reset_refill": {
+        "name": "Reset refill"
+      },
+      "refresh": {
+        "name": "Refresh"
+      }
+    }
+  },
   "config": {
     "step": {
       "user": {
