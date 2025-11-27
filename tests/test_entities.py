@@ -377,27 +377,24 @@ class TestThermacellLivResetButton:
     async def test_async_press_success(self, mock_coordinator):
         """Test button press successfully."""
         mock_coordinator.async_reset_refill_life = AsyncMock(return_value=True)
-        mock_coordinator.async_request_refresh = AsyncMock()
 
         button = ThermacellLivResetButton(mock_coordinator, "node1", "Device1")
 
         await button.async_press()
 
         mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
-        mock_coordinator.async_request_refresh.assert_called_once()
+        # Note: async_request_refresh is not called - coordinator updates listeners directly
 
     @pytest.mark.asyncio
     async def test_async_press_failure(self, mock_coordinator):
         """Test button press with failure."""
         mock_coordinator.async_reset_refill_life = AsyncMock(return_value=False)
-        mock_coordinator.async_request_refresh = AsyncMock()
 
         button = ThermacellLivResetButton(mock_coordinator, "node1", "Device1")
 
         await button.async_press()
 
         mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
-        mock_coordinator.async_request_refresh.assert_not_called()
 
 
 class TestEntityPlatformSetup:
