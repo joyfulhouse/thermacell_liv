@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.light import (
@@ -18,9 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ThermacellLivCoordinator
-from .entity import ThermacellLivEntity
-
-_LOGGER = logging.getLogger(__name__)
+from .entity import ThermacellLivEntity, async_setup_platform_entities
 
 # Limit parallel updates to avoid overwhelming the API
 PARALLEL_UPDATES = 1
@@ -32,16 +29,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the light platform."""
-    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
-
-    lights = []
-
-    # Create light entities for each device in each node
-    for node_id, node_data in coordinator.data.items():
-        for device_name in node_data.get("devices", {}):
-            lights.append(ThermacellLivLight(coordinator, node_id, device_name))
-
-    async_add_entities(lights, update_before_add=True)
+    await async_setup_platform_entities(config_entry, async_add_entities, ThermacellLivLight)
 
 
 class ThermacellLivLight(ThermacellLivEntity, LightEntity):
@@ -51,7 +39,6 @@ class ThermacellLivLight(ThermacellLivEntity, LightEntity):
         """Initialize the light."""
         super().__init__(coordinator, node_id, device_name)
 
-        self._attr_has_entity_name = True
         self._attr_translation_key = "led"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_light"
         self._attr_color_mode = ColorMode.RGB

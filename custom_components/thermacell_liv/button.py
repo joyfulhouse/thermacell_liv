@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ThermacellLivCoordinator
-from .entity import ThermacellLivEntity
+from .entity import ThermacellLivEntity, async_setup_platform_entities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,17 +27,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the button platform."""
-    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
-
-    buttons = []
-
-    # Create button entities for each device in each node
-    for node_id, node_data in coordinator.data.items():
-        for device_name in node_data.get("devices", {}):
-            buttons.append(ThermacellLivResetButton(coordinator, node_id, device_name))
-            buttons.append(ThermacellLivRefreshButton(coordinator, node_id, device_name))
-
-    async_add_entities(buttons, update_before_add=True)
+    await async_setup_platform_entities(
+        config_entry, async_add_entities, ThermacellLivResetButton, ThermacellLivRefreshButton
+    )
 
 
 class ThermacellLivResetButton(ThermacellLivEntity, ButtonEntity):
@@ -47,7 +39,6 @@ class ThermacellLivResetButton(ThermacellLivEntity, ButtonEntity):
         """Initialize the button."""
         super().__init__(coordinator, node_id, device_name)
 
-        self._attr_has_entity_name = True
         self._attr_translation_key = "reset_refill"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_reset_refill"
         self._attr_icon = "mdi:refresh"
@@ -66,7 +57,6 @@ class ThermacellLivRefreshButton(ThermacellLivEntity, ButtonEntity):
         """Initialize the button."""
         super().__init__(coordinator, node_id, device_name)
 
-        self._attr_has_entity_name = True
         self._attr_translation_key = "refresh"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refresh"
         self._attr_icon = "mdi:refresh"
