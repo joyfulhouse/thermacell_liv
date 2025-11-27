@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -23,10 +22,7 @@ from .const import (
     STATUS_UNKNOWN,
 )
 from .coordinator import ThermacellLivCoordinator
-from .entity import ThermacellLivEntity
-
-_LOGGER = logging.getLogger(__name__)
-
+from .entity import ThermacellLivEntity, async_setup_platform_entities
 
 # Sensor platform doesn't make write operations, so parallel updates can be higher
 PARALLEL_UPDATES = 0  # No limit on sensor updates
@@ -38,29 +34,17 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the sensor platform."""
-    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
-
-    sensors = []
-
-    # Create sensor entities for each device in each node
-    for node_id, node_data in coordinator.data.items():
-        for device_name in node_data.get("devices", {}):
-            # Refill life sensor
-            sensors.append(ThermacellLivRefillSensor(coordinator, node_id, device_name))
-            # System status sensor
-            sensors.append(ThermacellLivSystemStatusSensor(coordinator, node_id, device_name))
-            # System runtime sensor
-            sensors.append(ThermacellLivSystemRuntimeSensor(coordinator, node_id, device_name))
-            # Connectivity status sensor
-            sensors.append(ThermacellLivConnectivitySensor(coordinator, node_id, device_name))
-            # Error code sensor
-            sensors.append(ThermacellLivErrorCodeSensor(coordinator, node_id, device_name))
-            # Hub ID (Serial) sensor
-            sensors.append(ThermacellLivHubIdSensor(coordinator, node_id, device_name))
-            # Firmware version sensor
-            sensors.append(ThermacellLivFirmwareSensor(coordinator, node_id, device_name))
-
-    async_add_entities(sensors, update_before_add=True)
+    await async_setup_platform_entities(
+        config_entry,
+        async_add_entities,
+        ThermacellLivRefillSensor,
+        ThermacellLivSystemStatusSensor,
+        ThermacellLivSystemRuntimeSensor,
+        ThermacellLivConnectivitySensor,
+        ThermacellLivErrorCodeSensor,
+        ThermacellLivHubIdSensor,
+        ThermacellLivFirmwareSensor,
+    )
 
 
 class ThermacellLivRefillSensor(ThermacellLivEntity, SensorEntity):
@@ -69,7 +53,6 @@ class ThermacellLivRefillSensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "refill_life"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
         self._attr_state_class = SensorStateClass.TOTAL
@@ -89,7 +72,6 @@ class ThermacellLivSystemStatusSensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "system_status"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_status"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -122,7 +104,6 @@ class ThermacellLivSystemRuntimeSensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "system_runtime"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_system_runtime"
         self._attr_device_class = SensorDeviceClass.DURATION
@@ -177,7 +158,6 @@ class ThermacellLivConnectivitySensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "connectivity"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_connectivity"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -205,7 +185,6 @@ class ThermacellLivErrorCodeSensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "error_code"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_error_code"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -237,7 +216,6 @@ class ThermacellLivHubIdSensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "hub_id"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_hub_id"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -257,7 +235,6 @@ class ThermacellLivFirmwareSensor(ThermacellLivEntity, SensorEntity):
     def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, node_id, device_name)
-        self._attr_has_entity_name = True
         self._attr_translation_key = "firmware_version"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_firmware"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC

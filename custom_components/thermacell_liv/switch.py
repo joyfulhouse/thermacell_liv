@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
@@ -12,9 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ThermacellLivCoordinator
-from .entity import ThermacellLivEntity
-
-_LOGGER = logging.getLogger(__name__)
+from .entity import ThermacellLivEntity, async_setup_platform_entities
 
 # Limit parallel updates to avoid overwhelming the API
 PARALLEL_UPDATES = 1
@@ -26,16 +23,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the switch platform."""
-    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
-
-    switches = []
-
-    # Create switch entities for each device in each node
-    for node_id, node_data in coordinator.data.items():
-        for device_name in node_data.get("devices", {}):
-            switches.append(ThermacellLivSwitch(coordinator, node_id, device_name))
-
-    async_add_entities(switches, update_before_add=True)
+    await async_setup_platform_entities(config_entry, async_add_entities, ThermacellLivSwitch)
 
 
 class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
@@ -45,7 +33,6 @@ class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
         """Initialize the switch."""
         super().__init__(coordinator, node_id, device_name)
 
-        self._attr_has_entity_name = True
         self._attr_name = None  # Main switch entity for the device
         self._attr_translation_key = None  # No translation key - uses device name
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
