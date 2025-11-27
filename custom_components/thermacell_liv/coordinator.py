@@ -6,11 +6,10 @@ This module uses full type annotations and async operations for optimal performa
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
 import colorsys
 from datetime import datetime, timedelta
 import logging
-from typing import Any, TypeVar
+from typing import Any
 
 from pythermacell import (
     AuthenticationError,
@@ -39,8 +38,6 @@ from .const import (
     STATUS_WARMING_UP,
 )
 from .thermacell_types import DeviceParams, NodeData, RGBColor
-
-T = TypeVar("T")
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -307,73 +304,6 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return None
         devices = self.data[node_id].get("devices", {})
         return devices.get(device_name)
-
-    def _update_local_state(self, node_id: str, device: ThermacellDevice) -> None:
-        """Update local state from device object after operation."""
-        if self.data and node_id in self.data:
-            node_data = self._device_to_node_data(device)
-            self.data[node_id] = node_data
-            self.async_update_listeners()
-
-    async def _async_optimistic_update(
-        self,
-        node_id: str,
-        device_name: str,
-        apply_update: Callable[[DeviceParams], dict[str, Any]],
-        api_call: Callable[[ThermacellDevice], Awaitable[None]],
-        operation_name: str,
-    ) -> bool:
-        """Execute an optimistic update pattern.
-
-        This helper handles the common pattern of:
-        1. Get device and check it exists
-        2. Save current state
-        3. Apply optimistic update and notify listeners
-        4. Make API call
-        5. Revert on failure
-
-        Args:
-            node_id: The node identifier
-            device_name: The device name within the node
-            apply_update: Callable that takes device_data and returns dict of original values
-            api_call: Async callable that takes ThermacellDevice and makes API call
-            operation_name: Human-readable operation name for logging
-
-        Returns:
-            True if successful, False otherwise
-        """
-        device = self._get_device(node_id)
-        if not device:
-            _LOGGER.warning("Device not found for node %s", node_id)
-            return False
-
-        device_data = self._get_device_data_safe(node_id, device_name)
-        original_values: dict[str, Any] = {}
-
-        if device_data:
-            # Apply optimistic update and save original values
-            original_values = apply_update(device_data)
-            self.async_update_listeners()
-
-        # Make API call
-        try:
-            await api_call(device)
-            _LOGGER.debug("Successfully %s for device %s", operation_name, device_name)
-            return True
-        except Exception as err:
-            _LOGGER.warning(
-                "Failed to %s for device %s (node %s): %s - service unavailable",
-                operation_name,
-                device_name,
-                node_id,
-                err,
-            )
-            # Revert optimistic update
-            if device_data and original_values:
-                for key, value in original_values.items():
-                    device_data[key] = value
-                self.async_update_listeners()
-            return False
 
     async def async_set_device_power(self, node_id: str, device_name: str, power_on: bool) -> bool:
         """Set device power with optimistic update."""
