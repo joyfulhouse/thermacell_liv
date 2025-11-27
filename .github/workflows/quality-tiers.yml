@@ -62,11 +62,17 @@ jobs:
       - name: Validate entity naming
         run: |
           python -c "
+          # Check base entity class for has_entity_name (allows inheritance to platform entities)
+          with open('custom_components/thermacell_liv/entity.py') as f:
+              if 'has_entity_name = True' not in f.read():
+                  raise Exception('entity.py: Missing has_entity_name in base class')
+
+          # Verify platform files inherit from ThermacellLivEntity
           files = ['switch.py', 'light.py', 'sensor.py', 'button.py']
           for file in files:
               with open(f'custom_components/thermacell_liv/{file}') as f:
-                  if 'has_entity_name = True' not in f.read():
-                      raise Exception(f'{file}: Missing has_entity_name')
+                  if 'ThermacellLivEntity' not in f.read():
+                      raise Exception(f'{file}: Not using ThermacellLivEntity base class')
           print('✓ Entity naming compliant')
           "
 
