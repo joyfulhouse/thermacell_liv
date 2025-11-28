@@ -42,7 +42,6 @@ async def async_setup_entry(
         ThermacellLivSystemRuntimeSensor,
         ThermacellLivConnectivitySensor,
         ThermacellLivErrorCodeSensor,
-        ThermacellLivHubIdSensor,
         ThermacellLivFirmwareSensor,
     )
 
@@ -208,25 +207,6 @@ class ThermacellLivErrorCodeSensor(ThermacellLivEntity, SensorEntity):
                 "status": "Error" if error_code > 0 else "OK",
             }
         return None
-
-
-class ThermacellLivHubIdSensor(ThermacellLivEntity, SensorEntity):
-    """Representation of a Thermacell LIV Hub ID (Serial) sensor."""
-
-    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, device_name: str) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator, node_id, device_name)
-        self._attr_translation_key = "hub_id"
-        self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_hub_id"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-        self._attr_entity_registry_enabled_default = False  # Gold: entity-disabled-by-default
-        self._attr_icon = "mdi:identifier"
-
-    @property
-    def native_value(self) -> str | None:
-        """Return the Hub ID (serial number)."""
-        node_data = self.coordinator.get_node_data(self._node_id)
-        return node_data.get("hub_serial") if node_data else None
 
 
 class ThermacellLivFirmwareSensor(ThermacellLivEntity, SensorEntity):

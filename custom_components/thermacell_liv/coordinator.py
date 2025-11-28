@@ -184,7 +184,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             type="Thermacell LIV",
             fw_version=device.firmware_version or "Unknown",
             model=model,
-            hub_serial=device.serial_number,
+            hub_serial=device.serial_number
+            if device.serial_number and device.serial_number != "unknown"
+            else device.node_id,
             system_runtime=device.system_runtime,
             online=is_online,
             devices={device.name: device_params},
