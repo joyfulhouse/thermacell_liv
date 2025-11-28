@@ -26,6 +26,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
 
+    # Update entry title to include username if not already
+    expected_title = f"Thermacell LIV ({username})"
+    if entry.title != expected_title:
+        hass.config_entries.async_update_entry(entry, title=expected_title)
+
     # Get the shared aiohttp session
     session = async_get_clientsession(hass)
 
