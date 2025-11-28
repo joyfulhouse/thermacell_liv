@@ -15,7 +15,6 @@ from custom_components.thermacell_liv.sensor import (
     ThermacellLivConnectivitySensor,
     ThermacellLivErrorCodeSensor,
     ThermacellLivFirmwareSensor,
-    ThermacellLivHubIdSensor,
     ThermacellLivRefillSensor,
     ThermacellLivSystemRuntimeSensor,
     ThermacellLivSystemStatusSensor,
@@ -85,7 +84,7 @@ class TestThermacellLivSwitch:
 
         assert switch._node_id == "node1"
         assert switch._device_name == "Device1"
-        assert switch._attr_name is None  # Main device entity has no name
+        assert switch._attr_name is None  # Main entity uses device name only
         assert switch._attr_unique_id == f"{DOMAIN}_node1_Device1_switch"
         # entity_id is set by HA entity registry, not during __init__
         assert switch.entity_id is None
@@ -97,11 +96,10 @@ class TestThermacellLivSwitch:
         device_info = switch.device_info
 
         assert device_info["identifiers"] == {(DOMAIN, "node1")}
-        assert device_info["name"] == "Test Node"
+        assert device_info["name"] == "Thermacell LIV Test Node"
         assert device_info["manufacturer"] == "Thermacell"
         assert device_info["model"] == "Thermacell LIV Hub"
         assert device_info["sw_version"] == "5.3.2"
-        assert device_info["serial_number"] == "ABC123456"
 
     def test_available_true(self, mock_coordinator):
         """Test switch availability (true)."""
@@ -330,7 +328,7 @@ class TestThermacellLivRefillSensor:
         device_info = sensor.device_info
         assert device_info is not None
         assert (DOMAIN, "node1") in device_info["identifiers"]
-        assert device_info["name"] == "Test Node"
+        assert device_info["name"] == "Thermacell LIV Test Node"
         assert device_info["manufacturer"] == "Thermacell"
 
     def test_available_true(self, mock_coordinator):
@@ -444,7 +442,7 @@ class TestEntityPlatformSetup:
 
         mock_add_entities.assert_called_once()
         sensors = mock_add_entities.call_args[0][0]
-        assert len(sensors) == 7  # All sensor types
+        assert len(sensors) == 6  # All sensor types
         # Check we have all sensor types
         sensor_types = [type(sensor) for sensor in sensors]
         assert ThermacellLivRefillSensor in sensor_types
@@ -452,7 +450,6 @@ class TestEntityPlatformSetup:
         assert ThermacellLivSystemRuntimeSensor in sensor_types
         assert ThermacellLivConnectivitySensor in sensor_types
         assert ThermacellLivErrorCodeSensor in sensor_types
-        assert ThermacellLivHubIdSensor in sensor_types
         assert ThermacellLivFirmwareSensor in sensor_types
 
     @pytest.mark.asyncio
@@ -622,7 +619,7 @@ class TestThermacellLivSystemStatusSensor:
         device_info = sensor.device_info
         assert device_info is not None
         assert (DOMAIN, "node1") in device_info["identifiers"]
-        assert device_info["name"] == "Test Node"
+        assert device_info["name"] == "Thermacell LIV Test Node"
         assert device_info["manufacturer"] == "Thermacell"
 
     def test_available(self, mock_coordinator):
@@ -865,53 +862,6 @@ class TestThermacellLivErrorCodeSensor:
         mock_coordinator.last_update_success = True
         mock_coordinator.is_node_online.return_value = True
         sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
-        assert sensor.available is True
-
-
-class TestThermacellLivHubIdSensor:
-    """Test the ThermacellLivHubIdSensor class."""
-
-    def test_init(self, mock_coordinator):
-        """Test sensor initialization."""
-        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
-
-        assert sensor._node_id == "node1"
-        assert sensor._device_name == "Device1"
-        assert sensor._attr_translation_key == "hub_id"
-        assert sensor._attr_unique_id == f"{DOMAIN}_node1_Device1_hub_id"
-        # entity_id is set by HA entity registry, not during __init__
-        assert sensor.entity_id is None
-        assert sensor._attr_entity_category == "diagnostic"
-
-    def test_native_value(self, mock_coordinator):
-        """Test sensor native value."""
-        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
-
-        assert sensor.native_value == "ABC123456"
-
-    def test_native_value_no_node_data(self, mock_coordinator):
-        """Test sensor native value with no node data."""
-        mock_coordinator.get_node_data.return_value = None
-        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
-
-        assert sensor.native_value is None
-
-    def test_icon(self, mock_coordinator):
-        """Test sensor icon."""
-        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
-        assert sensor.icon == "mdi:identifier"
-
-    def test_device_info(self, mock_coordinator):
-        """Test sensor device info."""
-        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
-        device_info = sensor.device_info
-        assert (DOMAIN, "node1") in device_info["identifiers"]
-
-    def test_available(self, mock_coordinator):
-        """Test sensor available."""
-        mock_coordinator.last_update_success = True
-        mock_coordinator.is_node_online.return_value = True
-        sensor = ThermacellLivHubIdSensor(mock_coordinator, "node1", "Device1")
         assert sensor.available is True
 
 

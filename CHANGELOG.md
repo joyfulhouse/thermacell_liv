@@ -5,6 +5,17 @@ All notable changes to the Thermacell LIV Home Assistant integration will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2024-11-28
+
+### Changed
+- **Device Naming**: Device names now include "Thermacell LIV" prefix (e.g., "Thermacell LIV ADU")
+  - Entity IDs now properly prefixed: `switch.thermacell_liv_adu`, `light.thermacell_liv_adu_led`
+- **Device Model**: Updated to display "Thermacell LIV Hub" instead of generic "Hub"
+
+### Removed
+- **Hub ID Sensor**: Removed as API doesn't provide meaningful serial number data
+- **Serial Number**: Removed from device info (API returns "unknown")
+
 ## [2.0.2] - 2024-11-27
 
 ### Changed

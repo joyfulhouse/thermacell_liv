@@ -33,8 +33,7 @@ class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
         """Initialize the switch."""
         super().__init__(coordinator, node_id, device_name)
 
-        self._attr_name = None  # Main switch entity for the device
-        self._attr_translation_key = None  # No translation key - uses device name
+        self._attr_name = None  # Main entity uses device name only
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_switch"
 
     @property

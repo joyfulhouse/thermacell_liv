@@ -81,18 +81,14 @@ class ThermacellLivEntity(CoordinatorEntity["ThermacellLivCoordinator"]):
     def device_info(self) -> DeviceInfo:
         """Return device information."""
         node_data = self.coordinator.get_node_data(self._node_id)
+        raw_name = node_data.get("name", "Hub")
         device_info_dict = {
             "identifiers": {(DOMAIN, self._node_id)},
-            "name": node_data.get("name", "Thermacell LIV"),
+            "name": f"Thermacell LIV {raw_name}",
             "manufacturer": "Thermacell",
-            "model": node_data.get("model", "LIV"),
+            "model": "Thermacell LIV Hub",
             "sw_version": node_data.get("fw_version", "Unknown"),
         }
-
-        # Add serial number if available
-        hub_serial = node_data.get("hub_serial")
-        if hub_serial:
-            device_info_dict["serial_number"] = hub_serial
 
         return DeviceInfo(**device_info_dict)
 
