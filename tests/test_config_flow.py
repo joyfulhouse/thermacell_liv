@@ -52,7 +52,7 @@ class TestValidateInput:
         ):
             result = await validate_input(hass, data)
 
-            assert result == {"title": "Thermacell LIV"}
+            assert result == {"title": "Thermacell LIV (test@example.com)"}
             mock_client.get_devices.assert_called_once()
 
     @pytest.mark.asyncio
@@ -128,7 +128,8 @@ class TestConfigFlow:
         user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
 
         with patch(
-            "custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}
+            "custom_components.thermacell_liv.config_flow.validate_input",
+            return_value={"title": "Thermacell LIV (test@example.com)"},
         ):
             # Mock unique_id methods
             flow.async_set_unique_id = AsyncMock(return_value=None)
@@ -137,7 +138,7 @@ class TestConfigFlow:
             result = await flow.async_step_user(user_input=user_input)
 
             assert result["type"] == "create_entry"
-            assert result["title"] == "Thermacell LIV"
+            assert result["title"] == "Thermacell LIV (test@example.com)"
             assert result["data"] == user_input
 
     @pytest.mark.asyncio
@@ -239,7 +240,8 @@ class TestConfigFlow:
         user_input = {CONF_USERNAME: "new@example.com", CONF_PASSWORD: "newpass"}
 
         with patch(
-            "custom_components.thermacell_liv.config_flow.validate_input", return_value={"title": "Thermacell LIV"}
+            "custom_components.thermacell_liv.config_flow.validate_input",
+            return_value={"title": "Thermacell LIV (new@example.com)"},
         ):
             result = await flow.async_step_reauth_confirm(user_input=user_input)
 

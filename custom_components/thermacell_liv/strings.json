@@ -21,9 +21,6 @@
       "error_code": {
         "name": "Error code"
       },
-      "hub_id": {
-        "name": "Hub ID"
-      },
       "firmware_version": {
         "name": "Firmware version"
       }
@@ -54,6 +51,14 @@
           "username": "Username/Email",
           "password": "Password"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Thermacell LIV",
+        "description": "Update your Thermacell account credentials.",
+        "data": {
+          "username": "Username/Email",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -63,7 +68,8 @@
     },
     "abort": {
       "already_configured": "This Thermacell account is already configured.",
-      "reauth_successful": "Reauthentication successful. Your credentials have been updated."
+      "reauth_successful": "Reauthentication successful. Your credentials have been updated.",
+      "reconfigure_successful": "Configuration updated successfully."
     }
   },
   "options": {
