@@ -274,16 +274,24 @@ class TestConfigFlow:
         assert isinstance(options_flow, ThermacellLivOptionsFlow)
 
 
+def _create_options_flow(options: dict | None = None) -> ThermacellLivOptionsFlow:
+    """Create an options flow with a mocked config_entry property."""
+    config_entry = MagicMock()
+    config_entry.options = options or {}
+
+    flow = ThermacellLivOptionsFlow()
+    # HA sets config_entry via internal property; patch it for tests
+    type(flow).config_entry = property(lambda self: config_entry)
+    return flow
+
+
 class TestOptionsFlow:
     """Test ThermacellLivOptionsFlow class."""
 
     @pytest.mark.asyncio
     async def test_async_step_init_show_form(self):
         """Test showing options form."""
-        config_entry = MagicMock()
-        config_entry.options = {"scan_interval": 60}
-
-        flow = ThermacellLivOptionsFlow(config_entry)
+        flow = _create_options_flow({"scan_interval": 60})
 
         result = await flow.async_step_init(user_input=None)
 
@@ -294,10 +302,7 @@ class TestOptionsFlow:
     @pytest.mark.asyncio
     async def test_async_step_init_save_options(self):
         """Test saving options."""
-        config_entry = MagicMock()
-        config_entry.options = {"scan_interval": 60}
-
-        flow = ThermacellLivOptionsFlow(config_entry)
+        flow = _create_options_flow({"scan_interval": 60})
 
         user_input = {"scan_interval": 120}
 
@@ -309,10 +314,7 @@ class TestOptionsFlow:
     @pytest.mark.asyncio
     async def test_async_step_init_default_values(self):
         """Test default values in options."""
-        config_entry = MagicMock()
-        config_entry.options = {}  # No existing options
-
-        flow = ThermacellLivOptionsFlow(config_entry)
+        flow = _create_options_flow()  # No existing options
 
         result = await flow.async_step_init(user_input=None)
 
