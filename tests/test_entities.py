@@ -695,6 +695,21 @@ class TestThermacellLivSystemRuntimeSensor:
         attrs = sensor.extra_state_attributes
         assert attrs is None
 
+    def test_native_value_none_runtime(self, mock_coordinator):
+        """Test sensor native value when system_runtime is None (API not reporting)."""
+        mock_coordinator.get_node_data.return_value = {"system_runtime": None}
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.native_value == 0
+
+    def test_extra_state_attributes_none_runtime(self, mock_coordinator):
+        """Test extra state attributes when system_runtime is None."""
+        mock_coordinator.get_node_data.return_value = {"system_runtime": None}
+        sensor = ThermacellLivSystemRuntimeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is None
+
     def test_extra_state_attributes_no_node_data(self, mock_coordinator):
         """Test extra state attributes with no node data."""
         mock_coordinator.get_node_data.return_value = None

@@ -117,7 +117,8 @@ class ThermacellLivSystemRuntimeSensor(ThermacellLivEntity, SensorEntity):
         """Return the runtime in minutes."""
         node_data = self.coordinator.get_node_data(self._node_id)
         if node_data:
-            return node_data.get("system_runtime", 0)
+            runtime = node_data.get("system_runtime")
+            return runtime if runtime is not None else 0
         return 0
 
     @property
@@ -125,7 +126,7 @@ class ThermacellLivSystemRuntimeSensor(ThermacellLivEntity, SensorEntity):
         """Return additional state attributes with human-readable runtime."""
         node_data = self.coordinator.get_node_data(self._node_id)
         if node_data:
-            runtime_minutes = node_data.get("system_runtime", 0)
+            runtime_minutes = node_data.get("system_runtime")
             if runtime_minutes:
                 # Convert minutes to days, hours, minutes format
                 days = runtime_minutes // (24 * 60)

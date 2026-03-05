@@ -5,6 +5,15 @@ All notable changes to the Thermacell LIV Home Assistant integration will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2026-03-05
+
+### Fixed
+- **System Runtime accuracy**: Updated to pythermacell 0.2.4 which correctly converts API values from tenths of hours to minutes (x6 multiplier)
+- **System Runtime None handling**: Sensor now properly handles `None` runtime values when API doesn't report System Runtime
+
+### Changed
+- Bumped `pythermacell` dependency from `>=0.2.3` to `>=0.2.4`
+
 ## [2.0.4] - 2024-11-28
 
 ### Added

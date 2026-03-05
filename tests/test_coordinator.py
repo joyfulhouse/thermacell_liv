@@ -35,7 +35,7 @@ def create_mock_device(
     is_powered_on: bool = True,
     error: int = 0,
     system_status: int = 3,
-    system_runtime: int = 120,
+    system_runtime: int | None = 120,
     led_brightness: int = 100,
     led_hue: int = 30,
     led_saturation: int = 100,
@@ -526,3 +526,23 @@ class TestThermacellLivCoordinator:
 
         device_data = result["node1"]["devices"]["Test Device"]
         assert device_data["led_power"] is False
+
+    @pytest.mark.asyncio
+    async def test_system_runtime_none_passthrough(self, coordinator):
+        """Test that None system_runtime from library is preserved."""
+        device = create_mock_device(system_runtime=None)
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        assert result["node1"]["system_runtime"] is None
+
+    @pytest.mark.asyncio
+    async def test_system_runtime_value_passthrough(self, coordinator):
+        """Test that system_runtime value from library is passed through unchanged."""
+        device = create_mock_device(system_runtime=720)
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        assert result["node1"]["system_runtime"] == 720
