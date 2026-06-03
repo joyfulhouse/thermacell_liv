@@ -1,9 +1,13 @@
 [project]
 name = "thermacell-liv"
-version = "2.0.1"
+version = "2.0.5"
 description = "Home Assistant custom component for Thermacell LIV mosquito repellers"
 readme = "README.md"
 requires-python = ">=3.13.2"
+license = "MIT"
+authors = [
+    { name = "JoyfulHouse Real Estate LLC" },
+]
 dependencies = [
     "pythermacell>=0.2.4",
 ]

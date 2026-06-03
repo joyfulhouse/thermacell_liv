@@ -1,96 +1,104 @@
 # Changelog
 
-All notable changes to the Thermacell LIV Home Assistant integration will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [2.0.5] - 2026-03-05
 
-### Fixed
-- **System Runtime accuracy**: Updated to pythermacell 0.2.4 which correctly converts API values from tenths of hours to minutes (x6 multiplier)
-- **System Runtime None handling**: Sensor now properly handles `None` runtime values when API doesn't report System Runtime
-
 ### Changed
-- Bumped `pythermacell` dependency from `>=0.2.3` to `>=0.2.4`
 
-## [2.0.4] - 2024-11-28
-
-### Added
-- **Reconfigure Flow**: Added reconfigure option to update credentials from integration menu
-- **Integration Title**: Config entry title now includes username (e.g., "Thermacell LIV (user@example.com)")
-  - Existing entries are automatically updated on next restart
-
-### Removed
-- **Hub ID Sensor**: Removed as API doesn't provide meaningful serial number data
-- **Serial Number**: Removed from device info (API returns "unknown")
-
-## [2.0.3] - 2024-11-28
-
-### Changed
-- **Device Naming**: Device names now include "Thermacell LIV" prefix (e.g., "Thermacell LIV ADU")
-  - Entity IDs now properly prefixed: `switch.thermacell_liv_adu`, `light.thermacell_liv_adu_led`
-- **Device Model**: Updated to display "Thermacell LIV Hub" instead of generic "Hub"
-
-## [2.0.2] - 2024-11-27
-
-### Changed
-- **CI Consolidation**: Merged 4 workflow files into 2 clean workflows
-  - `validate.yaml`: HassFest + HACS (run in parallel with summary)
-  - `ci.yaml`: Lint, Test, Type Check, Quality Scale tiers (Bronze→Platinum)
-- **Platform Setup**: Extracted common `async_setup_platform_entities()` helper to reduce duplication
-- **Base Entity**: Moved `has_entity_name = True` to base class (removes 11 redundant lines)
-- **Branch Protection**: Updated required checks to `Lint`, `Test`, `Platinum Tier`
-
-### Removed
-- Dead code in coordinator (`_async_optimistic_update`, `_update_local_state`)
-- Unused imports (`Awaitable`, `Callable`, `TypeVar`)
-- Redundant `async_request_refresh` call in button handler
-- Old workflow files (`hassfest.yaml`, `validate.yml`, `quality-tiers.yml`)
-- 200+ old workflow run history
-
-### Documentation
-- Consolidated Quality Scale compliance into single `QUALITY_SCALE.md`
-
-## [2.0.1] - 2024-11-26
-
-### Changed
-- Updated CI workflows to use Python 3.13
-- Code quality improvements and reduced duplication
-- Updated CI to check for `pythermacell` instead of `aiohttp`
+- Bumped `pythermacell` dependency from `>=0.2.3` to `>=0.2.4`.
 
 ### Fixed
-- CI workflow compatibility with latest Home Assistant
 
-## [2.0.0] - 2024-11-25
+- **System Runtime accuracy**: updated to pythermacell 0.2.4, which correctly
+  converts API values from tenths of hours to minutes (×6 multiplier).
+- **System Runtime None handling**: the sensor now handles `None` runtime values
+  when the API does not report System Runtime.
+
+## [2.0.4] - 2025-11-28
 
 ### Added
-- **pythermacell Library Integration**: Migrated to dedicated `pythermacell>=0.2.3` library
-- **Platinum Quality Scale**: Achieved 54/54 rules compliance
-- **Full Type Safety**: Complete type annotations with `py.typed` marker
-- **TypedDict Definitions**: Strict typing for all data structures
-- **Diagnostics Platform**: Redacted sensitive data export for troubleshooting
-- **Repair Flows**: Auto-recovery for authentication and device offline issues
-- **Options Flow**: Configurable scan interval (30-300 seconds)
+
+- **Reconfigure flow**: update credentials from the integration menu.
+- **Integration title**: the config entry title now includes the username
+  (e.g. "Thermacell LIV (user@example.com)"); existing entries update on the
+  next restart.
+
+### Removed
+
+- **Hub ID sensor**: removed because the API does not provide meaningful serial
+  number data.
+- **Serial number**: removed from device info (the API returns "unknown").
+
+## [2.0.3] - 2025-11-28
 
 ### Changed
-- **Architecture**: Clean separation between API client (library) and HA integration
-- **Coordinator**: Simplified to use library methods directly
-- **Entity Base**: Consolidated common functionality in `ThermacellLivEntity`
-- **Error Handling**: Improved unavailability logging and state management
 
-### Entities
-- **Switch**: Main power control with optimistic updates
-- **Light**: RGB LED control with brightness and color support
-- **Sensors**: Refill life, system status, runtime, connectivity, error code, hub ID, firmware
-- **Buttons**: Reset refill, manual refresh
+- **Device naming**: device names now include the "Thermacell LIV" prefix
+  (e.g. "Thermacell LIV ADU"); entity IDs are prefixed accordingly
+  (`switch.thermacell_liv_adu`, `light.thermacell_liv_adu_led`).
+- **Device model**: now displays "Thermacell LIV Hub" instead of generic "Hub".
 
-### Quality Scale Compliance
-- Bronze Tier: 19/19 requirements
-- Silver Tier: 10/10 requirements
-- Gold Tier: 22/22 requirements
-- Platinum Tier: 3/3 requirements
+## [2.0.2] - 2025-11-27
 
+### Changed
+
+- **CI consolidation**: merged four workflow files into two — `validate.yaml`
+  (HassFest + HACS) and `ci.yaml` (lint, test, type check, quality-scale tiers).
+- **Platform setup**: extracted a common `async_setup_platform_entities()`
+  helper to reduce duplication.
+- **Base entity**: moved `has_entity_name = True` to the base class.
+- Consolidated Quality Scale compliance into a single `QUALITY_SCALE.md`.
+
+### Removed
+
+- Dead code in the coordinator (`_async_optimistic_update`,
+  `_update_local_state`) and unused imports.
+- Redundant `async_request_refresh` call in the button handler.
+- Old workflow files (`hassfest.yaml`, `validate.yml`, `quality-tiers.yml`).
+
+## [2.0.1] - 2025-11-26
+
+### Changed
+
+- Updated CI workflows to use Python 3.13.
+- Updated CI to check for `pythermacell` instead of `aiohttp`.
+- Code quality improvements and reduced duplication.
+
+### Fixed
+
+- CI workflow compatibility with the latest Home Assistant.
+
+## [2.0.0] - 2025-11-25
+
+### Added
+
+- **pythermacell library integration**: migrated to the dedicated
+  `pythermacell>=0.2.3` library.
+- **Platinum Quality Scale**: achieved 54/54 rules compliance (Bronze 19/19,
+  Silver 10/10, Gold 22/22, Platinum 3/3).
+- **Full type safety**: complete type annotations with a `py.typed` marker and
+  TypedDict definitions.
+- **Diagnostics platform**: redacted sensitive-data export for troubleshooting.
+- **Repair flows**: auto-recovery for authentication and device-offline issues.
+- **Options flow**: configurable scan interval (30-300 seconds).
+
+### Changed
+
+- **Architecture**: clean separation between the API client (library) and the
+  Home Assistant integration; the coordinator uses library methods directly.
+- **Entity base**: consolidated common functionality in `ThermacellLivEntity`.
+- **Error handling**: improved unavailability logging and state management.
+
+[Unreleased]: https://github.com/joyfulhouse/thermacell_liv/compare/v2.0.5...HEAD
+[2.0.5]: https://github.com/joyfulhouse/thermacell_liv/compare/v2.0.4...v2.0.5
+[2.0.4]: https://github.com/joyfulhouse/thermacell_liv/compare/v2.0.3...v2.0.4
+[2.0.3]: https://github.com/joyfulhouse/thermacell_liv/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/joyfulhouse/thermacell_liv/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/joyfulhouse/thermacell_liv/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/joyfulhouse/thermacell_liv/releases/tag/v2.0.0
