@@ -149,6 +149,7 @@ structured.
 
 ## Support
 
+- Join the [JoyfulHouse Discord](https://discord.gg/gc4eTPwxjJ) for support and discussion across all JoyfulHouse Home Assistant integrations and libraries.
 - **Issues:** <https://github.com/joyfulhouse/thermacell_liv/issues>
 - **Discussions / questions:** open an issue with the `question` label.
 
