@@ -81,7 +81,7 @@ def _map_system_status(system_status: int, enable_repellers: bool, error: int) -
     """Map system status code to human-readable text.
 
     Args:
-        system_status: System status code (1-3)
+        system_status: System status code (1-3; 0 when the hub reports none)
         enable_repellers: Whether repellers are enabled
         error: Error code (0 = no error; BENIGN_ERROR_BITS are ignored)
 
