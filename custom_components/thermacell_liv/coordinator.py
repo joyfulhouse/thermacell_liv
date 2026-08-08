@@ -68,6 +68,9 @@ def _convert_hsv_to_rgb(hue: int, saturation: int, brightness: int) -> RGBColor:
 def has_hub_error(error: int) -> bool:
     """Return whether an error code represents a genuine hub fault.
 
+    Use this rather than pythermacell's ThermacellDevice.has_error, which tests
+    the raw code with `> 0` and would reintroduce the #17 false "Error" state.
+
     Args:
         error: Raw error code reported by the hub
 
