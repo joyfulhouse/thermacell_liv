@@ -21,7 +21,7 @@ from .const import (
     DOMAIN,
     STATUS_UNKNOWN,
 )
-from .coordinator import ThermacellLivCoordinator
+from .coordinator import ThermacellLivCoordinator, has_hub_error
 from .entity import ThermacellLivEntity, async_setup_platform_entities
 
 # Sensor platform doesn't make write operations, so parallel updates can be higher
@@ -202,10 +202,11 @@ class ThermacellLivErrorCodeSensor(ThermacellLivEntity, SensorEntity):
         """Return additional state attributes."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         if device_data:
-            error_code = device_data.get("error_code", 0)
+            # Mirrors the status sensor: benign bits do not count as a fault (#17)
+            is_error = has_hub_error(device_data.get("error_code", 0))
             return {
-                "has_error": error_code > 0,
-                "status": "Error" if error_code > 0 else "OK",
+                "has_error": is_error,
+                "status": "Error" if is_error else "OK",
             }
         return None
 

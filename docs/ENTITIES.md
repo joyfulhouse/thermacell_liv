@@ -56,9 +56,11 @@ Settings**.
 - **LED state logic** — the LED light reports "on" only when the hub is powered
   **and** brightness is greater than 0. Brightness is converted between Home
   Assistant's 0-255 range and the device's 0-100 range.
-- **System status** — derived from the hub's reported state: `Error` when an
-  error code is present, `Off` when repellers are disabled, `Warming Up` while
-  heating, and `Protected` when operational.
+- **System status** — derived from the hub's reported state: `Error` when a
+  fault code is present, `Off` when repellers are disabled, `Warming Up` while
+  heating, and `Protected` when operational. Some hubs constantly report error
+  bit `0x01000000` (16777216) while working normally, so that bit alone does not
+  count as a fault; the raw value is still shown by the error code sensor.
 - **System runtime** — reflects the current session as reported by the API; this
   differs from the lifetime total shown in the mobile app.
 - **Device info** — each hub reports model "Thermacell LIV Hub" and its firmware

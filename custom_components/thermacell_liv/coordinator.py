@@ -28,6 +28,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    BENIGN_ERROR_BITS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     STATUS_ERROR,
@@ -64,18 +65,30 @@ def _convert_hsv_to_rgb(hue: int, saturation: int, brightness: int) -> RGBColor:
     )
 
 
+def has_hub_error(error: int) -> bool:
+    """Return whether an error code represents a genuine hub fault.
+
+    Args:
+        error: Raw error code reported by the hub
+
+    Returns:
+        True if any non-benign error bit is set (see BENIGN_ERROR_BITS)
+    """
+    return bool(error & ~BENIGN_ERROR_BITS)
+
+
 def _map_system_status(system_status: int, enable_repellers: bool, error: int) -> str:
     """Map system status code to human-readable text.
 
     Args:
         system_status: System status code (1-3)
         enable_repellers: Whether repellers are enabled
-        error: Error code (0 = no error)
+        error: Error code (0 = no error; BENIGN_ERROR_BITS are ignored)
 
     Returns:
         Status text constant from const.py
     """
-    if error > 0:
+    if has_hub_error(error):
         return STATUS_ERROR
     if not enable_repellers:
         return STATUS_OFF
@@ -142,7 +155,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         is_online = device.is_online
         is_powered = device.is_powered_on
         error = device.error or 0
-        system_status = device.system_status or 1
+        # Keep the raw code: a missing status must not masquerade as code 1 ("Off")
+        system_status = device.system_status if device.system_status is not None else 0
 
         # Check if node is offline first - override all other status
         status_text = STATUS_NOT_CONNECTED if not is_online else _map_system_status(system_status, is_powered, error)

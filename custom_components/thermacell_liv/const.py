@@ -18,6 +18,11 @@ STATUS_UNKNOWN = "Unknown"
 CONNECTIVITY_CONNECTED = "Connected"
 CONNECTIVITY_DISCONNECTED = "Disconnected"
 
+# Some hubs constantly report error bit 24 (0x01000000 = 16777216) while fully
+# functional, which pinned the status sensor on "Error" (#17). Ignore that bit
+# when deciding whether the hub is faulted; any other bit still counts.
+BENIGN_ERROR_BITS = 0x01000000
+
 # Default values
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 30

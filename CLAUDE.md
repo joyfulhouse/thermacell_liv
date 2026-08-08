@@ -310,7 +310,9 @@ thermacell_brightness = int((ha_brightness / 255) * 100)
 
 ### System Status Mapping
 ```python
-if error > 0:
+# Some hubs constantly report error bit 0x01000000 (16777216) while fully
+# functional, so that bit is masked out before testing for a fault (#17).
+if error & ~BENIGN_ERROR_BITS:
     status_text = "Error"
 elif not enable_repellers:
     status_text = "Off"
