@@ -18,10 +18,10 @@ STATUS_UNKNOWN = "Unknown"
 CONNECTIVITY_CONNECTED = "Connected"
 CONNECTIVITY_DISCONNECTED = "Disconnected"
 
-# Some hubs constantly report error bit 24 (0x01000000 = 16777216) while fully
-# functional, which pinned the status sensor on "Error" (#17). Ignore that bit
-# when deciding whether the hub is faulted; any other bit still counts.
-BENIGN_ERROR_BITS = 0x01000000
+# Some hubs constantly report benign bit 0x01000000 while fully functional
+# (#17). Firmware 5.4.1 also transiently sets benign bit 0x00000008 during
+# warm-up (#17 follow-up). Ignore both when deciding whether the hub is faulted.
+BENIGN_ERROR_BITS = 0x01000008
 
 # Default values
 DEFAULT_SCAN_INTERVAL = 60

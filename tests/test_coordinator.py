@@ -516,6 +516,49 @@ class TestThermacellLivCoordinator:
         assert device_data["system_status"] == expected
 
     @pytest.mark.asyncio
+    async def test_system_status_warming_up_ignores_firmware_5_4_1_bits(self, coordinator):
+        """Firmware 5.4.1 warm-up bits must not report a false error (#17)."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=2,
+            error=16777224,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Warming Up"
+
+    @pytest.mark.asyncio
+    async def test_system_status_protected_ignores_firmware_5_4_1_bits(self, coordinator):
+        """Firmware 5.4.1 benign bits must not hide Protected status (#17)."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=3,
+            error=16777224,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Protected"
+
+    @pytest.mark.asyncio
+    async def test_system_status_non_benign_bit_remains_error(self, coordinator):
+        """A non-benign bit must still report Error after widening the mask."""
+        coordinator.client.get_devices.return_value = [
+            create_mock_device(node_id="faulted", name="Faulted", system_status=3, error=0x01000010),
+            create_mock_device(node_id="healthy", name="Healthy", system_status=3, error=16777224),
+        ]
+
+        result = await coordinator._async_update_data()
+
+        assert result["faulted"]["devices"]["Faulted"]["system_status"] == "Error"
+        assert result["healthy"]["devices"]["Healthy"]["system_status"] == "Protected"
+
+    @pytest.mark.asyncio
     async def test_system_status_real_error_alongside_benign_bit(self, coordinator):
         """A genuine error bit combined with the benign bit still reports Error."""
         device = create_mock_device(
