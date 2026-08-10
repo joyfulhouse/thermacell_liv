@@ -1870,14 +1870,14 @@ wheels = [
 
 [[package]]
 name = "pythermacell"
-version = "0.2.4"
+version = "0.2.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/f9/0f686c9adc36c532582d66d8e2492949de96bafab574296bef6d8a014578/pythermacell-0.2.4.tar.gz", hash = "sha256:eefdbbfa19a4b09365d7af988d2a3503e157d0820c0278bd0599ce929356a4c7", size = 227775, upload-time = "2026-03-05T12:49:31.285Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/5b/0c66b7cad9c5484deb520d8f9d12dcd84a95784b2436a0c85918795aef82/pythermacell-0.2.5.tar.gz", hash = "sha256:afd70e35917edfeff5f2bbfdafb65d8ac02509dcd39164b68cb3142543c761f9", size = 228553, upload-time = "2026-08-10T20:59:05.151Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/5e/9aa5f5b3ae5c85f2bb5c1c11bf7e81aa9da8b48235a19d94fc26baac35bc/pythermacell-0.2.4-py3-none-any.whl", hash = "sha256:b59220b35bb16d71aeeb8473859e9ec36307a221d4e172779c7e16174c1d633e", size = 46770, upload-time = "2026-03-05T12:49:29.978Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/45/94865da2ca68d0a9cff880c49feb356cd0bada0a1c5904cae0a2e0c68250/pythermacell-0.2.5-py3-none-any.whl", hash = "sha256:3ff2bec97ab74bdc2093ef7eeb92fa55770a42be908f3795e4c546f829889d06", size = 40801, upload-time = "2026-08-10T20:59:03.581Z" },
 ]
 
 [[package]]
@@ -2184,7 +2184,7 @@ wheels = [
 
 [[package]]
 name = "thermacell-liv"
-version = "2.0.1"
+version = "2.0.5"
 source = { virtual = "." }
 dependencies = [
     { name = "pythermacell" },
@@ -2207,7 +2207,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pythermacell", specifier = ">=0.2.4" },
+    { name = "pythermacell", specifier = ">=0.2.5" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
 ]
 provides-extras = ["dev"]

@@ -516,6 +516,21 @@ class TestThermacellLivCoordinator:
         assert device_data["system_status"] == expected
 
     @pytest.mark.asyncio
+    async def test_system_status_warmup_bit_alone_ignored(self, coordinator):
+        """Warm-up bit 0x00000008 alone (firmware 5.4.1) must not report Error (#17)."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=3,
+            error=0x00000008,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Protected"
+
+    @pytest.mark.asyncio
     async def test_system_status_warming_up_ignores_firmware_5_4_1_bits(self, coordinator):
         """Firmware 5.4.1 warm-up bits must not report a false error (#17)."""
         device = create_mock_device(
