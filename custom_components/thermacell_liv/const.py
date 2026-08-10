@@ -18,9 +18,11 @@ STATUS_UNKNOWN = "Unknown"
 CONNECTIVITY_CONNECTED = "Connected"
 CONNECTIVITY_DISCONNECTED = "Disconnected"
 
-# Some hubs constantly report benign bit 0x01000000 while fully functional
-# (#17). Firmware 5.4.1 also transiently sets benign bit 0x00000008 during
-# warm-up (#17 follow-up). Ignore both when deciding whether the hub is faulted.
+# Ignore 0x01000000 (constant on some healthy hubs) and 0x00000008 (observed
+# transiently during firmware 5.4.1 warm-up) in every system state (#17).
+# The API provides no reliable warm-up-window signal, so the mask is not
+# time-limited. Tradeoff: a genuine bit-3 fault outside warm-up will not appear
+# in the status sensor; only the error-code sensor's raw value will expose it.
 BENIGN_ERROR_BITS = 0x01000008
 
 # Default values

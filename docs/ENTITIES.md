@@ -58,9 +58,11 @@ Settings**.
   Assistant's 0-255 range and the device's 0-100 range.
 - **System status** — derived from the hub's reported state: `Error` when a
   fault code is present, `Off` when repellers are disabled, `Warming Up` while
-  heating, and `Protected` when operational. Some hubs constantly report error
-  bit `0x01000000` (16777216) while working normally, so that bit alone does not
-  count as a fault; the raw value is still shown by the error code sensor.
+  heating, and `Protected` when operational. Some healthy hubs constantly report
+  bit `0x01000000` (16777216), and firmware 5.4.1 transiently reports bit
+  `0x00000008` during warm-up. Both bits are ignored when deriving status, so
+  their combined raw value `16777224` (`0x01000008`) can accompany a non-error
+  status; the raw value remains visible on the error code sensor.
 - **System runtime** — reflects the current session as reported by the API; this
   differs from the lifetime total shown in the mobile app.
 - **Device info** — each hub reports model "Thermacell LIV Hub" and its firmware
