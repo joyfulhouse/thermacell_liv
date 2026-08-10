@@ -18,6 +18,13 @@ STATUS_UNKNOWN = "Unknown"
 CONNECTIVITY_CONNECTED = "Connected"
 CONNECTIVITY_DISCONNECTED = "Disconnected"
 
+# Ignore 0x01000000 (constant on some healthy hubs) and 0x00000008 (observed
+# transiently during firmware 5.4.1 warm-up) in every system state (#17).
+# The API provides no reliable warm-up-window signal, so the mask is not
+# time-limited. Tradeoff: a genuine bit-3 fault outside warm-up will not appear
+# in the status sensor; only the error-code sensor's raw value will expose it.
+BENIGN_ERROR_BITS = 0x01000008
+
 # Default values
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 30

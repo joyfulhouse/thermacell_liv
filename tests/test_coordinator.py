@@ -474,7 +474,7 @@ class TestThermacellLivCoordinator:
 
     @pytest.mark.asyncio
     async def test_system_status_mapping_error(self, coordinator):
-        """Test system status mapping for Error state."""
+        """Test that a genuine error code takes precedence over a valid status."""
         device = create_mock_device(
             is_powered_on=True,
             system_status=3,
@@ -486,6 +486,127 @@ class TestThermacellLivCoordinator:
 
         device_data = result["node1"]["devices"]["Test Device"]
         assert device_data["system_status"] == "Error"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("is_powered_on", "system_status", "expected"),
+        [
+            (False, 1, "Off"),
+            (True, 2, "Warming Up"),
+            (True, 3, "Protected"),
+        ],
+    )
+    async def test_system_status_benign_error_bit_ignored(self, coordinator, is_powered_on, system_status, expected):
+        """Regression test for issue #17: benign error bit must not mask real status.
+
+        Some hubs report a constant error value of 16777216 (0x01000000) while
+        fully functional. The status sensor must reflect the valid system_status
+        code instead of being stuck on "Error".
+        """
+        device = create_mock_device(
+            is_powered_on=is_powered_on,
+            system_status=system_status,
+            error=16777216,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == expected
+
+    @pytest.mark.asyncio
+    async def test_system_status_warming_up_ignores_firmware_5_4_1_bits(self, coordinator):
+        """Firmware 5.4.1 warm-up bits must not report a false error (#17)."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=2,
+            error=16777224,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Warming Up"
+
+    @pytest.mark.asyncio
+    async def test_system_status_protected_ignores_firmware_5_4_1_bits(self, coordinator):
+        """Firmware 5.4.1 benign bits must not hide Protected status (#17)."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=3,
+            error=16777224,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Protected"
+
+    @pytest.mark.asyncio
+    async def test_system_status_non_benign_bit_remains_error(self, coordinator):
+        """A non-benign bit must still report Error after widening the mask."""
+        coordinator.client.get_devices.return_value = [
+            create_mock_device(node_id="faulted", name="Faulted", system_status=3, error=0x01000010),
+            create_mock_device(node_id="healthy", name="Healthy", system_status=3, error=16777224),
+        ]
+
+        result = await coordinator._async_update_data()
+
+        assert result["faulted"]["devices"]["Faulted"]["system_status"] == "Error"
+        assert result["healthy"]["devices"]["Healthy"]["system_status"] == "Protected"
+
+    @pytest.mark.asyncio
+    async def test_system_status_real_error_alongside_benign_bit(self, coordinator):
+        """A genuine error bit combined with the benign bit still reports Error."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=3,
+            error=16777216 | 1,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Error"
+
+    @pytest.mark.asyncio
+    async def test_system_status_unknown_code_without_error(self, coordinator):
+        """An unrecognized status code with no error reports Unknown."""
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=99,
+            error=0,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Unknown"
+
+    @pytest.mark.asyncio
+    async def test_system_status_missing_code_is_not_reported_as_off(self, coordinator):
+        """A hub that reports no status code must not be shown as 'Off'.
+
+        The raw code is preserved rather than defaulted to 1, so a powered hub
+        with an unknown status reports Unknown instead of a fabricated "Off".
+        """
+        device = create_mock_device(
+            is_powered_on=True,
+            system_status=None,
+            error=0,
+        )
+        coordinator.client.get_devices.return_value = [device]
+
+        result = await coordinator._async_update_data()
+
+        device_data = result["node1"]["devices"]["Test Device"]
+        assert device_data["system_status"] == "Unknown"
+        assert device_data["system_status_code"] == 0
 
     @pytest.mark.asyncio
     async def test_model_name_conversion(self, coordinator):

@@ -853,6 +853,31 @@ class TestThermacellLivErrorCodeSensor:
         assert attrs["has_error"] is True
         assert attrs["status"] == "Error"
 
+    def test_extra_state_attributes_benign_error_bit(self, mock_coordinator):
+        """Benign error bit must not report a fault (#17).
+
+        The raw code stays visible as the sensor value for support purposes,
+        but the attributes must agree with the system status sensor.
+        """
+        mock_coordinator.get_device_data.return_value = {"error_code": 16777216}
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+
+        assert sensor.native_value == 16777216
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["has_error"] is False
+        assert attrs["status"] == "OK"
+
+    def test_extra_state_attributes_real_error_with_benign_bit(self, mock_coordinator):
+        """A genuine error bit alongside the benign bit still reports a fault."""
+        mock_coordinator.get_device_data.return_value = {"error_code": 16777216 | 5}
+        sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["has_error"] is True
+        assert attrs["status"] == "Error"
+
     def test_extra_state_attributes_no_device_data(self, mock_coordinator):
         """Test extra state attributes with no device data."""
         mock_coordinator.get_device_data.return_value = None

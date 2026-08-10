@@ -310,7 +310,9 @@ thermacell_brightness = int((ha_brightness / 255) * 100)
 
 ### System Status Mapping
 ```python
-if error > 0:
+# BENIGN_ERROR_BITS in const.py masks 0x01000000 and 0x00000008 before testing
+# for a fault (#17).
+if error & ~BENIGN_ERROR_BITS:
     status_text = "Error"
 elif not enable_repellers:
     status_text = "Off"
@@ -447,17 +449,15 @@ tests/
 ### Authentication Flow
 ```python
 # 1. Login with credentials
-auth_response = await session.post(f"{base_url}/login", json={
-    "user_name": username,
-    "password": password
-})
+auth_response = await session.post(f"{base_url}/login", json={"user_name": username, "password": password})
 
 # 2. Extract JWT token
 token = auth_response.json()["idtoken"]
 
 # 3. Decode JWT payload for user info
 import base64, json
-payload = json.loads(base64.b64decode(token.split('.')[1] + '=='))
+
+payload = json.loads(base64.b64decode(token.split(".")[1] + "=="))
 user_id = payload["custom:user_id"]
 ```
 

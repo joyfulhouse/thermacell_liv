@@ -10,5 +10,5 @@
   "issue_tracker": "https://github.com/joyfulhouse/thermacell_liv/issues",
   "quality_scale": "platinum",
   "requirements": ["pythermacell>=0.2.4"],
-  "version": "2.0.5"
+  "version": "2.0.6-beta.1"
 }
