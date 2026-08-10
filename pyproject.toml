@@ -9,7 +9,7 @@ authors = [
     { name = "JoyfulHouse Real Estate LLC" },
 ]
 dependencies = [
-    "pythermacell>=0.2.4",
+    "pythermacell>=0.2.5",
 ]
 
 [project.optional-dependencies]

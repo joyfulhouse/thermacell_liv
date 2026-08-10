@@ -34,7 +34,7 @@ uv run mypy custom_components/thermacell_liv/ --ignore-missing-imports
 ```
 
 ### Dependencies
-- **pythermacell**: `>=0.2.3` - Python library for Thermacell API communication
+- **pythermacell**: `>=0.2.5` - Python library for Thermacell API communication
 - **homeassistant**: `>=2025.11.0` - Dev dependency for proper typing support
 - **requires-python**: `>=3.13.2` - Required for HA 2025.11+ compatibility
 
@@ -152,7 +152,7 @@ thermacell_liv/
 ├── button.py            # Button platform (refill reset, manual refresh)
 ├── entity.py            # Base entity class
 ├── thermacell_types.py   # TypedDict definitions for type safety
-├── manifest.json        # Component metadata (pythermacell>=0.2.2 dependency)
+├── manifest.json        # Component metadata (pythermacell>=0.2.5 dependency)
 ├── README.md            # User documentation with HACS support
 └── CLAUDE.md           # This specification file
 ```
@@ -310,8 +310,8 @@ thermacell_brightness = int((ha_brightness / 255) * 100)
 
 ### System Status Mapping
 ```python
-# BENIGN_ERROR_BITS in const.py masks 0x01000000 and 0x00000008 before testing
-# for a fault (#17).
+# BENIGN_ERROR_BITS (from pythermacell.const since v0.2.5) masks 0x01000000
+# and 0x00000008 before testing for a fault (#17).
 if error & ~BENIGN_ERROR_BITS:
     status_text = "Error"
 elif not enable_repellers:

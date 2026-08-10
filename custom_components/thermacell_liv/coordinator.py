@@ -18,6 +18,7 @@ from pythermacell import (
     ThermacellDevice,
     ThermacellTimeoutError,
 )
+from pythermacell.const import BENIGN_ERROR_BITS
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
@@ -28,7 +29,6 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    BENIGN_ERROR_BITS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     STATUS_ERROR,
@@ -68,8 +68,9 @@ def _convert_hsv_to_rgb(hue: int, saturation: int, brightness: int) -> RGBColor:
 def has_hub_error(error: int) -> bool:
     """Return whether an error code represents a genuine hub fault.
 
-    Use this rather than pythermacell's ThermacellDevice.has_error, which tests
-    the raw code with `> 0` and would reintroduce the #17 false "Error" state.
+    Benign bits (pythermacell.const.BENIGN_ERROR_BITS: 0x01000000, constant on
+    some healthy hubs, and 0x00000008, firmware 5.4.1 warm-up) are masked out;
+    the raw code remains visible via the error-code sensor (#17).
 
     Args:
         error: Raw error code reported by the hub
