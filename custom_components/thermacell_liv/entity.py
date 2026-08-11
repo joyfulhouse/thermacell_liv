@@ -80,15 +80,7 @@ class ThermacellLivEntity(CoordinatorEntity["ThermacellLivCoordinator"]):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
-        node_data = self.coordinator.get_node_data(self._node_id)
-        if node_data is None:
-            return DeviceInfo(
-                identifiers={(DOMAIN, self._node_id)},
-                name="Thermacell LIV Hub",
-                manufacturer="Thermacell",
-                model="Thermacell LIV Hub",
-            )
-
+        node_data = self.coordinator.get_node_data(self._node_id) or {}
         return DeviceInfo(
             identifiers={(DOMAIN, self._node_id)},
             name=f"Thermacell LIV {node_data.get('name', 'Hub')}",

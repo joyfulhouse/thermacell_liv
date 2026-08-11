@@ -229,7 +229,6 @@ class TestConfigFlow:
     async def test_async_step_reauth_confirm_success(self):
         """Test successful reauth."""
         hass = MagicMock()
-        hass.config_entries.async_get_entry.return_value = MagicMock()
         hass.config_entries.async_update_entry = MagicMock()
         hass.config_entries.async_reload = AsyncMock()
 
@@ -239,9 +238,12 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "new@example.com", CONF_PASSWORD: "newpass"}
 
-        with patch(
-            "custom_components.thermacell_liv.config_flow.validate_input",
-            return_value={"title": "Thermacell LIV (new@example.com)"},
+        with (
+            patch(
+                "custom_components.thermacell_liv.config_flow.validate_input",
+                return_value={"title": "Thermacell LIV (new@example.com)"},
+            ),
+            patch.object(flow, "_get_reauth_entry", return_value=MagicMock()),
         ):
             result = await flow.async_step_reauth_confirm(user_input=user_input)
 
@@ -258,7 +260,13 @@ class TestConfigFlow:
 
         user_input = {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrongpass"}
 
-        with patch("custom_components.thermacell_liv.config_flow.validate_input", side_effect=InvalidAuth):
+        with (
+            patch(
+                "custom_components.thermacell_liv.config_flow.validate_input",
+                side_effect=InvalidAuth,
+            ),
+            patch.object(flow, "_get_reauth_entry", return_value=MagicMock()),
+        ):
             result = await flow.async_step_reauth_confirm(user_input=user_input)
 
             assert result["type"] == "form"

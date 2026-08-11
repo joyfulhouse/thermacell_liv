@@ -117,9 +117,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle reconfiguration of credentials."""
         errors = {}
-        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
-        if entry is None:
-            return self.async_abort(reason="unknown")
+        entry = self._get_reconfigure_entry()
 
         if user_input is not None:
             try:
@@ -159,12 +157,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            # Get the existing entry
-            existing_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
-            if existing_entry is None:
-                return self.async_abort(reason="unknown")
+            existing_entry = self._get_reauth_entry()
 
-            # Validate new credentials
             try:
                 await validate_input(self.hass, user_input)
             except CannotConnect:
@@ -175,7 +169,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception during reauth")
                 errors["base"] = "unknown"
             else:
-                # Update the config entry with new credentials
                 self.hass.config_entries.async_update_entry(
                     existing_entry,
                     data=user_input,
