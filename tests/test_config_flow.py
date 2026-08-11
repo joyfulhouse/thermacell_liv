@@ -288,9 +288,7 @@ class TestConfigFlow:
                 "custom_components.thermacell_liv.config_flow.validate_input",
                 return_value={"title": "Thermacell LIV (test@example.com)"},
             ),
-            patch.object(
-                flow, "_get_reauth_entry", side_effect=UnknownEntry("missing_entry")
-            ),
+            patch.object(flow, "_get_reauth_entry", side_effect=UnknownEntry("missing_entry")),
             pytest.raises(UnknownEntry),
         ):
             await flow.async_step_reauth_confirm(user_input=user_input)

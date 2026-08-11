@@ -112,9 +112,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Get the options flow for this handler."""
         return ThermacellLivOptionsFlow()
 
-    async def async_step_reconfigure(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle reconfiguration of credentials."""
         errors = {}
         entry = self._get_reconfigure_entry()
@@ -150,9 +148,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle reauthentication request."""
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Confirm reauthentication with new credentials."""
         errors = {}
 
@@ -182,9 +178,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
-            description_placeholders={
-                "account": unique_id if unique_id is not None else "Unknown"
-            },
+            description_placeholders={"account": unique_id if unique_id is not None else "Unknown"},
         )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
