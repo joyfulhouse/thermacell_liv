@@ -14,6 +14,7 @@ from custom_components.thermacell_liv.config_flow import (
     validate_input,
 )
 from custom_components.thermacell_liv.const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from homeassistant.config_entries import UnknownEntry
 
 
 def create_mock_client(devices=None, auth_error=False, connection_error=False):
@@ -271,6 +272,28 @@ class TestConfigFlow:
 
             assert result["type"] == "form"
             assert result["errors"] == {"base": "invalid_auth"}
+
+    @pytest.mark.asyncio
+    async def test_async_step_reauth_confirm_missing_entry(self):
+        """Missing reauth entry raises UnknownEntry (HA ≥2025.11)."""
+        hass = MagicMock()
+        flow = ConfigFlow()
+        flow.hass = hass
+        flow.context = {"entry_id": "missing_entry"}
+
+        user_input = {CONF_USERNAME: "test@example.com", CONF_PASSWORD: "password123"}
+
+        with (
+            patch(
+                "custom_components.thermacell_liv.config_flow.validate_input",
+                return_value={"title": "Thermacell LIV (test@example.com)"},
+            ),
+            patch.object(
+                flow, "_get_reauth_entry", side_effect=UnknownEntry("missing_entry")
+            ),
+            pytest.raises(UnknownEntry),
+        ):
+            await flow.async_step_reauth_confirm(user_input=user_input)
 
     def test_async_get_options_flow(self):
         """Test getting options flow."""

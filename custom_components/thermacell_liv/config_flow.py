@@ -177,11 +177,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="reauth_successful")
 
         # Show the reauth form
+        unique_id = self.context.get("unique_id")
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
-            description_placeholders={"account": self.context.get("unique_id") or "Unknown"},
+            description_placeholders={
+                "account": unique_id if unique_id is not None else "Unknown"
+            },
         )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

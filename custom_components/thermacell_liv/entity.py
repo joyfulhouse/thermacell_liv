@@ -6,6 +6,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, TypeVar
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -80,7 +81,9 @@ class ThermacellLivEntity(CoordinatorEntity["ThermacellLivCoordinator"]):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
-        node_data = self.coordinator.get_node_data(self._node_id) or {}
+        node_data = self.coordinator.get_node_data(self._node_id)
+        if node_data is None:
+            raise HomeAssistantError(f"Node {self._node_id} not found in coordinator data")
         return DeviceInfo(
             identifiers={(DOMAIN, self._node_id)},
             name=f"Thermacell LIV {node_data.get('name', 'Hub')}",
