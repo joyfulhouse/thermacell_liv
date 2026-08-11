@@ -7,10 +7,9 @@ from typing import Any
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_RGB_COLOR,
-    ColorMode,
     LightEntity,
-    LightEntityFeature,
 )
+from homeassistant.components.light.const import ColorMode, LightEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback

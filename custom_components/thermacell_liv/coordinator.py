@@ -115,7 +115,7 @@ def _convert_brightness_to_thermacell(brightness: int) -> int:
     return int((brightness / 255) * 100)
 
 
-class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
     """Class to manage fetching Thermacell LIV data from the API.
 
     Polling Strategy:
