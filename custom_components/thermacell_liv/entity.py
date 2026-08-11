@@ -81,16 +81,21 @@ class ThermacellLivEntity(CoordinatorEntity["ThermacellLivCoordinator"]):
     def device_info(self) -> DeviceInfo:
         """Return device information."""
         node_data = self.coordinator.get_node_data(self._node_id)
-        raw_name = node_data.get("name", "Hub")
-        device_info_dict = {
-            "identifiers": {(DOMAIN, self._node_id)},
-            "name": f"Thermacell LIV {raw_name}",
-            "manufacturer": "Thermacell",
-            "model": "Thermacell LIV Hub",
-            "sw_version": node_data.get("fw_version", "Unknown"),
-        }
+        if node_data is None:
+            return DeviceInfo(
+                identifiers={(DOMAIN, self._node_id)},
+                name="Thermacell LIV Hub",
+                manufacturer="Thermacell",
+                model="Thermacell LIV Hub",
+            )
 
-        return DeviceInfo(**device_info_dict)
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._node_id)},
+            name=f"Thermacell LIV {node_data.get('name', 'Hub')}",
+            manufacturer="Thermacell",
+            model="Thermacell LIV Hub",
+            sw_version=node_data.get("fw_version", "Unknown"),
+        )
 
     @property
     def available(self) -> bool:

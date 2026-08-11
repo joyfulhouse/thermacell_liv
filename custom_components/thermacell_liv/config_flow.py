@@ -9,8 +9,8 @@ from pythermacell import AuthenticationError, ThermacellClient, ThermacellConnec
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -112,10 +112,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Get the options flow for this handler."""
         return ThermacellLivOptionsFlow()
 
-    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Handle reconfiguration of credentials."""
         errors = {}
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        if entry is None:
+            return self.async_abort(reason="unknown")
 
         if user_input is not None:
             try:
@@ -144,17 +148,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(self, _entry_data: dict[str, Any]) -> FlowResult:
+    async def async_step_reauth(self, _entry_data: dict[str, Any]) -> ConfigFlowResult:
         """Handle reauthentication request."""
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Confirm reauthentication with new credentials."""
         errors = {}
 
         if user_input is not None:
             # Get the existing entry
             existing_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+            if existing_entry is None:
+                return self.async_abort(reason="unknown")
 
             # Validate new credentials
             try:
@@ -180,10 +188,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
-            description_placeholders={"account": self.context.get("unique_id", "Unknown")},
+            description_placeholders={"account": self.context.get("unique_id") or "Unknown"},
         )
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is None:
             return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA)
@@ -213,7 +221,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class ThermacellLivOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for Thermacell LIV."""
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

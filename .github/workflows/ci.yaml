@@ -80,9 +80,7 @@ jobs:
           pip install mypy homeassistant voluptuous aiohttp
 
       - name: Run mypy
-        run: |
-          mypy custom_components/thermacell_liv --config-file .mypy.ini || true
-          echo "Note: Type errors from Home Assistant library (no stubs) are expected"
+        run: mypy custom_components/thermacell_liv --config-file .mypy.ini
 
   # ===========================================================================
   # Quality Scale Tiers
