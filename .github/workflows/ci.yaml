@@ -78,7 +78,7 @@ jobs:
         run: uv sync --locked --extra dev --prerelease=allow
 
       - name: Run mypy
-        run: uv run --locked mypy custom_components/thermacell_liv/ --config-file .mypy.ini
+        run: uv run --locked mypy custom_components/thermacell_liv/ --config-file .mypy.ini --python-version 3.13
 
   # ===========================================================================
   # Quality Scale Tiers
