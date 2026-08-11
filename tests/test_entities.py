@@ -22,6 +22,7 @@ from custom_components.thermacell_liv.sensor import (
 from custom_components.thermacell_liv.switch import ThermacellLivSwitch
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 
 @pytest.fixture
@@ -100,6 +101,14 @@ class TestThermacellLivSwitch:
         assert device_info["manufacturer"] == "Thermacell"
         assert device_info["model"] == "Thermacell LIV Hub"
         assert device_info["sw_version"] == "5.3.2"
+
+    def test_device_info_missing_node_raises(self, mock_coordinator):
+        """Missing node data raises HomeAssistantError instead of fallback metadata."""
+        mock_coordinator.get_node_data.return_value = None
+        switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
+
+        with pytest.raises(HomeAssistantError, match="Node node1 not found"):
+            _ = switch.device_info
 
     def test_available_true(self, mock_coordinator):
         """Test switch availability (true)."""
