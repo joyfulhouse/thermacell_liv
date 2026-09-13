@@ -31,7 +31,6 @@ from homeassistant.util import dt as dt_util
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    STATUS_ERROR,
     STATUS_NOT_CONNECTED,
     STATUS_OFF,
     STATUS_PROTECTED,
@@ -81,19 +80,16 @@ def has_hub_error(error: int) -> bool:
     return bool(error & ~BENIGN_ERROR_BITS)
 
 
-def _map_system_status(system_status: int, enable_repellers: bool, error: int) -> str:
-    """Map system status code to human-readable text.
+def _map_system_status(system_status: int, enable_repellers: bool) -> str:
+    """Map hub-reported system state to human-readable text.
 
     Args:
         system_status: System status code (1-3; 0 when the hub reports none)
         enable_repellers: Whether repellers are enabled
-        error: Error code (0 = no error; BENIGN_ERROR_BITS are ignored)
 
     Returns:
         Status text constant from const.py
     """
-    if has_hub_error(error):
-        return STATUS_ERROR
     if not enable_repellers:
         return STATUS_OFF
     if system_status == 1:
@@ -163,7 +159,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
         system_status = device.system_status if device.system_status is not None else 0
 
         # Check if node is offline first - override all other status
-        status_text = STATUS_NOT_CONNECTED if not is_online else _map_system_status(system_status, is_powered, error)
+        status_text = STATUS_NOT_CONNECTED if not is_online else _map_system_status(system_status, is_powered)
 
         # Get LED properties
         led_brightness = device.led_brightness or 0

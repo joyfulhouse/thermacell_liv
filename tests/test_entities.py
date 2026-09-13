@@ -6,6 +6,7 @@ import sys
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pythermacell import ThermacellDevice
 
 from custom_components.thermacell_liv.button import ThermacellLivRefreshButton, ThermacellLivResetButton
 from custom_components.thermacell_liv.const import DOMAIN
@@ -568,18 +569,35 @@ class TestThermacellLivSystemStatusSensor:
 
         assert sensor.native_value == "Off"
 
-    def test_native_value_error(self, mock_coordinator):
-        """Test sensor value when system has error."""
-        mock_coordinator.get_device_data.return_value = {
-            "power": True,
-            "system_status": "Error",
-            "system_status_code": 2,
-            "error_code": 5,
+    def test_latched_error_bits_remain_diagnostic(self, mock_coordinator):
+        """Latched error bits stay diagnostic and do not override hub status."""
+        device = MagicMock(spec=ThermacellDevice)
+        device.is_online = True
+        device.is_powered_on = True
+        device.error = 16777288
+        device.system_status = 3
+        device.led_brightness = 100
+        device.led_hue = 30
+        device.led_saturation = 100
+        device.refill_life = 75.0
+        device.model = "thermacell-hub"
+        device.node_id = "node1"
+        device.name = "Device1"
+        device.firmware_version = "5.4.1"
+        device.serial_number = "ABC123"
+        device.system_runtime = 120
+        node_data = ThermacellLivCoordinator._device_to_node_data(mock_coordinator, device)
+        mock_coordinator.get_device_data.return_value = node_data["devices"]["Device1"]
+
+        status_sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "node1", "Device1")
+        error_sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")
+
+        assert status_sensor.native_value == "Protected"
+        assert error_sensor.native_value == 16777288
+        assert error_sensor.extra_state_attributes == {
+            "has_error": True,
+            "status": "Error",
         }
-
-        sensor = ThermacellLivSystemStatusSensor(mock_coordinator, "test_node", "test_device")
-
-        assert sensor.native_value == "Error"
 
     def test_native_value_no_device_data(self, mock_coordinator):
         """Test sensor value when no device data is available."""
@@ -866,7 +884,7 @@ class TestThermacellLivErrorCodeSensor:
         """Benign error bit must not report a fault (#17).
 
         The raw code stays visible as the sensor value for support purposes,
-        but the attributes must agree with the system status sensor.
+        while the attributes retain their independent masked heuristic.
         """
         mock_coordinator.get_device_data.return_value = {"error_code": 16777216}
         sensor = ThermacellLivErrorCodeSensor(mock_coordinator, "node1", "Device1")

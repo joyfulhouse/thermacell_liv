@@ -201,7 +201,8 @@ class ThermacellLivErrorCodeSensor(ThermacellLivEntity, SensorEntity):
         """Return additional state attributes."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
         if device_data:
-            # Mirrors the status sensor: benign bits do not count as a fault (#17)
+            # This masked heuristic over an undocumented bitfield is independent
+            # of system_status; the sensor state retains the raw value (#17, #22).
             is_error = has_hub_error(device_data.get("error_code", 0))
             return {
                 "has_error": is_error,

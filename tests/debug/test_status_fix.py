@@ -48,9 +48,9 @@ async def test_status_fix(session):
                 print(f"   Error: {error}")
 
                 # Apply the NEW status mapping logic
-                if error > 0:
-                    status_text = "Error"
-                elif not enable_repellers or system_status == 1:
+                if not enable_repellers:
+                    status_text = "Off"
+                elif system_status == 1:
                     status_text = "Off"
                 elif system_status == 2:
                     status_text = "Warming Up"

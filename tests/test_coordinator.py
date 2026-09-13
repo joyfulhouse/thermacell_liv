@@ -473,8 +473,8 @@ class TestThermacellLivCoordinator:
         assert device_data["system_status"] == "Off"
 
     @pytest.mark.asyncio
-    async def test_system_status_mapping_error(self, coordinator):
-        """Test that a genuine error code takes precedence over a valid status."""
+    async def test_system_status_mapping_ignores_error_code(self, coordinator):
+        """Test that the error bitfield does not override a valid hub status."""
         device = create_mock_device(
             is_powered_on=True,
             system_status=3,
@@ -485,7 +485,7 @@ class TestThermacellLivCoordinator:
         result = await coordinator._async_update_data()
 
         device_data = result["node1"]["devices"]["Test Device"]
-        assert device_data["system_status"] == "Error"
+        assert device_data["system_status"] == "Protected"
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -496,17 +496,17 @@ class TestThermacellLivCoordinator:
             (True, 3, "Protected"),
         ],
     )
-    async def test_system_status_benign_error_bit_ignored(self, coordinator, is_powered_on, system_status, expected):
-        """Regression test for issue #17: benign error bit must not mask real status.
+    async def test_system_status_latched_error_bits_ignored(self, coordinator, is_powered_on, system_status, expected):
+        """Regression test for issue #22: latched error bits must not mask hub status.
 
-        Some hubs report a constant error value of 16777216 (0x01000000) while
-        fully functional. The status sensor must reflect the valid system_status
-        code instead of being stuck on "Error".
+        Some hubs report 16777288 (0x01000048) after warm-up and retain it while
+        fully functional. The status sensor must reflect the hub state instead
+        of being stuck on "Error".
         """
         device = create_mock_device(
             is_powered_on=is_powered_on,
             system_status=system_status,
-            error=16777216,
+            error=16777288,
         )
         coordinator.client.get_devices.return_value = [device]
 
@@ -561,8 +561,8 @@ class TestThermacellLivCoordinator:
         assert device_data["system_status"] == "Protected"
 
     @pytest.mark.asyncio
-    async def test_system_status_non_benign_bit_remains_error(self, coordinator):
-        """A non-benign bit must still report Error after widening the mask."""
+    async def test_system_status_non_benign_bit_does_not_override_hub_state(self, coordinator):
+        """A non-benign bit remains diagnostic and does not override hub state."""
         coordinator.client.get_devices.return_value = [
             create_mock_device(node_id="faulted", name="Faulted", system_status=3, error=0x01000010),
             create_mock_device(node_id="healthy", name="Healthy", system_status=3, error=16777224),
@@ -570,23 +570,23 @@ class TestThermacellLivCoordinator:
 
         result = await coordinator._async_update_data()
 
-        assert result["faulted"]["devices"]["Faulted"]["system_status"] == "Error"
+        assert result["faulted"]["devices"]["Faulted"]["system_status"] == "Protected"
         assert result["healthy"]["devices"]["Healthy"]["system_status"] == "Protected"
 
     @pytest.mark.asyncio
-    async def test_system_status_real_error_alongside_benign_bit(self, coordinator):
-        """A genuine error bit combined with the benign bit still reports Error."""
+    async def test_system_status_unmasked_bit_does_not_override_hub_state(self, coordinator):
+        """An unmasked error bit does not override the hub-reported state."""
         device = create_mock_device(
             is_powered_on=True,
             system_status=3,
-            error=16777216 | 1,
+            error=16777289,
         )
         coordinator.client.get_devices.return_value = [device]
 
         result = await coordinator._async_update_data()
 
         device_data = result["node1"]["devices"]["Test Device"]
-        assert device_data["system_status"] == "Error"
+        assert device_data["system_status"] == "Protected"
 
     @pytest.mark.asyncio
     async def test_system_status_unknown_code_without_error(self, coordinator):

@@ -7,7 +7,6 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 
 # System status values
-STATUS_ERROR = "Error"
 STATUS_OFF = "Off"
 STATUS_WARMING_UP = "Warming Up"
 STATUS_PROTECTED = "Protected"

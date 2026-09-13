@@ -93,7 +93,7 @@ Each Thermacell LIV hub supports the following entities:
 **Diagnostic Sensors (under Diagnostics tab):**
    - **System Status**: `sensor.thermacell_liv_{device_name}_system_status` 
      - Display: "{Device Name} System Status"
-     - Values: "Protected", "Warming Up", "Off", "Error"
+     - Values: "Protected", "Warming Up", "Off", "Unknown"
    - **System Runtime**: `sensor.thermacell_liv_{device_name}_system_runtime`
      - Display: "{Device Name} System Runtime" 
      - Current session runtime with human-readable format and attributes
@@ -191,10 +191,10 @@ thermacell_liv/
    - ✅ **Optimistic LED updates**: Instant color/brightness response
 
 5. **System Status & Runtime** ✅
-   - ✅ **Accurate status mapping**: "Protected", "Warming Up", "Off", "Error"
+   - ✅ **Accurate status mapping**: "Protected", "Warming Up", "Off", "Unknown"
    - ✅ **Runtime investigation**: API session time vs mobile app lifetime understanding
    - ✅ **Status sensor**: Real-time operational state monitoring
-   - ✅ **Error code handling**: Proper error state detection and display
+   - ✅ **Error code handling**: Raw diagnostic bitfield with masked heuristic attributes
 
 6. **Entity Naming & Display** ✅ **(Version 0.0.2)**
    - ✅ **Home Assistant Standards**: Implemented `has_entity_name` pattern
@@ -310,11 +310,8 @@ thermacell_brightness = int((ha_brightness / 255) * 100)
 
 ### System Status Mapping
 ```python
-# BENIGN_ERROR_BITS (from pythermacell.const since v0.2.5) masks 0x01000000
-# and 0x00000008 before testing for a fault (#17).
-if error & ~BENIGN_ERROR_BITS:
-    status_text = "Error"
-elif not enable_repellers:
+# System status follows the hub state; the error bitfield is diagnostics-only.
+if not enable_repellers:
     status_text = "Off"
 elif system_status == 1:
     status_text = "Off"
