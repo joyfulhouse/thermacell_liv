@@ -79,7 +79,6 @@
           "protected": "보호 중",
           "warming_up": "예열 중",
           "off": "꺼짐",
-          "error": "오류",
           "unknown": "알 수 없음"
         }
       },

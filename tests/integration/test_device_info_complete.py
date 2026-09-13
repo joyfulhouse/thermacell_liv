@@ -53,9 +53,9 @@ async def test_device_info_and_sensors():
 
             # Interpret system status
             status_text = "Unknown"
-            if device.error_code and device.error_code > 0:
-                status_text = "Error"
-            elif not device.is_powered_on or device.system_status == 1:
+            if not device.is_powered_on:
+                status_text = "Off"
+            elif device.system_status == 1:
                 status_text = "Off"
             elif device.system_status == 2:
                 status_text = "Warming Up"

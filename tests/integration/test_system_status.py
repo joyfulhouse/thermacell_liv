@@ -16,21 +16,17 @@ from pythermacell import ThermacellClient
 def interpret_system_status(
     system_status: int | None,
     is_powered_on: bool,
-    error_code: int | None,
 ) -> str:
-    """Interpret system status based on parameters."""
-    if error_code and error_code > 0:
-        return "Error"
-    elif not is_powered_on or system_status == 1:
+    """Interpret status from the hub-reported state parameters."""
+    if not is_powered_on:
         return "Off"
-    elif system_status == 2:
+    if system_status == 1:
+        return "Off"
+    if system_status == 2:
         return "Warming Up"
-    elif system_status == 3:
+    if system_status == 3:
         return "Protected"
-    elif system_status == 4:
-        return "Standby"
-    else:
-        return f"Unknown (Status: {system_status})"
+    return "Unknown"
 
 
 async def analyze_system_status():
@@ -69,7 +65,6 @@ async def analyze_system_status():
                 status_text = interpret_system_status(
                     device.system_status,
                     device.is_powered_on,
-                    device.error_code,
                 )
                 print(f"\n   Interpreted Status: {status_text}")
 
@@ -91,9 +86,8 @@ async def analyze_system_status():
             print("   1 = Off (device commanded off)")
             print("   2 = Warming Up (transitioning)")
             print("   3 = Protected (fully operational)")
-            print("   4 = Standby mode")
             print()
-            print("Note: Error takes precedence if error_code > 0")
+            print("Note: Error code is diagnostic and does not override system status")
 
     print("\nSystem Status analysis completed!")
 

@@ -26,11 +26,11 @@ instance manages every hub on your Thermacell account.
 - Turn mosquito repellers on and off.
 - Control the indicator LED color and brightness.
 - Monitor remaining refill life and reset the counter when replacing cartridges.
-- Track system status (Off, Warming Up, Protected, Error) and session runtime.
+- Track system status (Off, Warming Up, Protected) and session runtime.
 - Manage multiple LIV hubs from one integration instance, with automatic
   device discovery.
-- Diagnostic sensors for connectivity, error codes, and firmware version
-  (disabled by default).
+- Diagnostic sensors for connectivity, the raw error bitfield with masked
+  heuristic attributes, and firmware version (disabled by default).
 - Configurable polling interval (30-300 seconds) and credential
   reauthentication without removing the integration.
 - Repair flows and redacted diagnostics for troubleshooting.
