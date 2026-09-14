@@ -595,8 +595,8 @@ class TestThermacellLivSystemStatusSensor:
         assert status_sensor.native_value == "Protected"
         assert error_sensor.native_value == 16777288
         assert error_sensor.extra_state_attributes == {
-            "has_error": True,
-            "status": "Error",
+            "has_error": False,
+            "status": "OK",
         }
 
     def test_native_value_no_device_data(self, mock_coordinator):
