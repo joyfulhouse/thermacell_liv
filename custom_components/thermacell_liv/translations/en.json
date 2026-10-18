@@ -32,6 +32,11 @@
       "refresh": {
         "name": "Refresh"
       }
+    },
+    "select": {
+      "refill_type": {
+        "name": "Refill type for next reset"
+      }
     }
   },
   "config": {

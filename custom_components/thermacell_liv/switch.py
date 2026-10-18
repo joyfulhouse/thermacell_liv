@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -44,8 +45,10 @@ class ThermacellLivSwitch(ThermacellLivEntity, SwitchEntity):
 
     async def async_turn_on(self, **_kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.coordinator.async_set_device_power(self._node_id, self._device_name, True)
+        if not await self.coordinator.async_set_device_power(self._node_id, self._device_name, True):
+            raise HomeAssistantError("Failed to change Thermacell power; check the hub state")
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.coordinator.async_set_device_power(self._node_id, self._device_name, False)
+        if not await self.coordinator.async_set_device_power(self._node_id, self._device_name, False):
+            raise HomeAssistantError("Failed to change Thermacell power; check the hub state")

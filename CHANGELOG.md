@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.7-beta.1] - 2026-10-18
+
+### Added
+- A restored per-hub refill type selector for 40-hour yellow, 100-hour blue,
+  and 180-hour gray cartridges. The reset button applies the selected type.
+
+### Fixed
+- Require confirmed power changes using pythermacell 0.2.7; expose failed
+  commands to Home Assistant instead of reporting success.
+- Preserve active reported hub status when the control flag is already off.
+- Revert optimistic state when the library rejects a command.
+- Preserve requested LED brightness instead of overwriting it with 100%.
+
 ## [2.0.5] - 2026-03-05
 
 ### Changed

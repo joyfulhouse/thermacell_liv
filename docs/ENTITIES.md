@@ -36,7 +36,8 @@ Each hub provides the following entities. Entity IDs use the device name, e.g.
 | `light.thermacell_liv_{name}_led` | Light | RGB color and brightness of the indicator LED |
 | `sensor.thermacell_liv_{name}_refill_life` | Sensor | Remaining refill life (%) |
 | `sensor.thermacell_liv_{name}_system_status` | Sensor | Off, Warming Up, Protected, Error |
-| `button.thermacell_liv_{name}_reset_refill` | Button | Resets the refill-life counter to 100% |
+| `button.thermacell_liv_{name}_reset_refill` | Button | Resets refill life using the selected cartridge capacity |
+| Refill type for next reset | Select (configuration) | 40-hour yellow, 100-hour blue, or 180-hour gray; remembered per hub |
 
 ### Diagnostic entities (disabled by default)
 
@@ -113,3 +114,15 @@ The integration communicates with the Thermacell IoT (ESP RainMaker) API via the
 - Home Assistant core libraries (`aiohttp_client`, `update_coordinator`,
   `config_entries`). All dependencies are managed by Home Assistant; no manual
   installation is required.
+
+## Choosing an installed refill
+
+Choose **Refill type for next reset** on the hub's device page, then press
+**Reset refill** after installing a new cartridge. Selection alone does not
+change the hub or reset usage. The default remains 100-hour blue, and the choice
+is restored across Home Assistant restarts. The selector is a local reset
+preference, not a measurement of the cartridge physically installed in the hub.
+
+Power commands now confirm the hub's reported flag and operational status.
+A service error means shutdown was not confirmed; refresh the official app and
+check the physical hub before assuming it has stopped.

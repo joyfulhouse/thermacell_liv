@@ -8,6 +8,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -45,9 +46,11 @@ class ThermacellLivResetButton(ThermacellLivEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        success = await self.coordinator.async_reset_refill_life(self._node_id, self._device_name)
+        success = await self.coordinator.async_reset_refill_life(
+            self._node_id, self._device_name, self.coordinator.refill_types.get(self._node_id, 1)
+        )
         if not success:
-            _LOGGER.error("Failed to reset refill life for %s %s", self._node_id, self._device_name)
+            raise HomeAssistantError("Failed to reset Thermacell refill life")
 
 
 class ThermacellLivRefreshButton(ThermacellLivEntity, ButtonEntity):

@@ -21,6 +21,7 @@ from pythermacell import (
 from pythermacell.const import BENIGN_ERROR_BITS
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -90,15 +91,13 @@ def _map_system_status(system_status: int, enable_repellers: bool) -> str:
     Returns:
         Status text constant from const.py
     """
-    if not enable_repellers:
-        return STATUS_OFF
     if system_status == 1:
         return STATUS_OFF
     if system_status == 2:
         return STATUS_WARMING_UP
     if system_status == 3:
         return STATUS_PROTECTED
-    return STATUS_UNKNOWN
+    return STATUS_UNKNOWN if enable_repellers else STATUS_OFF
 
 
 def _convert_brightness_to_ha(brightness: int) -> int:
@@ -137,6 +136,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.client = client
+        self.refill_types: dict[str, int] = {}
         self.nodes: dict[str, dict[str, Any]] = {}
         self.last_update_success_time: datetime | None = None
         self._node_online_states: dict[str, bool] = {}  # Track online/offline transitions
@@ -157,6 +157,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
         error = device.error or 0
         # Keep the raw code: a missing status must not masquerade as code 1 ("Off")
         system_status = device.system_status if device.system_status is not None else 0
+
+        # Active reported status must remain visible after a failed shutdown.
+        if system_status in (1, 2, 3):
+            is_powered = system_status != 1
 
         # Check if node is offline first - override all other status
         status_text = STATUS_NOT_CONNECTED if not is_online else _map_system_status(system_status, is_powered)
@@ -340,7 +344,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
         # Make API call
         try:
-            await device.set_power(power_on)
+            if not await device.set_power(power_on, verify=True):
+                raise HomeAssistantError("Thermacell rejected the command")
             _LOGGER.debug("Successfully set power to %s for device %s", power_on, device_name)
             return True
         except Exception as err:
@@ -377,7 +382,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
         # Make API call
         try:
-            await device.set_led_power(led_on)
+            if not await device.set_led_power(led_on):
+                raise HomeAssistantError("Thermacell rejected the command")
             _LOGGER.debug("Successfully set LED power to %s for device %s", led_on, device_name)
             return True
         except Exception as err:
@@ -419,7 +425,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
         # Make API call
         try:
-            await device.set_led_color(hue=hue, brightness=brightness)
+            if not await device.set_led_color(hue=hue, brightness=brightness):
+                raise HomeAssistantError("Thermacell rejected the command")
             _LOGGER.debug(
                 "Successfully set LED color to RGB(%d, %d, %d) for device %s",
                 red,
@@ -470,7 +477,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
         # Make API call
         try:
-            await device.set_led_brightness(thermacell_brightness)
+            if not await device.set_led_brightness(thermacell_brightness):
+                raise HomeAssistantError("Thermacell rejected the command")
             _LOGGER.debug(
                 "Successfully set LED brightness to %d for device %s",
                 brightness,
@@ -492,7 +500,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                 self.async_update_listeners()
             return False
 
-    async def async_reset_refill_life(self, node_id: str, device_name: str) -> bool:
+    async def async_reset_refill_life(self, node_id: str, device_name: str, refill_type: int = 1) -> bool:
         """Reset refill life and update local data."""
         device = self._get_device(node_id)
         if not device:
@@ -500,7 +508,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             return False
 
         try:
-            await device.reset_refill()
+            if not await device.reset_refill(refill_type=refill_type):
+                raise HomeAssistantError("Thermacell rejected the refill reset")
             _LOGGER.info("Successfully reset refill life for device %s", device_name)
 
             # Update local cache immediately
