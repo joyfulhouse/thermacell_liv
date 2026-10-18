@@ -57,6 +57,8 @@ class ThermacellDiagnosticFlag(ThermacellLivEntity, BinarySensorEntity):
             return device.refill_life <= 10 if device.refill_life is not None else None
         if self.key == "refill_drain":
             return features.anomalies.get(self._node_id)
+        if features.history.get(self._node_id, {}).get("shutdown_failed"):
+            return True
         reported = features.reported.get(self._node_id)
         requested = features.audit.get(self._node_id, {}).get("requested_power")
         return requested != reported if requested is not None and reported is not None else None

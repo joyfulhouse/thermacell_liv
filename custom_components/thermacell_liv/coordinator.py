@@ -343,6 +343,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             _LOGGER.warning("Device not found for node %s", node_id)
             return False
 
+        if power_on and self.features.shutdown_pending(node_id):
+            _LOGGER.warning("Cannot start %s while its previous timed shutdown is unconfirmed", device_name)
+            return False
+
         # Apply optimistic update
         device_data = self._get_device_data_safe(node_id, device_name)
         original_power = device_data.get("power", False) if device_data else False
