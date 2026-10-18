@@ -27,6 +27,16 @@ TO_REDACT = {
     "hub_serial",
     "Hub ID",
     "node_id",
+    "nodeid",
+    "device_id",
+    "serial_num",
+    "serial_number",
+    "name",
+    "user_name",
+    "email",
+    "refresh_token",
+    "id_token",
+    "message",
 }
 
 
@@ -36,26 +46,41 @@ def _measurements(data: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]
 
 
 async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
-    """Export only operational measurements under anonymous node/device labels."""
+    """Export support data under anonymous node/device labels, redacting secrets."""
     coordinator = entry.runtime_data["coordinator"]
     nodes = {}
-    for index, node_data in enumerate((coordinator.data or {}).values(), 1):
+    for index, (node_id, node_data) in enumerate((coordinator.data or {}).items(), 1):
         node = _measurements(node_data, ("online", "system_runtime"))
+        node.update(
+            {
+                "type": node_data.get("type"),
+                "model": node_data.get("model"),
+                "fw_version": node_data.get("fw_version"),
+                "maintenance": coordinator.features.history.get(node_id, {}),
+                "last_command": coordinator.features.audit.get(node_id, {}),
+                "reported_power": coordinator.features.reported.get(node_id),
+                "refill_drain": coordinator.features.anomalies.get(node_id),
+            }
+        )
         node["devices"] = {
-            f"device_{device_index}": _measurements(
-                device_data,
-                (
-                    "power",
-                    "led_power",
-                    "led_brightness",
-                    "led_brightness_pct",
-                    "refill_life",
-                    "cartridge_present",
-                    "system_status_code",
-                    "error_code",
-                    "last_updated",
+            f"device_{device_index}": {
+                **_measurements(
+                    device_data,
+                    (
+                        "power",
+                        "led_power",
+                        "led_brightness",
+                        "led_brightness_pct",
+                        "refill_life",
+                        "cartridge_present",
+                        "system_status_code",
+                        "error_code",
+                        "last_updated",
+                    ),
                 ),
-            )
+                "led_color": device_data.get("led_color"),
+                "system_status": device_data.get("system_status"),
+            }
             for device_index, device_data in enumerate(node_data.get("devices", {}).values(), 1)
         }
         nodes[f"node_{index}"] = node

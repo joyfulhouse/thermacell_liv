@@ -275,8 +275,6 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                         node_id,
                     )
 
-                # Cache the device object for later control operations
-                self._devices[node_id] = device
                 self.features.observe(device)
 
                 # Convert to our internal format
@@ -287,7 +285,6 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                 self._handle_node_state_change(node_id, device.name, device.is_online)
 
             self.nodes = updated_data
-            self._devices = {node_id: self._devices[node_id] for node_id in updated_data}
             await self.features.async_refresh()
             self.last_update_success_time = dt_util.utcnow()
             _LOGGER.debug("Successfully updated data for %d device(s)", len(updated_data))

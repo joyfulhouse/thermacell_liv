@@ -209,7 +209,6 @@ async def test_retry_and_retained_service_bounds(lan):
 async def test_stop_prevents_pending_resolution_and_refresh(lan):
     coordinator, discovery, info, _ = lan
     gate = asyncio.Event()
-    info.async_request.side_effect = lambda *args: gate.wait()
 
     async def wait(*args):
         await gate.wait()
@@ -241,3 +240,15 @@ def test_transport_sensor_is_a_qualified_hint(lan, route):
         "per_refresh": False,
         "local_endpoint_configured": False,
     }
+
+
+async def test_configured_endpoint_without_route_evidence_remains_unknown(lan):
+    """Configuring an endpoint does not prove cloud or LAN success."""
+    coordinator, discovery, info, _ = lan
+    with patch.object(LocalTransport, "read", AsyncMock()) as read:
+        await announce(discovery, info)
+        sensor = ThermacellFeatureSensor(coordinator, "node", "Hub", "transport")
+        assert sensor.native_value is None
+        assert sensor.extra_state_attributes["local_endpoint_configured"] is True
+        assert sensor.extra_state_attributes["proves_success"] is False
+        read.assert_not_awaited()

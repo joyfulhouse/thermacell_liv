@@ -68,7 +68,6 @@ class ReadFailoverTransport(LocalTransport):
 class _Service:
     zeroconf: Zeroconf
     service_type: str
-    generation: int
     attempts: int = 0
     info: AsyncServiceInfo | None = None
 
@@ -79,7 +78,6 @@ class LocalDiscovery:
     def __init__(self, coordinator: ThermacellLivCoordinator) -> None:
         self.coordinator = coordinator
         self._browser: AsyncServiceBrowser | None = None
-        self._names: dict[str, str] = {}
         self._generations: dict[str, int] = {}
         self._generation = 0
         self._services: dict[str, _Service] = {}
@@ -107,7 +105,7 @@ class LocalDiscovery:
             self._forget(next(iter(self._services)))
         self._forget(name)
         self._generations[name] = generation
-        self._services[name] = _Service(zeroconf, service_type, generation)
+        self._services[name] = _Service(zeroconf, service_type)
         self._schedule(name)
 
     def _forget(self, name: str) -> None:
@@ -122,7 +120,7 @@ class LocalDiscovery:
             return
         service.attempts += 1
         self._tasks[name] = self.coordinator.hass.async_create_task(
-            self._resolve(service.zeroconf, service.service_type, name, service.generation)
+            self._resolve(service.zeroconf, service.service_type, name, self._generations[name])
         )
 
     async def _resolve(self, zeroconf: Zeroconf, service_type: str, name: str, generation: int) -> None:
@@ -150,8 +148,7 @@ class LocalDiscovery:
 
     def _rebuild(self) -> None:
         endpoints: dict[str, list[LocalEndpoint]] = {}
-        self._names.clear()
-        for name, service in self._services.items():
+        for service in self._services.values():
             info = service.info
             if info is None or not info.port or not (raw_node := info.properties.get(b"node_id")):
                 continue
@@ -162,7 +159,6 @@ class LocalDiscovery:
             for address in _addresses(info):
                 endpoint = device.services.local_endpoint(address, info.port)
                 if endpoint:
-                    self._names[name] = node_id
                     candidates = endpoints.setdefault(node_id, [])
                     if endpoint not in candidates and len(candidates) < MAX_ADDRESSES:
                         candidates.append(endpoint)
@@ -193,7 +189,6 @@ class LocalDiscovery:
         await asyncio.gather(*tasks, return_exceptions=True)
         self._tasks.clear()
         self._services.clear()
-        self._names.clear()
         self._generations.clear()
         self._endpoints.clear()
         self.coordinator.client.api.local_transports.clear()

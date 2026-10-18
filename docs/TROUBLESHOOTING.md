@@ -98,10 +98,13 @@ transitions, service-call outcomes, and optimistic-update operations.
 2. **⋮ → Download Diagnostics**.
 3. Attach the file when reporting an issue (sensitive data is auto-redacted).
 
-Diagnostics use anonymous node/device labels and allowlisted operational
-measurements; account titles/IDs, local credentials, arbitrary metadata and audit
-error text are omitted. Review debug logs separately before sharing them; the
-diagnostics allowlist does not sanitize log files.
+Diagnostics use anonymous node/device labels and allowlisted support fields,
+including firmware/model, LED state, maintenance history, command audit, reported
+power, and refill-drain evidence. Account titles/IDs and local credentials are
+omitted or redacted by key, including sensitive fields nested in support data.
+Free-form message fields are redacted because they can embed credentials.
+Review debug logs separately before sharing them; diagnostics redaction does not
+sanitize log files.
 
 ## Getting Help
 
