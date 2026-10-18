@@ -37,6 +37,7 @@ class TestAsyncSetupEntry:
             mock_coordinator = MagicMock()
             mock_coordinator.data = {"node1": {}}
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.features.async_load = AsyncMock()
             mock_coordinator.async_add_listener = MagicMock(return_value=MagicMock())
             mock_coordinator_class.return_value = mock_coordinator
 
@@ -94,6 +95,7 @@ class TestAsyncSetupEntry:
             mock_coordinator = MagicMock()
             mock_coordinator.data = {}
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.features.async_load = AsyncMock()
             mock_coordinator.async_add_listener = MagicMock(return_value=MagicMock())
             mock_coordinator_class.return_value = mock_coordinator
 
@@ -128,6 +130,7 @@ class TestAsyncSetupEntry:
             mock_coordinator = MagicMock()
             mock_coordinator.data = {}
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.features.async_load = AsyncMock()
             mock_coordinator.async_add_listener = MagicMock(return_value=MagicMock())
             mock_coordinator_class.return_value = mock_coordinator
 

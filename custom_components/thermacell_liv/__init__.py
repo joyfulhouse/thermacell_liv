@@ -15,10 +15,20 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import ThermacellLivCoordinator
+from .local import LocalDiscovery
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.LIGHT, Platform.SENSOR, Platform.BUTTON, Platform.SELECT]
+PLATFORMS: list[Platform] = [
+    Platform.SWITCH,
+    Platform.LIGHT,
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.SELECT,
+    Platform.BINARY_SENSOR,
+    Platform.UPDATE,
+    Platform.TEXT,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -54,12 +64,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Initialize coordinator with configurable scan interval
     scan_interval = entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)
     coordinator = ThermacellLivCoordinator(hass, client, scan_interval=scan_interval)
-
-    # Fetch initial data
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.features.async_load(entry.entry_id)
+        await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        await client.__aexit__(None, None, None)
+        raise
 
     # Store coordinator and client in runtime_data (HA 2024.x+ best practice)
     entry.runtime_data = {"coordinator": coordinator, "client": client}
+    if entry.options.get("prefer_local", True) is True:
+        discovery = LocalDiscovery(coordinator)
+        try:
+            await discovery.async_start()
+        except Exception as err:
+            await discovery.async_stop()
+            _LOGGER.warning("Local discovery unavailable; using cloud control (%s)", type(err).__name__)
+        else:
+            entry.runtime_data["local_discovery"] = discovery
 
     # Setup options update listener
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
@@ -133,6 +155,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Clean up the client context
     if unload_ok and entry.runtime_data:
+        if discovery := entry.runtime_data.get("local_discovery"):
+            await discovery.async_stop()
         client: ThermacellClient = entry.runtime_data.get("client")
         if client:
             try:

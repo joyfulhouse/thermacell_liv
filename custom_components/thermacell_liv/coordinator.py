@@ -6,6 +6,7 @@ This module uses full type annotations and async operations for optimal performa
 
 from __future__ import annotations
 
+import asyncio
 import colorsys
 from datetime import datetime, timedelta
 import logging
@@ -38,6 +39,7 @@ from .const import (
     STATUS_UNKNOWN,
     STATUS_WARMING_UP,
 )
+from .features import HubFeatures
 from .thermacell_types import DeviceParams, NodeData, RGBColor
 
 _LOGGER = logging.getLogger(__name__)
@@ -136,6 +138,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.client = client
+        self.features = HubFeatures(self)
         self.refill_types: dict[str, int] = {}
         self.nodes: dict[str, dict[str, Any]] = {}
         self.last_update_success_time: datetime | None = None
@@ -184,7 +187,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             led_brightness=ha_brightness,
             led_brightness_pct=led_brightness,
             led_color=led_color,
-            refill_life=int(device.refill_life or 0),
+            refill_life=device.refill_life,
+            cartridge_present=device.cartridge_present,
             system_status=status_text,
             system_status_code=system_status,
             error_code=error,
@@ -268,6 +272,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
                 # Cache the device object for later control operations
                 self._devices[node_id] = device
+                self.features.observe(device)
 
                 # Convert to our internal format
                 node_data = self._device_to_node_data(device)
@@ -277,6 +282,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                 self._handle_node_state_change(node_id, device.name, device.is_online)
 
             self.nodes = updated_data
+            self._devices = {node_id: self._devices[node_id] for node_id in updated_data}
+            await self.features.async_refresh()
             self.last_update_success_time = dt_util.utcnow()
             _LOGGER.debug("Successfully updated data for %d device(s)", len(updated_data))
             return updated_data
@@ -318,6 +325,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
         """Get the ThermacellDevice object for a node."""
         return self._devices.get(node_id)
 
+    def get_device(self, node_id: str) -> ThermacellDevice | None:
+        """Return a current library object for capability-aware entities."""
+        return self._devices.get(node_id)
+
     def _get_device_data_safe(self, node_id: str, device_name: str) -> DeviceParams | None:
         """Safely get device data with null checks."""
         if not self.data or node_id not in self.data:
@@ -346,8 +357,17 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
         try:
             if not await device.set_power(power_on, verify=True):
                 raise HomeAssistantError("Thermacell rejected the command")
+            self.features.reported[node_id] = power_on
             _LOGGER.debug("Successfully set power to %s for device %s", power_on, device_name)
+            await self.features.record(node_id, "power", "confirmed", power_on)
             return True
+        except asyncio.CancelledError:
+            if device_data:
+                device_data["power"] = original_power
+                brightness = device_data.get("led_brightness", 0)
+                device_data["led_power"] = original_power and brightness > 0
+            await self.features.record(node_id, "power", "cancelled", power_on)
+            raise
         except Exception as err:
             _LOGGER.warning(
                 "Failed to set power for device %s (node %s): %s - service unavailable",
@@ -356,6 +376,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                 err,
             )
             # Revert optimistic update
+            await self.features.record(node_id, "power", "failed", power_on)
             if device_data:
                 device_data["power"] = original_power
                 brightness = device_data.get("led_brightness", 0)
@@ -511,6 +532,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             if not await device.reset_refill(refill_type=refill_type):
                 raise HomeAssistantError("Thermacell rejected the refill reset")
             _LOGGER.info("Successfully reset refill life for device %s", device_name)
+            await self.features.refill_reset(node_id, refill_type)
 
             # Update local cache immediately
             if self.data and node_id in self.data:

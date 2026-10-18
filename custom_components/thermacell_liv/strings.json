@@ -23,6 +23,24 @@
       },
       "firmware_version": {
         "name": "Firmware version"
+      },
+      "last_refill_reset": {
+        "name": "Last refill reset"
+      },
+      "installed_refill": {
+        "name": "Last applied refill type"
+      },
+      "remaining_hours": {
+        "name": "Estimated refill hours remaining"
+      },
+      "last_command": {
+        "name": "Last command result"
+      },
+      "shutdown_at": {
+        "name": "Scheduled shutdown"
+      },
+      "transport": {
+        "name": "Connection transport"
       }
     },
     "button": {
@@ -31,11 +49,53 @@
       },
       "refresh": {
         "name": "Refresh"
+      },
+      "run_30": {
+        "name": "Run for 30 minutes"
+      },
+      "run_60": {
+        "name": "Run for 60 minutes"
+      },
+      "run_120": {
+        "name": "Run for 120 minutes"
+      },
+      "cancel_timer": {
+        "name": "Cancel shutdown timer"
+      },
+      "reboot": {
+        "name": "Reboot hub"
+      },
+      "check_firmware": {
+        "name": "Check firmware updates"
       }
     },
     "select": {
       "refill_type": {
         "name": "Refill type for next reset"
+      }
+    },
+    "binary_sensor": {
+      "missing_cartridge": {
+        "name": "Missing cartridge"
+      },
+      "low_refill": {
+        "name": "Low refill"
+      },
+      "refill_drain": {
+        "name": "Refill drain while off"
+      },
+      "power_mismatch": {
+        "name": "Requested power differs from reported power"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    },
+    "text": {
+      "timezone": {
+        "name": "Hub timezone"
       }
     }
   },
@@ -83,7 +143,8 @@
         "title": "Thermacell LIV Options",
         "description": "Configure integration settings",
         "data": {
-          "scan_interval": "Update interval (seconds)"
+          "scan_interval": "Update interval (seconds)",
+          "prefer_local": "Prefer local network control when supported"
         },
         "data_description": {
           "scan_interval": "How often to poll the Thermacell API for device status (30-300 seconds)"
@@ -94,7 +155,7 @@
   "issues": {
     "auth_failed": {
       "title": "Authentication Failed",
-      "description": "Your Thermacell credentials are invalid or have expired. Please reauthenticate to continue using this integration.\n\nGo to **Settings** → **Devices & Services**, find the **Thermacell LIV** integration, click the three dots menu and select **Reauthenticate**."
+      "description": "Your Thermacell credentials are invalid or have expired. Please reauthenticate to continue using this integration.\n\nGo to **Settings** \u2192 **Devices & Services**, find the **Thermacell LIV** integration, click the three dots menu and select **Reauthenticate**."
     },
     "device_offline": {
       "title": "Device Offline",

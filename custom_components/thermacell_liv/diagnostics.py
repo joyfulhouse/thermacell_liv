@@ -56,6 +56,10 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                 "fw_version": node_data.get("fw_version"),
                 "online": node_data.get("online"),
                 "system_runtime": node_data.get("system_runtime"),
+                "maintenance": coordinator.features.history.get(node_id, {}),
+                "last_command": coordinator.features.audit.get(node_id, {}),
+                "reported_power": coordinator.features.reported.get(node_id),
+                "refill_drain": coordinator.features.anomalies.get(node_id),
                 "devices": {},
             }
 
@@ -68,6 +72,7 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                     "led_brightness_pct": device_data.get("led_brightness_pct"),
                     "led_color": device_data.get("led_color"),
                     "refill_life": device_data.get("refill_life"),
+                    "cartridge_present": device_data.get("cartridge_present"),
                     "system_status": device_data.get("system_status"),
                     "system_status_code": device_data.get("system_status_code"),
                     "error_code": device_data.get("error_code"),
