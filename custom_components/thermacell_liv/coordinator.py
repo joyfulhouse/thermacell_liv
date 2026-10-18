@@ -356,7 +356,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
         # Make API call
         try:
             if not await device.set_power(power_on, verify=True):
-                raise HomeAssistantError("Thermacell rejected the command")
+                raise HomeAssistantError("Thermacell power change failed or could not be confirmed")
             self.features.reported[node_id] = power_on
             _LOGGER.debug("Successfully set power to %s for device %s", power_on, device_name)
             await self.features.record(node_id, "power", "confirmed", power_on)

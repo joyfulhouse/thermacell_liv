@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0-beta.3] - 2026-10-18
+
+### Changed
+- Require pythermacell 0.3.0b3 for HTTP 207 batch results and shutdown diagnostics.
+
+### Fixed
+- Describe failed power changes as failed or unconfirmed instead of assuming
+  command rejection when a hub acknowledges off but keeps reporting Warming Up.
+- Add a timed-run regression through the library confirmation path, preserving
+  individual/group service errors and the native timer when shutdown is unconfirmed
+  (#30). The underlying firmware behavior still requires hardware investigation.
+
 ## [2.1.0-beta.2] - 2026-10-18
 
 ### Fixed
