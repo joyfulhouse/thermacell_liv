@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0-beta.2] - 2026-10-18
+
+### Fixed
+- Use pythermacell 0.3.0b2 to resolve the protobuf 7 dependency conflict that
+  prevented the native-control beta from loading on current Home Assistant.
+
 ## [2.0.7-beta.1] - 2026-10-18
 
 ### Added
