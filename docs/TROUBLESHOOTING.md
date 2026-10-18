@@ -36,6 +36,36 @@ summary, see the [README](../README.md#troubleshooting).
 - Test control from the mobile app to rule out a hardware issue.
 - Ensure brightness is greater than 0 — the LED is off at brightness 0.
 
+### LAN unavailable or cloud fallback
+
+- Confirm local preference is enabled and the hub advertises local-control
+  capability in authenticated account metadata. Firmware without that service
+  cannot use this path; physical-hub LAN validation remains outstanding.
+- Check `_esp_local_ctrl._tcp.local.` mDNS visibility **from Home Assistant's
+  network/interface**. A short negative browse is inconclusive. Across VLANs,
+  verify multicast reflection as well as routed TCP access to the advertised port;
+  discovery visibility does not establish endpoint reachability.
+- Check all advertised address families/routes. The integration prefers IPv4,
+  then non-link-local IPv6, then link-local addresses (IPv6 needs a scope).
+  Read failures try bounded alternatives then cloud. Writes do not retry across
+  addresses or replay through cloud; refresh before manually retrying an uncertain
+  command.
+- A discovered endpoint is not proof of authenticated pairing or a successful
+  read. Security/PoP/username come from cloud account metadata, never TXT records.
+  Do not weaken security or publish those values while diagnosing handshakes.
+- Late account/capability metadata is re-evaluated after coordinator refreshes.
+  Timed-out announcements get at most three resolution attempts per announcement;
+  a later mDNS update resets that budget. Removed aliases keep a transport only
+  while another valid alias owns it; account removal prunes local control.
+- The transport sensor is a library route hint, not a success or per-refresh
+  measurement. `cloud` can describe an attempted fallback; `local` can coexist
+  with cloud config/status. See [operation boundaries](NATIVE_CONTROLS.md#operation-boundaries).
+- Setup and restart require cloud login. During a runtime outage only previously
+  paired, discovered, local-capable hubs with cached metadata may continue;
+  authentication failures (401/403) do not take the cached server-error path.
+  Offline restart is **UNSUPPORTED**. OTA, groups, and account membership remain
+  cloud-only. Avoid reload during an outage: it discards ephemeral local state.
+
 ### Slow response times
 
 - Check internet speed and latency; increase the scan interval if the API is
@@ -67,6 +97,11 @@ transitions, service-call outcomes, and optimistic-update operations.
 1. **Settings → Devices & Services → Thermacell LIV**.
 2. **⋮ → Download Diagnostics**.
 3. Attach the file when reporting an issue (sensitive data is auto-redacted).
+
+Diagnostics use anonymous node/device labels and allowlisted operational
+measurements; account titles/IDs, local credentials, arbitrary metadata and audit
+error text are omitted. Review debug logs separately before sharing them; the
+diagnostics allowlist does not sanitize log files.
 
 ## Getting Help
 

@@ -100,6 +100,23 @@ def sample_devices():
     ]
 
 
+@pytest.mark.parametrize("remaining", [0, 1])
+async def test_refresh_reconciles_local_account_membership(coordinator, mock_client, sample_devices, remaining):
+    """Discovery sees the current cache even when the final account node is removed."""
+    coordinator._devices = {device.node_id: device for device in sample_devices}
+    observed = []
+    coordinator.local_discovery = MagicMock()
+    coordinator.local_discovery.reconcile.side_effect = lambda: observed.append(set(coordinator._devices))
+    coordinator.features.async_refresh = AsyncMock()
+    mock_client.get_devices.return_value = sample_devices[:remaining]
+    if remaining:
+        await coordinator._async_update_data()
+    else:
+        with pytest.raises(UpdateFailed, match="No devices found"):
+            await coordinator._async_update_data()
+    assert observed == [{device.node_id for device in sample_devices[:remaining]}]
+
+
 class TestThermacellLivCoordinator:
     """Test the ThermacellLivCoordinator class."""
 

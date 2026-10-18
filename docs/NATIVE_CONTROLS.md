@@ -71,11 +71,47 @@ advertise the service and are reachable through mDNS can use it.
 Read failures can fall back to cloud. An attempted local write is not replayed
 through cloud after a timeout, because it might already have reached the hub.
 Refresh state before retrying. Power, LED, refill, native schedules, reboot and
-timezone can use LAN; OTA and group discovery remain cloud operations. Initial
-setup/authentication still requires the cloud. Already-discovered local hubs can
-continue during subsequent cloud outages. The connection-transport sensor shows
-the most recently successful route. Disable the local preference and reload to
-use cloud-only control if your network does not support the protocol.
+timezone can use LAN; OTA and groups remain cloud operations. Read address
+selection prefers usable IPv4, then non-link-local IPv6, then scoped link-local
+IPv6. A failed local read can try other advertised addresses (at most eight);
+a write uses exactly one endpoint, without address retry or cloud replay.
+
+The connection-transport sensor is a **library route hint**, not proof of a
+successful operation or a wholly local refresh. The library can mark `cloud`
+before fallback succeeds, and a refresh may combine local params with cloud
+config/status. Writes share the hint; it has no success timestamp. Before any
+hint exists the sensor is unknown. Attributes explicitly say `proves_success:
+false` and `per_refresh: false`; `local_endpoint_configured` means configuration,
+not successful pairing/handshake. Per-operation successful read/write telemetry
+requires a coordinated library follow-up.
+
+Disable local preference and reload for cloud-only control; re-enabling also
+reloads and requires cloud authentication. Discovery removal clears an endpoint,
+but a previous route hint can remain until another operation updates it.
+
+### Operation boundaries
+
+- **Setup:** cloud required for authentication, account enrollment, and trusted
+  local security/credential metadata. mDNS never enrolls a foreign account node.
+- **Runtime cloud outage:** conditional LAN operation for already-paired,
+  discovered, local-control-advertising hubs with cached account metadata and a
+  reachable authenticated endpoint. Cached-node fallback supports connection
+  failures and some server errors; HTTP 401/403 do not qualify. It is not a
+  guarantee for every cloud error or firmware. Physical-hub validation remains
+  outstanding.
+- **Offline restart: UNSUPPORTED.** Startup/reload authenticates and refreshes
+  through cloud before discovery, even for previously used hubs. No local
+  bootstrap credentials/catalog are persisted by this integration.
+- **Cloud-only features:** OTA offers/status/install, groups and their current
+  membership, account membership/enrollment and credential provisioning/rotation.
+
+Follow-up: coordinate secure offline bootstrap with pythermacell: a versioned,
+account-scoped catalog of previously paired nodes; protected PoP/local-username
+storage and backup policy; identity/security verification after rediscovery;
+credential revocation/rotation and membership reconciliation on cloud recovery;
+and restart tests denying cloud while rejecting spoofed/unpaired nodes. HA
+Store/config-entry persistence alone is not encryption. This design is deferred,
+not an offline-startup feature in this phase.
 
 ## Refill State and Shutdown Evidence
 

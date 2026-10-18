@@ -11,7 +11,7 @@ This integration supports all **Thermacell LIV** mosquito repeller hubs.
 |---|---|
 | Model | Thermacell LIV Hub (`thermacell-hub`) |
 | Indicator | RGB LED |
-| Connectivity | Cloud (ESP RainMaker), 2.4 GHz Wi-Fi |
+| Connectivity | Cloud (ESP RainMaker), conditional RainMaker LAN; 2.4 GHz Wi-Fi |
 | Cartridge | Refillable |
 | Tested firmware | 5.3.2 and later |
 | Minimum firmware | Any version supporting ESP RainMaker API v1 |

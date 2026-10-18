@@ -66,8 +66,8 @@ Uses Home Assistant's managed ClientSession for proper lifecycle management.
 |------|--------|----------------|
 | devices | ✅ | `entity.py:21-38` - DeviceInfo with identifiers, model, firmware |
 | diagnostics | ✅ | `diagnostics.py` - Export with data redaction |
-| discovery-update-info | N/A | Cloud polling integration |
-| discovery | N/A | Account-based device discovery via API |
+| discovery-update-info | Reassessment pending | Account-scoped mDNS endpoint updates; mocked lifecycle tests, physical-hub validation outstanding |
+| discovery | Reassessment pending | Cloud account enrollment plus optional RainMaker mDNS endpoint discovery; not independent LAN enrollment |
 | docs-data-update | ✅ | README.md - 60s polling, optimistic updates |
 | docs-examples | ✅ | README.md - Automation examples |
 | docs-known-limitations | ✅ | README.md - Cloud dependency, runtime discrepancy |

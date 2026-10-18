@@ -21,8 +21,12 @@ Full configuration reference for Thermacell LIV. For a quick overview, see the
    [thermacell.com](https://www.thermacell.com/) and verify your email.
 2. **Registered LIV device** — set the hub up in the Thermacell mobile app
    (iOS/Android) and connect it to 2.4 GHz Wi-Fi. Confirm it appears in the app.
-3. **Network** — Home Assistant needs outbound HTTPS internet access. No inbound
-   firewall configuration is required.
+3. **Network** — Home Assistant needs outbound HTTPS internet access for setup,
+   authentication and restart. Optional LAN operation requires hub local-control
+   capability, mDNS (`_esp_local_ctrl._tcp.local.`) visibility, and access to its
+   advertised TCP port. Across VLANs, multicast reflection and routing/firewall
+   policy must both permit discovery and endpoint traffic; no public inbound
+   port forwarding is required.
 
 ## Configuration Options
 
@@ -68,11 +72,14 @@ You can also trigger it manually:
 
 ## Data Updates and Polling
 
-The integration uses **cloud polling** with optimistic updates:
+The integration uses **local-preferred polling with cloud fallback** and optimistic updates:
 
 1. **Initial connection** — on startup it fetches all device data from the API.
 2. **Periodic polling** — device status refreshes every scan interval
-   (default 60 s).
+   (default 60 s). With local preference enabled (the default), account-scoped
+   mDNS discovery configures supported LAN endpoints after the initial refresh.
+   A failed local read may try another advertised address, then cloud. Local
+   writes are never replayed across addresses or through cloud on failure.
 3. **Optimistic updates** — when you control a device, the UI updates
    immediately (~0.01 s) while the API call runs in the background (~2.5 s
    average); the change reverts if the API call fails.
@@ -110,8 +117,13 @@ Thermacell account or hardware.
 
 **API and connectivity**
 
-- Requires constant internet access; cannot function if the Thermacell API is
-  down. There is no local API.
+- Setup and authentication require cloud. Runtime cloud outages may allow
+  already-paired, discovered hubs advertising local control to continue on LAN,
+  provided cached account metadata and a reachable, authenticated endpoint exist.
+  This is conditional, not complete cloud independence.
+- Offline restart is **UNSUPPORTED**: startup/reload still requires cloud login.
+  OTA, groups, and account membership remain cloud-only. Physical-hub LAN
+  validation remains outstanding. See [operation boundaries](NATIVE_CONTROLS.md#operation-boundaries).
 - Status updates are limited by the polling interval (the integration polls; it
   does not receive device push notifications).
 - Excessive API calls may be temporarily throttled.

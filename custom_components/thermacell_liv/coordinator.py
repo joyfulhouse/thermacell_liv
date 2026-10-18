@@ -40,6 +40,7 @@ from .const import (
     STATUS_WARMING_UP,
 )
 from .features import HubFeatures
+from .local import LocalDiscovery
 from .thermacell_types import DeviceParams, NodeData, RGBColor
 
 _LOGGER = logging.getLogger(__name__)
@@ -138,6 +139,7 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.client = client
+        self.local_discovery: LocalDiscovery | None = None
         self.features = HubFeatures(self)
         self.refill_types: dict[str, int] = {}
         self.nodes: dict[str, dict[str, Any]] = {}
@@ -252,6 +254,9 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             # Get all devices from pythermacell client
             devices = await self.client.get_devices()
 
+            self._devices = {device.node_id: device for device in devices}
+            if self.local_discovery:
+                self.local_discovery.reconcile()
             if not devices:
                 raise UpdateFailed("No devices found")
 

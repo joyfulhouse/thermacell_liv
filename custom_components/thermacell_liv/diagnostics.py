@@ -1,83 +1,53 @@
-"""Diagnostics support for Thermacell LIV."""
+"""Allowlisted diagnostics without account, node, or local-control credentials."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_PASSWORD, CONF_USERNAME
+from .const import DOMAIN
 
-# Keys to redact from diagnostics
-TO_REDACT = {
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    "user_id",
-    "access_token",
-    "idtoken",
-    "refreshtoken",
-    "hub_serial",
-    "Hub ID",
-}
+
+def _measurements(data: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
+    """Do not copy arbitrary nested metadata, labels, audit errors, or strings."""
+    return {key: value for key in keys if type(value := data.get(key)) in (bool, int, float) or value is None}
 
 
 async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
-    """Return diagnostics for a config entry."""
+    """Export only operational measurements under anonymous node/device labels."""
     coordinator = entry.runtime_data["coordinator"]
-
-    # Gather all diagnostic data
-    diagnostics_data = {
-        "entry": {
-            "title": entry.title,
-            "domain": entry.domain,
-            "version": entry.version,
-            "unique_id": entry.unique_id,
-        },
+    nodes = {}
+    for index, node_data in enumerate((coordinator.data or {}).values(), 1):
+        node = _measurements(node_data, ("online", "system_runtime"))
+        node["devices"] = {
+            f"device_{device_index}": _measurements(
+                device_data,
+                (
+                    "power",
+                    "led_power",
+                    "led_brightness",
+                    "led_brightness_pct",
+                    "refill_life",
+                    "cartridge_present",
+                    "system_status_code",
+                    "error_code",
+                    "last_updated",
+                ),
+            )
+            for device_index, device_data in enumerate(node_data.get("devices", {}).values(), 1)
+        }
+        nodes[f"node_{index}"] = node
+    return {
+        "entry": {"domain": DOMAIN, "version": entry.version},
         "coordinator": {
             "last_update_success": coordinator.last_update_success,
             "last_update_success_time": (
                 str(coordinator.last_update_success_time) if coordinator.last_update_success_time else None
             ),
             "update_interval": str(coordinator.update_interval),
-            "node_count": len(coordinator.data) if coordinator.data else 0,
+            "node_count": len(nodes),
         },
-        "nodes": {},
+        "nodes": nodes,
     }
-
-    # Add detailed node information
-    if coordinator.data:
-        for node_id, node_data in coordinator.data.items():
-            diagnostics_data["nodes"][node_id] = {
-                "name": node_data.get("name"),
-                "type": node_data.get("type"),
-                "model": node_data.get("model"),
-                "fw_version": node_data.get("fw_version"),
-                "online": node_data.get("online"),
-                "system_runtime": node_data.get("system_runtime"),
-                "maintenance": coordinator.features.history.get(node_id, {}),
-                "last_command": coordinator.features.audit.get(node_id, {}),
-                "reported_power": coordinator.features.reported.get(node_id),
-                "refill_drain": coordinator.features.anomalies.get(node_id),
-                "devices": {},
-            }
-
-            # Add device information
-            for device_name, device_data in node_data.get("devices", {}).items():
-                diagnostics_data["nodes"][node_id]["devices"][device_name] = {
-                    "power": device_data.get("power"),
-                    "led_power": device_data.get("led_power"),
-                    "led_brightness": device_data.get("led_brightness"),
-                    "led_brightness_pct": device_data.get("led_brightness_pct"),
-                    "led_color": device_data.get("led_color"),
-                    "refill_life": device_data.get("refill_life"),
-                    "cartridge_present": device_data.get("cartridge_present"),
-                    "system_status": device_data.get("system_status"),
-                    "system_status_code": device_data.get("system_status_code"),
-                    "error_code": device_data.get("error_code"),
-                    "last_updated": device_data.get("last_updated"),
-                }
-
-    # Redact sensitive information
-    return async_redact_data(diagnostics_data, TO_REDACT)

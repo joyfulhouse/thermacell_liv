@@ -98,12 +98,19 @@ class ThermacellFeatureSensor(ThermacellLivEntity, SensorEntity):
         if self.key == "shutdown_at":
             return features.shutdown_at(self._node_id)
         if self.key == "transport":
-            return self.coordinator.client.api.last_transport.get(self._node_id, "cloud")
+            return self.coordinator.client.api.last_transport.get(self._node_id)
         result = features.audit.get(self._node_id, {}).get("result")
         return str(result) if result is not None else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        if self.key == "transport":
+            return {
+                "evidence": "library_route_hint",
+                "proves_success": False,
+                "per_refresh": False,
+                "local_endpoint_configured": self._node_id in self.coordinator.client.api.local_transports,
+            }
         if self.key == "last_command":
             return {
                 **self.coordinator.features.audit.get(self._node_id, {}),
