@@ -211,6 +211,33 @@ async def test_group_partial_failure_keeps_successful_members(feature_hub):
         await features.group_power("g", False)
 
 
+async def test_timed_run_with_warming_up_off_report_fails_switch_and_group(feature_hub):
+    """Replay the ADU report through the real library confirmation path."""
+    coordinator, device, services = feature_hub
+    device.set_power = ThermacellDevice.set_power.__get__(device)
+    device._api.update_node_params = AsyncMock(return_value=(200, {"status": "success"}))
+    device._api.get_node_params = AsyncMock(
+        return_value=(200, {"LIV Hub": {"Enable Repellers": True, "System State": 2, "System Status": 2}})
+    )
+    await coordinator.features.command("n", "run_for", 60)
+    services.set_shutdown_timer.assert_awaited_once_with(60)
+    device._api.get_node_params.return_value = (
+        200,
+        {"LIV Hub": {"Enable Repellers": False, "System State": 2, "System Status": 2, "Error": 0}},
+    )
+    coordinator.features.groups = {"g": {"name": "Yard", "nodes": ["n"]}}
+    coordinator.features.groups_available = True
+    with patch("pythermacell.devices.asyncio.sleep", new_callable=AsyncMock):
+        switch = ThermacellLivSwitch(coordinator, "n", "Yard")
+        with pytest.raises(HomeAssistantError, match="Failed to change"):
+            await switch.async_turn_off()
+        with pytest.raises(HomeAssistantError, match="n"):
+            await coordinator.features.group_power("g", False)
+    assert coordinator.data["n"]["devices"]["Yard"]["power"]
+    assert coordinator.features.audit["n"]["result"] == "failed"
+    services.cancel_shutdown_timer.assert_not_awaited()
+
+
 async def test_firmware_entity_uses_server_stage_and_rejects_changed_offer(feature_hub):
     coordinator, _, services = feature_hub
     features = coordinator.features
