@@ -6,8 +6,10 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, TypeVar
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -17,6 +19,29 @@ if TYPE_CHECKING:
     from .coordinator import ThermacellLivCoordinator
 
 T = TypeVar("T", bound="ThermacellLivEntity")
+
+
+def setup_dynamic_entities(
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+    factory: Callable[[], list[Entity]],
+) -> None:
+    """Discover optional entities after each successful capability refresh."""
+    coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
+    known: set[str] = set()
+
+    @callback
+    def discover() -> None:
+        entities = []
+        for entity in factory():
+            if entity.unique_id and entity.unique_id not in known:
+                known.add(entity.unique_id)
+                entities.append(entity)
+        if entities:
+            async_add_entities(entities)
+
+    discover()
+    config_entry.async_on_unload(coordinator.async_add_listener(discover))
 
 
 def create_entities_for_devices(
@@ -57,14 +82,23 @@ async def async_setup_platform_entities(
         entity_factories: One or more factory functions to create entities
     """
     coordinator: ThermacellLivCoordinator = config_entry.runtime_data["coordinator"]
-    entities: list[ThermacellLivEntity] = []
+    known: set[str] = set()
 
-    for node_id, node_data in coordinator.data.items():
-        for device_name in node_data.get("devices", {}):
-            for factory in entity_factories:
-                entities.append(factory(coordinator, node_id, device_name))
+    @callback
+    def discover() -> None:
+        entities: list[ThermacellLivEntity] = []
+        for node_id, node_data in coordinator.data.items():
+            if node_id in known:
+                continue
+            for device_name in node_data.get("devices", {}):
+                for factory in entity_factories:
+                    entities.append(factory(coordinator, node_id, device_name))
+            known.add(node_id)
+        if entities:
+            async_add_entities(entities, update_before_add=True)
 
-    async_add_entities(entities, update_before_add=True)
+    discover()
+    config_entry.async_on_unload(coordinator.async_add_listener(discover))
 
 
 class ThermacellLivEntity(CoordinatorEntity["ThermacellLivCoordinator"]):

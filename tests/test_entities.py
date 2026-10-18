@@ -29,7 +29,9 @@ from homeassistant.exceptions import HomeAssistantError
 @pytest.fixture
 def hass():
     """Return a mock Home Assistant instance."""
-    return MagicMock(spec=HomeAssistant)
+    hass = MagicMock(spec=HomeAssistant)
+    hass.services = MagicMock()
+    return hass
 
 
 @pytest.fixture
@@ -46,6 +48,7 @@ def mock_coordinator():
     from datetime import datetime, timezone
 
     coordinator = MagicMock(spec=ThermacellLivCoordinator)
+    coordinator.features = MagicMock()
     coordinator.refill_types = {}
     coordinator.last_update_success = True
     coordinator.last_update_success_time = datetime.now(UTC)  # Timezone-aware
@@ -318,14 +321,14 @@ class TestThermacellLivRefillSensor:
         mock_coordinator.get_device_data.return_value = None
         sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
 
-        assert sensor.native_value == 0
+        assert sensor.native_value is None
 
     def test_native_value_missing_refill_life(self, mock_coordinator):
         """Test sensor native value with missing refill_life."""
         mock_coordinator.get_device_data.return_value = {"power": True}  # Missing refill_life
         sensor = ThermacellLivRefillSensor(mock_coordinator, "node1", "Device1")
 
-        assert sensor.native_value == 0
+        assert sensor.native_value is None
 
     def test_icon(self, mock_coordinator):
         """Test sensor icon."""
@@ -453,9 +456,9 @@ class TestEntityPlatformSetup:
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
-        mock_add_entities.assert_called_once()
-        sensors = mock_add_entities.call_args[0][0]
-        assert len(sensors) == 6  # All sensor types
+        assert mock_add_entities.call_count == 2
+        sensors = [entity for call in mock_add_entities.call_args_list for entity in call.args[0]]
+        assert len(sensors) == 12  # All sensor types
         # Check we have all sensor types
         sensor_types = [type(sensor) for sensor in sensors]
         assert ThermacellLivRefillSensor in sensor_types
@@ -474,9 +477,9 @@ class TestEntityPlatformSetup:
 
         await async_setup_entry(hass, config_entry, mock_add_entities)
 
-        mock_add_entities.assert_called_once()
-        buttons = mock_add_entities.call_args[0][0]
-        assert len(buttons) == 2  # Reset refill + Refresh buttons
+        assert mock_add_entities.call_count == 2
+        buttons = [entity for call in mock_add_entities.call_args_list for entity in call.args[0]]
+        assert len(buttons) == 3  # Reset refill + Refresh buttons
         button_types = [type(button) for button in buttons]
         assert ThermacellLivResetButton in button_types
         assert ThermacellLivRefreshButton in button_types

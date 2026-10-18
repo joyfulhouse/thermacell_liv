@@ -126,3 +126,7 @@ preference, not a measurement of the cartridge physically installed in the hub.
 Power commands now confirm the hub's reported flag and operational status.
 A service error means shutdown was not confirmed; refresh the official app and
 check the physical hub before assuming it has stopped.
+
+## Native Controls and Diagnostics
+
+Version 2.1.0-beta.1 adds timers, schedule switches, firmware updates, timezone, reboot, group switches, and refill/shutdown diagnostics. See [Native Controls](NATIVE_CONTROLS.md) for availability, service examples, and limitations.

@@ -33,7 +33,8 @@ class DeviceParams(TypedDict, total=False):
     led_brightness: int
     led_brightness_pct: int
     led_color: RGBColor
-    refill_life: int
+    refill_life: float | None
+    cartridge_present: bool | None
     system_status: str
     system_status_code: int
     error_code: int

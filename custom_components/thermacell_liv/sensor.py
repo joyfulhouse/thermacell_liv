@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -13,6 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONNECTIVITY_CONNECTED,
@@ -21,7 +23,8 @@ from .const import (
     STATUS_UNKNOWN,
 )
 from .coordinator import ThermacellLivCoordinator, has_hub_error
-from .entity import ThermacellLivEntity, async_setup_platform_entities
+from .entity import ThermacellLivEntity, async_setup_platform_entities, setup_dynamic_entities
+from .features import CAPACITIES
 
 # Sensor platform doesn't make write operations, so parallel updates can be higher
 PARALLEL_UPDATES = 0  # No limit on sensor updates
@@ -43,6 +46,72 @@ async def async_setup_entry(
         ThermacellLivErrorCodeSensor,
         ThermacellLivFirmwareSensor,
     )
+    coordinator = config_entry.runtime_data["coordinator"]
+    setup_dynamic_entities(
+        config_entry,
+        async_add_entities,
+        lambda: [
+            ThermacellFeatureSensor(coordinator, node_id, data.get("name", node_id), key)
+            for node_id, data in coordinator.data.items()
+            for key in (
+                "last_refill_reset",
+                "installed_refill",
+                "remaining_hours",
+                "last_command",
+                "shutdown_at",
+                "transport",
+            )
+        ],
+    )
+
+
+class ThermacellFeatureSensor(ThermacellLivEntity, SensorEntity):
+    """Expose persisted maintenance information and current control evidence."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: ThermacellLivCoordinator, node_id: str, name: str, key: str) -> None:
+        super().__init__(coordinator, node_id, name)
+        self.key = key
+        self._attr_translation_key = key
+        self._attr_unique_id = f"{DOMAIN}_{node_id}_{key}"
+        if key in ("last_refill_reset", "shutdown_at"):
+            self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        if key == "remaining_hours":
+            self._attr_device_class = SensorDeviceClass.DURATION
+            self._attr_native_unit_of_measurement = UnitOfTime.HOURS
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+
+    @property
+    def native_value(self) -> str | float | datetime | None:
+        features = self.coordinator.features
+        history = features.history.get(self._node_id, {})
+        if self.key == "last_refill_reset":
+            value = history.get("reset_at")
+            return dt_util.parse_datetime(value) if value else None
+        if self.key == "installed_refill":
+            hours = CAPACITIES.get(history.get("applied_type", -1))
+            return f"{hours} hours" if hours else None
+        if self.key == "remaining_hours":
+            device = self.coordinator.get_device(self._node_id)
+            return features.remaining_hours(self._node_id, device.refill_life) if device else None
+        if self.key == "shutdown_at":
+            return features.shutdown_at(self._node_id)
+        if self.key == "transport":
+            return self.coordinator.client.api.last_transport.get(self._node_id, "cloud")
+        result = features.audit.get(self._node_id, {}).get("result")
+        return str(result) if result is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self.key == "last_command":
+            return {
+                **self.coordinator.features.audit.get(self._node_id, {}),
+                "reported_power": self.coordinator.features.reported.get(self._node_id),
+            }
+        if self.key in ("installed_refill", "remaining_hours"):
+            return {"source": "last_successful_reset_in_home_assistant", "estimate": self.key == "remaining_hours"}
+        return {}
 
 
 class ThermacellLivRefillSensor(ThermacellLivEntity, SensorEntity):
@@ -53,7 +122,7 @@ class ThermacellLivRefillSensor(ThermacellLivEntity, SensorEntity):
         super().__init__(coordinator, node_id, device_name)
         self._attr_translation_key = "refill_life"
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{device_name}_refill_life"
-        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = "%"
         self._attr_icon = "mdi:battery"
 
@@ -61,7 +130,7 @@ class ThermacellLivRefillSensor(ThermacellLivEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
         device_data = self.coordinator.get_device_data(self._node_id, self._device_name)
-        return device_data.get("refill_life", 0) if device_data else 0
+        return device_data.get("refill_life") if device_data else None
 
 
 class ThermacellLivSystemStatusSensor(ThermacellLivEntity, SensorEntity):

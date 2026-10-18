@@ -202,3 +202,7 @@ unofficial integration and is not affiliated with or endorsed by Thermacell.
 [kofi]: https://ko-fi.com/bryanli
 [omnigent-shield]: https://raw.githubusercontent.com/joyfulhouse/.github/main/assets/badges/built-with-omnigent.svg
 [omnigent]: https://github.com/omnigent-ai/omnigent
+
+## Native Controls Beta
+
+Version 2.1.0-beta.1 adds native shutdown timers, app schedule switches, firmware updates, reboot, timezone, account groups, local network control, and persistent refill/shutdown diagnostics. See the [control guide](docs/NATIVE_CONTROLS.md). New protocol paths are covered by simulators and automated tests; live hub validation remains outstanding.

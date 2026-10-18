@@ -229,6 +229,7 @@ class ThermacellLivOptionsFlow(config_entries.OptionsFlow):
                         "scan_interval",
                         default=options["scan_interval"],
                     ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)),
+                    vol.Optional("prefer_local", default=self.config_entry.options.get("prefer_local", True)): bool,
                 }
             ),
         )

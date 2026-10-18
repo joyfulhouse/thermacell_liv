@@ -4,6 +4,7 @@ Documentation for Thermacell LIV.
 
 | Document | Description |
 |---|---|
+| [NATIVE_CONTROLS.md](NATIVE_CONTROLS.md) | Timers, schedules, firmware, groups, LAN, and refill diagnostics |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | How the integration is structured and why |
 | [CONFIGURATION.md](CONFIGURATION.md) | Full configuration, options, and polling reference |
 | [ENTITIES.md](ENTITIES.md) | Complete catalog of devices, entities, and services |
