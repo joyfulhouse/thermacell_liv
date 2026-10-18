@@ -12,6 +12,7 @@ from homeassistant.components.light import (
 from homeassistant.components.light.const import ColorMode, LightEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -71,14 +72,22 @@ class ThermacellLivLight(ThermacellLivEntity, LightEntity):
         """Turn on the light."""
         if ATTR_RGB_COLOR in kwargs:
             r, g, b = kwargs[ATTR_RGB_COLOR]
-            await self.coordinator.async_set_device_led_color(self._node_id, self._device_name, red=r, green=g, blue=b)
+            if not await self.coordinator.async_set_device_led_color(
+                self._node_id, self._device_name, red=r, green=g, blue=b
+            ):
+                raise HomeAssistantError("Failed to set Thermacell LED color")
 
         if ATTR_BRIGHTNESS in kwargs:
-            brightness = kwargs[ATTR_BRIGHTNESS]
-            await self.coordinator.async_set_device_led_brightness(self._node_id, self._device_name, brightness)
-
-        await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, True)
+            if not await self.coordinator.async_set_device_led_brightness(
+                self._node_id, self._device_name, kwargs[ATTR_BRIGHTNESS]
+            ):
+                raise HomeAssistantError("Failed to set Thermacell LED brightness")
+        elif ATTR_RGB_COLOR not in kwargs and not await self.coordinator.async_set_device_led_power(
+            self._node_id, self._device_name, True
+        ):
+            raise HomeAssistantError("Failed to turn on Thermacell LEDs")
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
         """Turn off the light."""
-        await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, False)
+        if not await self.coordinator.async_set_device_led_power(self._node_id, self._device_name, False):
+            raise HomeAssistantError("Failed to turn off Thermacell LEDs")

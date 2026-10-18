@@ -59,12 +59,12 @@ def create_mock_device(
     device.refill_life = refill_life
 
     # Make async methods return coroutines
-    device.set_power = AsyncMock(return_value=None)
-    device.set_led_power = AsyncMock(return_value=None)
-    device.set_led_color = AsyncMock(return_value=None)
-    device.set_led_brightness = AsyncMock(return_value=None)
-    device.reset_refill = AsyncMock(return_value=None)
-    device.refresh = AsyncMock(return_value=None)
+    device.set_power = AsyncMock(return_value=True)
+    device.set_led_power = AsyncMock(return_value=True)
+    device.set_led_color = AsyncMock(return_value=True)
+    device.set_led_brightness = AsyncMock(return_value=True)
+    device.reset_refill = AsyncMock(return_value=True)
+    device.refresh = AsyncMock(return_value=True)
 
     return device
 
@@ -274,7 +274,7 @@ class TestThermacellLivCoordinator:
 
         assert result is True
         assert coordinator.data["node1"]["devices"]["Living Room Thermacell"]["power"] is True
-        device.set_power.assert_called_once_with(True)
+        device.set_power.assert_called_once_with(True, verify=True)
 
     @pytest.mark.asyncio
     async def test_async_set_device_power_failure(self, coordinator, sample_devices):
@@ -650,6 +650,7 @@ class TestThermacellLivCoordinator:
 
         # Now test with hub off
         device.is_powered_on = False
+        device.system_status = 1
         result = await coordinator._async_update_data()
 
         device_data = result["node1"]["devices"]["Test Device"]
@@ -682,3 +683,56 @@ class TestThermacellLivCoordinator:
         result = await coordinator._async_update_data()
 
         assert result["node1"]["system_runtime"] == 720
+
+
+@pytest.mark.parametrize(
+    ("method", "device_method", "args"),
+    [
+        ("async_set_device_power", "set_power", (False,)),
+        ("async_set_device_led_power", "set_led_power", (False,)),
+        ("async_set_device_led_brightness", "set_led_brightness", (20,)),
+        ("async_reset_refill_life", "reset_refill", (2,)),
+    ],
+)
+async def test_rejected_command_preserves_state(coordinator, sample_devices, method, device_method, args):
+    """A False library result must revert HA state and report failure."""
+    from copy import deepcopy
+
+    device = sample_devices[0]
+    coordinator._devices = {"node1": device}
+    coordinator.data = {
+        "node1": {
+            "devices": {
+                device.name: {
+                    "power": True,
+                    "led_power": True,
+                    "led_brightness": 255,
+                    "led_brightness_pct": 100,
+                    "refill_life": 25,
+                }
+            }
+        }
+    }
+    before = deepcopy(coordinator.data)
+    getattr(device, device_method).return_value = False
+    assert await getattr(coordinator, method)("node1", device.name, *args) is False
+    assert coordinator.data == before
+
+
+@pytest.mark.parametrize("refill_type", [0, 1, 2])
+async def test_selected_refill_type_reaches_library(coordinator, sample_devices, refill_type):
+    """The coordinator must forward the selected cartridge code."""
+    device = sample_devices[0]
+    coordinator._devices = {"node1": device}
+    assert await coordinator.async_reset_refill_life("node1", device.name, refill_type)
+    device.reset_refill.assert_awaited_once_with(refill_type=refill_type)
+
+
+async def test_active_status_not_hidden_by_disabled_flag(coordinator):
+    """Reported protection must remain visible even if the control flag is off."""
+    device = create_mock_device(is_powered_on=False, system_status=3)
+    coordinator.client.get_devices.return_value = [device]
+    data = await coordinator._async_update_data()
+    params = data[device.node_id]["devices"][device.name]
+    assert params["power"] is True
+    assert params["system_status"] == "Protected"

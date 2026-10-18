@@ -46,6 +46,7 @@ def mock_coordinator():
     from datetime import datetime, timezone
 
     coordinator = MagicMock(spec=ThermacellLivCoordinator)
+    coordinator.refill_types = {}
     coordinator.last_update_success = True
     coordinator.last_update_success_time = datetime.now(UTC)  # Timezone-aware
     coordinator.data = {
@@ -169,7 +170,8 @@ class TestThermacellLivSwitch:
 
         switch = ThermacellLivSwitch(mock_coordinator, "node1", "Device1")
 
-        await switch.async_turn_on()
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_on()
 
         mock_coordinator.async_set_device_power.assert_called_once_with("node1", "Device1", True)
 
@@ -263,7 +265,7 @@ class TestThermacellLivLight:
         mock_coordinator.async_set_device_led_color.assert_called_once_with(
             "node1", "Device1", red=255, green=0, blue=128
         )
-        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
+        mock_coordinator.async_set_device_led_power.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_async_turn_on_with_brightness(self, mock_coordinator):
@@ -276,7 +278,7 @@ class TestThermacellLivLight:
         await light.async_turn_on(brightness=128)
 
         mock_coordinator.async_set_device_led_brightness.assert_called_once_with("node1", "Device1", 128)
-        mock_coordinator.async_set_device_led_power.assert_called_once_with("node1", "Device1", True)
+        mock_coordinator.async_set_device_led_power.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_async_turn_off_success(self, mock_coordinator):
@@ -390,7 +392,7 @@ class TestThermacellLivResetButton:
 
         await button.async_press()
 
-        mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
+        mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1", 1)
         # Note: async_request_refresh is not called - coordinator updates listeners directly
 
     @pytest.mark.asyncio
@@ -400,9 +402,10 @@ class TestThermacellLivResetButton:
 
         button = ThermacellLivResetButton(mock_coordinator, "node1", "Device1")
 
-        await button.async_press()
+        with pytest.raises(HomeAssistantError):
+            await button.async_press()
 
-        mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1")
+        mock_coordinator.async_reset_refill_life.assert_called_once_with("node1", "Device1", 1)
 
 
 class TestEntityPlatformSetup:
@@ -411,7 +414,7 @@ class TestEntityPlatformSetup:
     @pytest.fixture
     def mock_add_entities(self):
         """Return a mock add entities callback."""
-        return AsyncMock()
+        return MagicMock()
 
     @pytest.mark.asyncio
     async def test_switch_setup_entry(self, hass, config_entry, mock_coordinator, mock_add_entities):
