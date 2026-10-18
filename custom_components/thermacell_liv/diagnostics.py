@@ -4,10 +4,30 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
+
+TO_REDACT = {
+    "username",
+    "password",
+    "user_id",
+    "account_id",
+    "title",
+    "unique_id",
+    "access_token",
+    "idtoken",
+    "refreshtoken",
+    "token",
+    "pop",
+    "proof_of_possession",
+    "local_username",
+    "hub_serial",
+    "Hub ID",
+    "node_id",
+}
 
 
 def _measurements(data: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
@@ -39,15 +59,18 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
             for device_index, device_data in enumerate(node_data.get("devices", {}).values(), 1)
         }
         nodes[f"node_{index}"] = node
-    return {
-        "entry": {"domain": DOMAIN, "version": entry.version},
-        "coordinator": {
-            "last_update_success": coordinator.last_update_success,
-            "last_update_success_time": (
-                str(coordinator.last_update_success_time) if coordinator.last_update_success_time else None
-            ),
-            "update_interval": str(coordinator.update_interval),
-            "node_count": len(nodes),
+    return async_redact_data(
+        {
+            "entry": {"domain": DOMAIN, "version": entry.version},
+            "coordinator": {
+                "last_update_success": coordinator.last_update_success,
+                "last_update_success_time": (
+                    str(coordinator.last_update_success_time) if coordinator.last_update_success_time else None
+                ),
+                "update_interval": str(coordinator.update_interval),
+                "node_count": len(nodes),
+            },
+            "nodes": nodes,
         },
-        "nodes": nodes,
-    }
+        TO_REDACT,
+    )

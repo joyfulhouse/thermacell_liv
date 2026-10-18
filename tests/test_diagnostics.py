@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -116,3 +116,17 @@ async def test_diagnostics_rejects_nested_values_in_measurements():
     assert "SECRET" not in json.dumps(result)
     assert "online" not in result["nodes"]["node_1"]
     assert "power" not in result["nodes"]["node_1"]["devices"]["device_1"]
+
+
+async def test_diagnostics_retains_defense_in_depth_redaction():
+    coordinator = MagicMock(
+        last_update_success=True, last_update_success_time=None, update_interval=timedelta(seconds=60)
+    )
+    coordinator.data = {"node": {"devices": {}}}
+    entry = MagicMock(
+        version=1, domain="thermacell_liv", title="Title", unique_id="id", runtime_data={"coordinator": coordinator}
+    )
+    with patch("custom_components.thermacell_liv.diagnostics._measurements", return_value={"pop": "SENTINEL-POP"}):
+        result = await async_get_config_entry_diagnostics(MagicMock(), entry)
+    assert "SENTINEL-POP" not in json.dumps(result)
+    assert result["nodes"]["node_1"]["pop"] == "**REDACTED**"
