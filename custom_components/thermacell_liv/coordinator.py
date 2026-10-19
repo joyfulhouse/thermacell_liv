@@ -256,7 +256,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
             self._devices = {device.node_id: device for device in devices}
             if self.local_discovery:
-                self.local_discovery.reconcile()
+                try:
+                    self.local_discovery.reconcile()
+                except Exception as err:
+                    _LOGGER.debug("Local discovery reconciliation failed (%s)", type(err).__name__)
             if not devices:
                 raise UpdateFailed("No devices found")
 

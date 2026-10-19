@@ -88,7 +88,7 @@ requires a coordinated library follow-up.
 
 Disable local preference and reload for cloud-only control; re-enabling also
 reloads and requires cloud authentication. Discovery removal clears an endpoint,
-but a previous route hint can remain until another operation updates it.
+and pruning its transport also clears the previous route hint.
 
 ### Operation boundaries
 
@@ -121,7 +121,8 @@ Checked 2026-10-18 UTC with the
 against two LIV hubs on firmware **5.4.7**. Neither hub advertised
 `esp.service.local_control` in its account metadata: no security scheme, PoP, or
 local username was provisioned. No `_esp_local_ctrl._tcp.local.` service was seen
-from a host on the hub LAN that did observe other mDNS services.
+from a homelab host (server0) that had mDNS multicast visibility of other LAN
+services; hub VLAN co-location was not independently established.
 
 No local handshake, local read, or local LED write was performed. On these hubs
 the integration operates over cloud and the transport sensor will not show
@@ -131,8 +132,9 @@ blocked, but could not demonstrate LAN operation because there was no endpoint.
 LAN control remains implemented and simulator-tested, but is unverified on
 physical hubs; it requires firmware/provisioning that advertises local control.
 If the sensor never shows `local`, first check whether the hub advertises local
-control with `python -m pythermacell.diagnostics` (see the linked diagnostic),
-before investigating mDNS/VLAN.
+control before investigating mDNS/VLAN. The `python -m pythermacell.diagnostics`
+command is available from pythermacell PR #73 / the next pythermacell release;
+it is not included in the pinned **0.3.0b3**. See the linked diagnostic for usage.
 
 ## Refill State and Shutdown Evidence
 

@@ -103,6 +103,42 @@ async def test_write_never_retries_another_address_or_cloud(lan):
         cloud.assert_not_called()
 
 
+async def test_failover_transport_initializes_library_state_and_entry_points(lan):
+    coordinator, discovery, info, _ = lan
+    info.parsed_scoped_addresses.return_value = ["192.0.2.1", "192.0.2.2"]
+    await announce(discovery, info)
+    api = coordinator.client.api
+    transport = api.local_transports["node"]
+    assert transport._session is api._session
+    assert not transport._lock.locked()
+    assert transport._base.host == transport.endpoint.host
+    params = {"Hub": {"LED": True}}
+    snapshot = ({"node_id": "node"}, params)
+    with (
+        patch.object(LocalTransport, "read", AsyncMock(return_value=snapshot)) as read,
+        patch.object(LocalTransport, "write", AsyncMock()) as write,
+        patch.object(api, "request", AsyncMock()) as cloud,
+    ):
+        assert await api.read_local("node") == snapshot
+        assert await api.update_node_params("node", params) == (200, {})
+        read.assert_awaited_once_with()
+        write.assert_awaited_once_with(params)
+        cloud.assert_not_awaited()
+
+
+async def test_eager_cached_resolution_does_not_retain_completed_task(lan):
+    coordinator, discovery, info, _ = lan
+    coordinator.hass.async_create_task.side_effect = lambda coroutine: asyncio.Task(
+        coroutine, loop=asyncio.get_running_loop(), eager_start=True
+    )
+    await announce(discovery, info)
+    assert set(coordinator.client.api.local_transports) == {"node"}
+    assert discovery._services["service"].info is info
+    assert not discovery._tasks
+    discovery.reconcile()
+    info.async_request.assert_awaited_once()
+
+
 async def test_address_update_and_node_remap(lan):
     coordinator, discovery, info, device = lan
     await announce(discovery, info)
@@ -152,9 +188,16 @@ async def test_alias_removal_preserves_remaining_endpoint(lan):
 async def test_account_removal_prunes_transport(lan):
     coordinator, discovery, info, _ = lan
     await announce(discovery, info)
+    api = coordinator.client.api
+    api.last_transport["node"] = "local"
+    sensor = ThermacellFeatureSensor(coordinator, "node", "Hub", "transport")
+    assert sensor.native_value == "local"
     coordinator.get_device.side_effect = lambda node: None
     discovery.reconcile()
-    assert not coordinator.client.api.local_transports
+    assert not api.local_transports
+    assert "node" not in api.last_transport
+    assert sensor.native_value is None
+    assert sensor.extra_state_attributes["local_endpoint_configured"] is False
 
 
 async def test_started_discovery_reconciles_after_real_coordinator_refresh(lan):

@@ -42,9 +42,9 @@ class ReadFailoverTransport(LocalTransport):
     """Keep library identity/security checks; only reads may try another address."""
 
     def __init__(self, transports: list[LocalTransport]) -> None:
+        super().__init__(transports[0]._session, transports[0].endpoint)
         self._transports = transports
         self._selected = transports[0]
-        self.endpoint = self._selected.endpoint
 
     async def read(self) -> tuple[dict[str, Any], dict[str, Any]]:
         ordered = [self._selected, *(item for item in self._transports if item is not self._selected)]
@@ -119,9 +119,11 @@ class LocalDiscovery:
         if name in self._tasks or service.attempts >= MAX_RESOLVE_ATTEMPTS:
             return
         service.attempts += 1
-        self._tasks[name] = self.coordinator.hass.async_create_task(
+        task = self.coordinator.hass.async_create_task(
             self._resolve(service.zeroconf, service.service_type, name, self._generations[name])
         )
+        if not task.done():
+            self._tasks[name] = task
 
     async def _resolve(self, zeroconf: Zeroconf, service_type: str, name: str, generation: int) -> None:
         info = AsyncServiceInfo(service_type, name)
@@ -165,6 +167,7 @@ class LocalDiscovery:
         api = self.coordinator.client.api
         for node_id in set(api.local_transports) - endpoints.keys():
             api.local_transports.pop(node_id, None)
+            api.last_transport.pop(node_id, None)
         for node_id, candidates in endpoints.items():
             if candidates == self._endpoints.get(node_id) and node_id in api.local_transports:
                 continue

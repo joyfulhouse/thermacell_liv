@@ -1,6 +1,7 @@
 """Published guidance must preserve the boundary between LAN and cloud."""
 
 from pathlib import Path
+import re
 
 import pytest
 
@@ -16,10 +17,9 @@ def test_operation_boundaries_are_explicit(path):
     if path == "docs/CONFIGURATION.md":
         assert "physical-hub" in text and "outstanding" in text
     else:
-        assert "#live-hub-status-2026-10-18" in text
+        assert "#live-hub-status" in text
         if path == "docs/NATIVE_CONTROLS.md":
-            assert "### live hub status (2026-10-18)" in text
-            assert "5.4.7" in text and "https://github.com/joyfulhouse/pythermacell/pull/73" in text
+            assert "### live hub status" in text
             assert "unverified on physical hubs" in " ".join(text.split())
 
 
@@ -43,3 +43,45 @@ def test_troubleshooting_distinguishes_discovery_from_success():
     text = (ROOT / "docs/TROUBLESHOOTING.md").read_text().lower()
     assert all(term in text for term in ("vlan", "ipv6", "capability", "fallback", "handshake", "pop"))
     assert "not proof" in text
+
+
+@pytest.mark.parametrize("path", ["docs/NATIVE_CONTROLS.md", "docs/TROUBLESHOOTING.md"])
+def test_diagnostic_availability_matches_pinned_library(path):
+    text = " ".join((ROOT / path).read_text().lower().split())
+    assert "pythermacell pr #73 / the next pythermacell release" in text
+    assert "0.3.0b3" in text
+    assert "not included" in text or "not in" in text
+
+
+def test_live_evidence_does_not_assume_hub_vlan():
+    text = " ".join((ROOT / "docs/NATIVE_CONTROLS.md").read_text().lower().split())
+    assert "homelab host (server0)" in text
+    assert "hub vlan co-location was not independently established" in text
+    assert "no local handshake, local read, or local led write was performed" in text
+
+
+def test_secret_exposure_response_distinguishes_cloud_and_local_credentials():
+    text = " ".join((ROOT / "docs/TROUBLESHOOTING.md").read_text().lower().split())
+    assert "if you shared a secret" in text and "remove the upload" in text
+    assert "change the thermacell cloud password and reauthenticate" in text
+    assert "remaining lifetime" in text
+    assert "vendor-provisioned and not user-rotatable" in text
+    assert "does **not** rotate pop" in text
+    assert "disable local preference" in text and "network segment as exposed" in text
+    assert "vendor reprovisions" in text and "no automated leak detection" in text
+
+
+def test_live_status_checks_allow_new_observation_dates(monkeypatch):
+    original = Path.read_text
+
+    def updated_observations(path, *args, **kwargs):
+        return re.sub(r"\d{4}-\d{2}-\d{2}", "2099-12-31", original(path, *args, **kwargs))
+
+    monkeypatch.setattr(Path, "read_text", updated_observations)
+    for path in ("README.md", "docs/CONFIGURATION.md", "docs/NATIVE_CONTROLS.md"):
+        test_operation_boundaries_are_explicit(path)
+
+
+def test_unreleased_records_lan_and_privacy_changes():
+    text = (ROOT / "CHANGELOG.md").read_text().lower().split("## [unreleased]", 1)[1].split("\n## [", 1)[0]
+    assert all(term in text for term in ("unknown", "diagnostics", "anonymous", "reads", "writes", "announcements"))

@@ -3,6 +3,7 @@
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 import json
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -50,7 +51,7 @@ def diagnostic_entry():
     }
     coordinator.features.reported = {"account-node": True}
     coordinator.features.anomalies = {"account-node": False}
-    return MagicMock(version=1, runtime_data={"coordinator": coordinator})
+    return MagicMock(version=1, data={}, runtime_data={"coordinator": coordinator})
 
 
 @pytest.mark.parametrize(
@@ -280,3 +281,112 @@ async def test_diagnostics_retains_defense_in_depth_redaction(diagnostic_entry):
         result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
     assert "SENTINEL-POP" not in json.dumps(result)
     assert result["nodes"]["node_1"]["pop"] == "**REDACTED**"
+
+
+@pytest.mark.parametrize("shape", ["tuple", "nested-list", "scalar-list", "set"])
+async def test_diagnostics_scrubs_support_containers(diagnostic_entry, shape):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    known = [
+        f"SYNTHETIC-{name}"
+        for name in (
+            "password",
+            "token",
+            "user",
+            "pop",
+            "local-user",
+            "cached-pop",
+            "cached-user",
+            "auth-password",
+            "auth-user",
+        )
+    ]
+    password, token, user, pop, local_user, cached_pop, cached_user, auth_password, auth_user = known
+    diagnostic_entry.data = {"password": password}
+    diagnostic_entry.runtime_data["client"] = SimpleNamespace(
+        _auth_handler=SimpleNamespace(access_token=token, user_id=user, password=auth_password, username=auth_user),
+        api=SimpleNamespace(
+            local_transports={
+                "account-node": SimpleNamespace(endpoint=SimpleNamespace(pop=cached_pop, username=cached_user))
+            }
+        ),
+    )
+    coordinator.get_device.return_value.services.value.side_effect = lambda service, param: {
+        "esp.param.local_control_pop": pop,
+        "esp.param.local_control_username": local_user,
+    }.get(param)
+    record = {"pop": "SYNTHETIC-UNKNOWN-POP", "opaque": [*known, "account-node", "LIV Hub"], "support": "benign"}
+    payload = {
+        "tuple": (record,),
+        "nested-list": [[record]],
+        "scalar-list": [*known, "benign"],
+        "set": {*known, "benign"},
+    }[shape]
+    coordinator.features.history["account-node"]["metadata"] = payload
+    coordinator.features.audit["account-node"]["details"] = payload
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    serialized = json.dumps(result)
+    assert all(secret not in serialized for secret in [*known, "SYNTHETIC-UNKNOWN-POP"])
+    assert "account-node" not in serialized and '"LIV Hub"' not in serialized
+    node = result["nodes"]["node_1"]
+    assert isinstance(node["maintenance"]["metadata"], list)
+    assert "benign" in json.dumps(node["maintenance"]["metadata"])
+    assert "benign" in json.dumps(node["last_command"]["details"])
+    assert node["fw_version"] == "5.4.7"
+    assert node["last_command"]["result"] == "failed"
+
+
+@pytest.mark.parametrize(
+    "field", ["type", "model", "fw_version", "led_color", "system_status", "reported_power", "refill_drain"]
+)
+@pytest.mark.parametrize("malformed", [False, True])
+async def test_diagnostics_scrubs_known_secrets_in_support_fields(diagnostic_entry, field, malformed):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    secret = "SYNTHETIC-PASSWORD"
+    diagnostic_entry.data = {"password": secret}
+    value = object() if malformed else secret
+    if field in ("reported_power", "refill_drain"):
+        values = coordinator.features.reported if field == "reported_power" else coordinator.features.anomalies
+        values["account-node"] = value
+    else:
+        data = coordinator.data["account-node"]
+        if field in ("led_color", "system_status"):
+            data = data["devices"]["LIV Hub"]
+        data[field] = value
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    assert secret not in json.dumps(result)
+    node = result["nodes"]["node_1"]
+    exported = node["devices"]["device_1"] if field in ("led_color", "system_status") else node
+    assert exported[field] == (None if malformed else "**REDACTED**")
+
+
+async def test_diagnostics_labels_are_stable_across_insertion_order(diagnostic_entry):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    node = coordinator.data["account-node"]
+    node["devices"]["Another device"] = {**node["devices"]["LIV Hub"], "power": True}
+    coordinator.data["z-node"] = {**deepcopy(node), "fw_version": "5.3.2"}
+    first = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    coordinator.data = dict(reversed(coordinator.data.items()))
+    for data in coordinator.data.values():
+        data["devices"] = dict(reversed(data["devices"].items()))
+    second = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    assert first == second
+    assert first["nodes"]["node_1"]["fw_version"] == "5.4.7"
+    assert first["nodes"]["node_1"]["devices"]["device_1"]["power"] is True
+    assert "account-node" not in json.dumps(first)
+    assert "Another device" not in json.dumps(first)
+
+
+async def test_diagnostics_redacts_ota_job_id(diagnostic_entry):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    coordinator.features.history["account-node"]["firmware"] = {
+        "job_id": "SYNTHETIC-JOB-ID",
+        "description": "Firmware update",
+        "version": "5.4.7",
+    }
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    assert "SYNTHETIC-JOB-ID" not in json.dumps(result)
+    assert result["nodes"]["node_1"]["maintenance"]["firmware"] == {
+        "job_id": "**REDACTED**",
+        "description": "Firmware update",
+        "version": "5.4.7",
+    }

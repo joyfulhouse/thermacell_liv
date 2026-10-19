@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Qualify the transport sensor as a route hint, unknown before route evidence
+  exists and after its local transport is pruned, not proof of LAN success.
+- Export diagnostics with stable anonymous node/device labels and retained
+  firmware, LED, maintenance, command, and refill/shutdown support evidence;
+  redact nested identifiers and known credentials, including list/tuple values.
+- Document cloud setup/restart requirements, conditional LAN operation, measured
+  firmware 5.4.7 capability limits, diagnostic availability, and leak response.
+
+### Fixed
+- Prefer usable IPv4/local address candidates and fail over reads across bounded
+  advertised addresses without retrying writes or replaying them through cloud.
+- Re-evaluate late announcements after refresh, preserve live discovery aliases,
+  prune removed account nodes, and release eagerly completed resolution tasks.
+- Keep optional discovery failures from invalidating successful cloud refreshes.
+
 ## [2.1.0-beta.3] - 2026-10-18
 
 ### Changed
