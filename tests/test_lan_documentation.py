@@ -76,6 +76,13 @@ def test_secret_exposure_response_distinguishes_cloud_and_local_credentials():
     assert "vendor reprovisions" in text and "no automated leak detection" in text
 
 
+def test_diagnostics_privacy_separates_identifiers_from_device_names():
+    text = " ".join((ROOT / "docs/TROUBLESHOOTING.md").read_text().lower().split())
+    assert "machine identifiers" in text and "ota job ids" in text
+    assert "shorter than four characters redacts the whole string" in text
+    assert "user-chosen device names use exact matching only" in text
+
+
 def test_live_status_checks_allow_new_observation_dates(monkeypatch):
     original = Path.read_text
 

@@ -27,7 +27,7 @@ _CREDENTIAL_KEYS = {
     "refresh_token",
     "id_token",
 }
-TO_REDACT = _CREDENTIAL_KEYS | {
+_IDENTIFIER_KEYS = {
     "user_id",
     "account_id",
     "title",
@@ -39,10 +39,23 @@ TO_REDACT = _CREDENTIAL_KEYS | {
     "device_id",
     "serial_num",
     "serial_number",
-    "name",
-    "message",
     "job_id",
 }
+TO_REDACT = _CREDENTIAL_KEYS | _IDENTIFIER_KEYS | {"name", "message"}
+
+
+def _identifier_values(value: Any) -> set[str]:
+    """Collect machine identifiers before key-based redaction discards them."""
+    identifiers = set()
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key in _IDENTIFIER_KEYS and isinstance(item, str) and item:
+                identifiers.add(item)
+            identifiers.update(_identifier_values(item))
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        for item in value:
+            identifiers.update(_identifier_values(item))
+    return identifiers
 
 
 def _json_data(value: Any, credentials: set[str], labels: set[str]) -> Any:
@@ -61,7 +74,7 @@ def _json_data(value: Any, credentials: set[str], labels: set[str]) -> Any:
     if isinstance(value, (list, tuple, set, frozenset)):
         return [_json_data(item, credentials, labels) for item in value]
     if isinstance(value, str):
-        if value in credentials or value in labels:
+        if value in credentials or value in labels or any(secret in value for secret in credentials if len(secret) < 4):
             return REDACTED
         for secret in sorted(credentials, key=lambda item: (-len(item), item)):
             if len(secret) >= 4:
@@ -78,19 +91,37 @@ def _measurements(data: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]
 async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     """Export support data under anonymous node/device labels, redacting secrets."""
     coordinator = entry.runtime_data["coordinator"]
-    known = [entry.unique_id, *(value for key, value in entry.data.items() if key in _CREDENTIAL_KEYS)]
+    known = [value for key, value in entry.data.items() if key in _CREDENTIAL_KEYS]
     client = entry.runtime_data.get("client", coordinator.client)
     auth = getattr(client, "_auth_handler", None)
     known.extend(getattr(auth, key, None) for key in ("username", "password", "access_token"))
-    labels = {
+    identifiers = {
         value
         for value in (
             entry.title,
+            entry.unique_id,
             getattr(auth, "user_id", None),
             *(coordinator.data or {}),
-            *(value for key, value in entry.data.items() if key not in _CREDENTIAL_KEYS),
         )
         if isinstance(value, str) and value
+    }
+    identifiers.update(
+        _identifier_values(
+            (
+                entry.data,
+                coordinator.data,
+                coordinator.features.history,
+                coordinator.features.audit,
+                coordinator.features.reported,
+                coordinator.features.anomalies,
+            )
+        )
+    )
+    # Device names are exact-match labels; machine identifiers are substring-scrubbed.
+    labels = {
+        value
+        for key, value in entry.data.items()
+        if key not in _CREDENTIAL_KEYS | _IDENTIFIER_KEYS and isinstance(value, str) and value
     }
     for transport in client.api.local_transports.values():
         known.extend((transport.endpoint.pop, transport.endpoint.username))
@@ -102,6 +133,7 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                 for key in ("pop", "username")
             )
     credentials = {value for value in known if isinstance(value, str) and value}
+    sensitive = credentials | identifiers
     nodes = {}
     for index, (node_id, node_data) in enumerate(sorted((coordinator.data or {}).items()), 1):
         node = _measurements(node_data, ("online", "system_runtime"))
@@ -115,15 +147,16 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                 "refill_drain": coordinator.features.anomalies.get(node_id),
             }
         )
-        node = {
-            key: _json_data(value, credentials, labels) for key, value in async_redact_data(node, TO_REDACT).items()
-        }
-        # Standard model/status literals can coincide with names without identifying a hub.
-        node["model"] = _json_data(node_data.get("model"), credentials, labels - {"Thermacell LIV Hub"})
+        node = {key: _json_data(value, sensitive, labels) for key, value in async_redact_data(node, TO_REDACT).items()}
+        # Only typed standard model/status values may coincide with identifiers, never credentials.
+        model = node_data.get("model")
+        node["model"] = _json_data(
+            model, credentials if model == "Thermacell LIV Hub" else sensitive, labels - {"Thermacell LIV Hub"}
+        )
         node["devices"] = {
             f"device_{device_index}": {
                 **{
-                    key: _json_data(value, credentials, labels)
+                    key: _json_data(value, sensitive, labels)
                     for key, value in async_redact_data(
                         {
                             **_measurements(
@@ -147,7 +180,9 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                 },
                 "system_status": _json_data(
                     device_data.get("system_status"),
-                    credentials,
+                    credentials
+                    if device_data.get("system_status") in ("Off", "Warming Up", "Protected", "Unknown")
+                    else sensitive,
                     labels - {"Off", "Warming Up", "Protected", "Unknown"},
                 ),
             }

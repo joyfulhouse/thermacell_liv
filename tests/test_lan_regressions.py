@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pythermacell import AuthenticationError, ThermacellClient
 from pythermacell.api import ThermacellAPI
 from pythermacell.local import LocalEndpoint, LocalTransport
 from zeroconf import ServiceStateChange
@@ -219,6 +220,66 @@ async def test_account_removal_prunes_transport(lan):
     assert "node" not in api.last_transport
     assert sensor.native_value is None
     assert sensor.extra_state_attributes["local_endpoint_configured"] is False
+
+
+@pytest.mark.parametrize("outage", [ConnectionError("offline"), (503, None)])
+@pytest.mark.parametrize("state_error", [False, True])
+async def test_confirmed_account_removal_survives_cached_client_fallback(lan, outage, state_error):
+    mock_coordinator, _, info, _ = lan
+    client = ThermacellClient("synthetic-user", "synthetic-password", auth_handler=MagicMock(), session=MagicMock())
+    coordinator = ThermacellLivCoordinator(mock_coordinator.hass, client)
+    coordinator.features.observe = MagicMock()
+    coordinator.features.async_refresh = AsyncMock()
+    coordinator._device_to_node_data = MagicMock(return_value={})
+    discovery = coordinator.local_discovery = LocalDiscovery(coordinator)
+    devices = {}
+    for node_id in ("node", "remaining"):
+        device = MagicMock(node_id=node_id, is_online=True)
+        device.services.local_endpoint.side_effect = lambda host, port, node_id=node_id: LocalEndpoint(
+            node_id, host, port, 2
+        )
+        devices[node_id] = device
+    client._devices.update(devices)
+    membership = (200, {"nodes": list(devices)})
+
+    async def request(method, path, **kwargs):
+        assert (method, path) == ("GET", "/user/nodes")
+        if isinstance(membership, Exception):
+            raise membership
+        return membership
+
+    with (
+        patch.object(client.api, "request", side_effect=request) as network,
+        patch.object(client, "_fetch_device_state", AsyncMock(return_value=None)) as state,
+    ):
+        await coordinator._async_update_data()
+        await announce(discovery, info)
+        remaining_info = MagicMock(async_request=AsyncMock(return_value=True), port=8080)
+        remaining_info.properties = {b"node_id": b"remaining"}
+        remaining_info.parsed_scoped_addresses.return_value = ["192.0.2.2"]
+        await announce(discovery, remaining_info, "remaining-service")
+        assert set(client.api.local_transports) == set(devices)
+        membership = (200, {"nodes": ["remaining"]})
+        if state_error:
+            state.side_effect = AuthenticationError("synthetic state-read failure")
+            with pytest.raises(UpdateFailed, match="Authentication failed"):
+                await coordinator._async_update_data()
+            state.side_effect = None
+        else:
+            assert set(await coordinator._async_update_data()) == {"remaining"}
+        assert coordinator.get_device("node") is None
+        assert set(client.api.local_transports) == {"remaining"}
+        membership = outage
+        assert set(await coordinator._async_update_data()) == {"remaining"}
+        assert coordinator.get_device("node") is None
+        assert set(client.api.local_transports) == {"remaining"}
+        assert not await coordinator.async_set_device_power("node", "Hub", True)
+        devices["node"].set_power.assert_not_called()
+        membership = (200, {"nodes": list(devices)})
+        assert set(await coordinator._async_update_data()) == set(devices)
+        assert coordinator.get_device("node") is devices["node"]
+        assert set(client.api.local_transports) == set(devices)
+        assert network.await_count == 4
 
 
 async def test_started_discovery_reconciles_after_real_coordinator_refresh(lan):

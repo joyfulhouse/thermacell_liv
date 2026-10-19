@@ -106,6 +106,10 @@ including firmware/model, LED state, maintenance history, command audit, reporte
 power, and refill-drain evidence. Account titles/IDs and local credentials are
 omitted or redacted by key, including sensitive fields nested in support data.
 Free-form message fields are redacted because they can embed credentials.
+Known credentials and machine identifiers (including node/account IDs, serials,
+and OTA job IDs) are scrubbed from strings and keys; a match shorter than four
+characters redacts the whole string. User-chosen device names use exact matching
+only, preserving standard model/status support text.
 Review debug logs separately before sharing them; diagnostics redaction does not
 sanitize log files.
 

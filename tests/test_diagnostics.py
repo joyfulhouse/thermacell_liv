@@ -485,7 +485,8 @@ async def test_diagnostics_labels_do_not_mangle_support(diagnostic_entry, name, 
     assert node["model"] == "Thermacell LIV Hub"
     assert node["devices"]["device_1"]["system_status"] == "Protected"
     assert node["devices"]["device_1"]["power"] is False
-    assert node["maintenance"] == {"description": f"firmware for {name} hub", "opaque": "**REDACTED**"}
+    description = name if owner == "device" else "**REDACTED**"
+    assert node["maintenance"] == {"description": f"firmware for {description} hub", "opaque": "**REDACTED**"}
     assert (coordinator.data, coordinator.features.history) == before
 
 
@@ -524,3 +525,74 @@ async def test_diagnostics_preserves_colliding_scrubbed_keys(diagnostic_entry):
     assert coordinator.features.audit == before
     coordinator.features.audit["account-node"]["details"] = dict(reversed(details.items()))
     assert await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry) == first
+
+
+@pytest.mark.parametrize("secret", ["Q", "Q7", "Q7Z"])
+@pytest.mark.parametrize("credential", ["pop", "username"])
+async def test_diagnostics_redacts_strings_containing_short_credentials(diagnostic_entry, secret, credential):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    endpoint = SimpleNamespace(pop=None, username=None)
+    setattr(endpoint, credential, secret)
+    diagnostic_entry.runtime_data["client"] = SimpleNamespace(
+        api=SimpleNamespace(local_transports={"account-node": SimpleNamespace(endpoint=endpoint)})
+    )
+    coordinator.features.history["account-node"]["metadata"] = {
+        f"proof:{secret}": f"proof={secret}",
+        "items": [f"proof:{secret}", (f"proof={secret}",)],
+        "benign": "unchanged support",
+    }
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    assert secret not in json.dumps(result)
+    node = result["nodes"]["node_1"]
+    assert node["maintenance"]["metadata"] == {
+        "**REDACTED**": "**REDACTED**",
+        "items": ["**REDACTED**", ["**REDACTED**"]],
+        "benign": "unchanged support",
+    }
+    assert node["model"] == "Thermacell LIV Hub"
+    assert node["devices"]["device_1"]["system_status"] == "Warming Up"
+
+
+@pytest.mark.parametrize(
+    "identifier",
+    ["node_id", "hub_serial", "job_id", "user_id", "account_id", "unique_id", "title"],
+)
+@pytest.mark.parametrize("secret", ["SYNTHETIC-IDENTIFIER", "Q", "Q7", "Q7Z"])
+async def test_diagnostics_scrubs_embedded_machine_identifiers(diagnostic_entry, identifier, secret):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    if identifier == "node_id":
+        coordinator.data[secret] = coordinator.data.pop("account-node")
+    elif identifier == "hub_serial":
+        coordinator.data["account-node"][identifier] = secret
+    elif identifier == "job_id":
+        coordinator.features.history["account-node"]["firmware"] = {identifier: secret}
+    elif identifier == "user_id":
+        diagnostic_entry.runtime_data["client"] = SimpleNamespace(
+            _auth_handler=SimpleNamespace(user_id=secret), api=SimpleNamespace(local_transports={})
+        )
+    elif identifier == "account_id":
+        diagnostic_entry.data = {identifier: secret}
+    else:
+        setattr(diagnostic_entry, identifier, secret)
+    node_id = next(iter(coordinator.data))
+    details = {
+        f"record:{secret}": [f"id={secret}", (f"id:{secret}",)],
+        "record:**REDACTED**": "unchanged support",
+    }
+    coordinator.features.audit[node_id] = {"result": "failed", "details": details}
+    before = deepcopy((coordinator.data, coordinator.features.history, coordinator.features.audit))
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    assert secret not in json.dumps(result)
+    node = result["nodes"]["node_1"]
+    key = "**REDACTED**" if len(secret) < 4 else "record:**REDACTED**_2"
+    values = ["**REDACTED**", ["**REDACTED**"]] if len(secret) < 4 else ["id=**REDACTED**", ["id:**REDACTED**"]]
+    assert node["last_command"] == {
+        "result": "failed",
+        "details": {
+            "record:**REDACTED**": "unchanged support",
+            key: values,
+        },
+    }
+    assert node["model"] == "Thermacell LIV Hub"
+    assert node["devices"]["device_1"]["system_status"] == "Warming Up"
+    assert (coordinator.data, coordinator.features.history, coordinator.features.audit) == before
