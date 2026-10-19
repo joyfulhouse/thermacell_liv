@@ -370,3 +370,135 @@ async def test_external_reset_invalidates_capacity_estimate(feature_hub):
     assert features.remaining_hours("n", 100) is None
     await features.async_refresh()
     assert not features._history_dirty
+
+
+@pytest.mark.parametrize(
+    "states", [{"System State": 2, "System Status": 2}, {}, {"System State": 1, "System Status": 2}]
+)
+async def test_expired_disabled_timer_retains_failure_and_retries_only_once(feature_hub, states):
+    """Replay ADU expiry: a disabled native schedule and false flag do not prove Off."""
+    coordinator, device, services = feature_hub
+    features = coordinator.features
+    deadline = (datetime.now(UTC) - timedelta(seconds=5)).isoformat()
+    features.history["n"] = {"shutdown_at": deadline}
+    features.audit["n"] = {"command": "run_for", "result": "accepted", "requested_power": True}
+    services.schedules = [Schedule(TIMER_ID, TIMER_NAME, False)]
+    coordinator.client.api.get_node_params = AsyncMock(
+        return_value=(200, {"LIV Hub": {"Enable Repellers": False, **states}})
+    )
+    coordinator.client.api.get_node_config = AsyncMock(return_value=(200, {}))
+    device.set_power.return_value = False
+    with patch("custom_components.thermacell_liv.features.ir.async_create_issue") as issue:
+        await features.async_refresh()
+        await features.async_refresh()
+    assert features.shutdown_at("n").isoformat() == deadline
+    assert features.history["n"]["shutdown_retry_attempted"]
+    assert features.history["n"]["shutdown_failed"]
+    assert features.audit["n"]["requested_power"] is False
+    assert features.audit["n"]["result"] == "failed"
+    assert ThermacellDiagnosticFlag(coordinator, "n", "Yard", "power_mismatch").is_on
+    issue.assert_called()
+    device.set_power.assert_awaited_once_with(False, verify=True)
+    services.cancel_shutdown_timer.assert_not_awaited()
+    services.reboot.assert_not_awaited()
+    assert not await coordinator.async_set_device_power("n", "Yard", True)
+    for command in ("run_for", "schedule_shutdown", "cancel_timer"):
+        with pytest.raises(HomeAssistantError, match="unconfirmed|operational Off"):
+            await features.command("n", command, 60)
+    services.set_shutdown_timer.assert_not_awaited()
+
+    # Persisted metadata must prevent another off attempt after an entry reload.
+    restored = HubFeatures(coordinator)
+    restored.history = features.history.copy()
+    with patch("custom_components.thermacell_liv.features.ir.async_create_issue"):
+        await restored._reconcile_shutdown("n")
+    device.set_power.assert_awaited_once()
+
+    coordinator.client.api.get_node_params.return_value = (
+        200,
+        {"LIV Hub": {"Enable Repellers": False, "System State": 1, "System Status": 1}},
+    )
+    with patch("custom_components.thermacell_liv.features.ir.async_delete_issue") as clear:
+        await features._reconcile_shutdown("n")
+    clear.assert_called_once()
+    assert not features.shutdown_pending("n")
+    assert features.shutdown_at("n") is None
+    assert features.audit["n"]["result"] == "confirmed"
+    assert not features.history["n"]
+
+
+async def test_expired_timer_recovers_with_one_verified_off(feature_hub):
+    coordinator, device, services = feature_hub
+    features = coordinator.features
+    features.history["n"] = {"shutdown_at": (datetime.now(UTC) - timedelta(seconds=5)).isoformat()}
+    coordinator.client.api.get_node_params = AsyncMock(
+        side_effect=[
+            (200, {"LIV Hub": {"Enable Repellers": False, "System Status": 2}}),
+            (200, {"LIV Hub": {"Enable Repellers": False, "System Status": 1}}),
+        ]
+    )
+    coordinator.client.api.get_node_config = AsyncMock(return_value=(200, {}))
+    with patch("custom_components.thermacell_liv.features.ir.async_delete_issue"):
+        await features._reconcile_shutdown("n")
+    device.set_power.assert_awaited_once_with(False, verify=True)
+    assert features.audit["n"]["result"] == "confirmed"
+    services.cancel_shutdown_timer.assert_not_awaited()
+
+
+async def test_shutdown_monitor_does_not_write_before_deadline_or_after_confirmed_expiry(feature_hub):
+    coordinator, device, _ = feature_hub
+    features = coordinator.features
+    features.history["n"] = {"shutdown_at": (datetime.now(UTC) + timedelta(minutes=1)).isoformat()}
+    await features._reconcile_shutdown("n")
+    device.set_power.assert_not_awaited()
+    features.history["n"]["shutdown_at"] = (datetime.now(UTC) - timedelta(seconds=5)).isoformat()
+    coordinator.client.api.get_node_params = AsyncMock(
+        return_value=(200, {"LIV Hub": {"Enable Repellers": False, "System Status": 1}})
+    )
+    coordinator.client.api.get_node_config = AsyncMock(return_value=(200, {}))
+    with patch("custom_components.thermacell_liv.features.ir.async_delete_issue"):
+        await features._reconcile_shutdown("n")
+    device.set_power.assert_not_awaited()
+    assert not features.shutdown_pending("n")
+
+
+async def test_expired_offline_timer_waits_for_online_before_single_retry(feature_hub):
+    coordinator, device, _ = feature_hub
+    features = coordinator.features
+    features.history["n"] = {"shutdown_at": (datetime.now(UTC) - timedelta(seconds=5)).isoformat()}
+    with (
+        patch.object(ThermacellDevice, "is_online", False),
+        patch("custom_components.thermacell_liv.features.ir.async_create_issue"),
+    ):
+        await features._reconcile_shutdown("n")
+    device.set_power.assert_not_awaited()
+    assert features.history["n"]["shutdown_failed"]
+    assert "shutdown_retry_attempted" not in features.history["n"]
+
+
+async def test_shutdown_retry_timeout_is_bounded_and_not_repeated(feature_hub):
+    coordinator, device, _ = feature_hub
+    features = coordinator.features
+    features.history["n"] = {"shutdown_at": (datetime.now(UTC) - timedelta(seconds=5)).isoformat()}
+    coordinator.client.api.get_node_params = AsyncMock(
+        return_value=(200, {"LIV Hub": {"Enable Repellers": False, "System Status": 2}})
+    )
+    coordinator.client.api.get_node_config = AsyncMock(return_value=(200, {}))
+
+    async def hang(*args, **kwargs):
+        await asyncio.Event().wait()
+
+    device.set_power.side_effect = hang
+    real_timeout = asyncio.timeout
+    with (
+        patch(
+            "custom_components.thermacell_liv.features.asyncio.timeout", side_effect=lambda seconds: real_timeout(0.01)
+        ) as timeout,
+        patch("custom_components.thermacell_liv.features.ir.async_create_issue"),
+    ):
+        await features._reconcile_shutdown("n")
+        await features._reconcile_shutdown("n")
+    timeout.assert_called_once_with(30)
+    device.set_power.assert_awaited_once()
+    assert features.history["n"]["shutdown_failed"]
+    assert features.shutdown_pending("n")

@@ -1888,16 +1888,16 @@ wheels = [
 
 [[package]]
 name = "pythermacell"
-version = "0.3.0b3"
+version = "0.3.0b4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "cryptography" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/56/a7d6949b2b67f6c0328dd68513e3d1c1dd8ab86d97b18025d5e47bd7d013/pythermacell-0.3.0b3.tar.gz", hash = "sha256:e30f11032fcd8e02f2c49a866dcea5d24cad1f6d48cd6e0098ad09cea6d79596", size = 278990, upload-time = "2026-10-18T22:47:38.778Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/a4/29ae44be58c192528a3cf7b67076a984feb646e40dc8e0d0bc2125ed3914/pythermacell-0.3.0b4.tar.gz", hash = "sha256:f92ae98ac4c16113e87c04e666a3b4318673429d9a2cdc18caf4343807683499", size = 281573, upload-time = "2026-10-19T01:23:21.016Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/2a/8b207d76816b5bf76117ddd1d73751cbef7048f40f52efc585a37fb87bb8/pythermacell-0.3.0b3-py3-none-any.whl", hash = "sha256:929ede910217dc8c3514c8ef32237d3144e1f4647d9e793892a0bdbde80c630a", size = 60898, upload-time = "2026-10-18T22:47:37.548Z" },
+    { url = "https://files.pythonhosted.org/packages/82/ab/8756b5d001ae89d366d88845c471b50996fd0659da294b6f8918ddbd3206/pythermacell-0.3.0b4-py3-none-any.whl", hash = "sha256:799afdb7aee694d16918d1924dcf031a0e7e5e964ca010158e8ea018666402fd", size = 60919, upload-time = "2026-10-19T01:23:19.461Z" },
 ]
 
 [[package]]
@@ -2204,7 +2204,7 @@ wheels = [
 
 [[package]]
 name = "thermacell-liv"
-version = "2.1.0b3"
+version = "2.1.0b4"
 source = { virtual = "." }
 dependencies = [
     { name = "pythermacell" },
@@ -2227,7 +2227,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pythermacell", specifier = "==0.3.0b3" },
+    { name = "pythermacell", specifier = "==0.3.0b4" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
 ]
 provides-extras = ["dev"]
