@@ -24,7 +24,7 @@ def diagnostic_entry():
             "online": True,
             "system_runtime": 120,
             "devices": {
-                "Yard": {
+                "LIV Hub": {
                     "power": False,
                     "led_power": True,
                     "led_brightness": 128,
@@ -314,7 +314,7 @@ async def test_diagnostics_scrubs_support_containers(diagnostic_entry, shape):
         "esp.param.local_control_pop": pop,
         "esp.param.local_control_username": local_user,
     }.get(param)
-    record = {"pop": "SYNTHETIC-UNKNOWN-POP", "opaque": [*known, "account-node", "Yard"], "support": "benign"}
+    record = {"pop": "SYNTHETIC-UNKNOWN-POP", "opaque": [*known, "account-node", "LIV Hub"], "support": "benign"}
     payload = {
         "tuple": (record,),
         "nested-list": [[record]],
@@ -326,11 +326,13 @@ async def test_diagnostics_scrubs_support_containers(diagnostic_entry, shape):
     result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
     serialized = json.dumps(result)
     assert all(secret not in serialized for secret in [*known, "SYNTHETIC-UNKNOWN-POP"])
-    assert "account-node" not in serialized and "Yard" not in serialized
+    assert "account-node" not in serialized
     node = result["nodes"]["node_1"]
     assert isinstance(node["maintenance"]["metadata"], list)
     assert "benign" in json.dumps(node["maintenance"]["metadata"])
     assert "benign" in json.dumps(node["last_command"]["details"])
+    assert '"LIV Hub"' not in json.dumps(node["maintenance"])
+    assert '"LIV Hub"' not in json.dumps(node["last_command"])
     assert node["fw_version"] == "5.4.7"
     assert node["last_command"]["result"] == "failed"
 
@@ -350,7 +352,7 @@ async def test_diagnostics_scrubs_known_secrets_in_support_fields(diagnostic_ent
     else:
         data = coordinator.data["account-node"]
         if field in ("led_color", "system_status"):
-            data = data["devices"]["Yard"]
+            data = data["devices"]["LIV Hub"]
         data[field] = value
     result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
     assert secret not in json.dumps(result)
@@ -362,7 +364,7 @@ async def test_diagnostics_scrubs_known_secrets_in_support_fields(diagnostic_ent
 async def test_diagnostics_labels_are_stable_across_insertion_order(diagnostic_entry):
     coordinator = diagnostic_entry.runtime_data["coordinator"]
     node = coordinator.data["account-node"]
-    node["devices"]["Another device"] = {**node["devices"]["Yard"], "power": True}
+    node["devices"]["Another device"] = {**node["devices"]["LIV Hub"], "power": True}
     coordinator.data["z-node"] = {**deepcopy(node), "fw_version": "5.3.2"}
     first = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
     coordinator.data = dict(reversed(coordinator.data.items()))
@@ -400,7 +402,7 @@ async def test_diagnostics_redacts_original_keys_before_name_scrubbing(diagnosti
     node = coordinator.data.pop("account-node")
     coordinator.data[node_id] = node
     if owner == "device":
-        node["devices"] = {key: node["devices"]["Yard"]}
+        node["devices"] = {key: node["devices"]["LIV Hub"]}
     for values in (
         coordinator.features.history,
         coordinator.features.audit,
@@ -458,3 +460,66 @@ async def test_diagnostics_anonymizes_after_scrubbing_support_records(diagnostic
     assert set(node["devices"]) == {"device_1"}
     assert node["devices"]["device_1"]["system_status"] == "Warming Up"
     assert node["model"] == "Thermacell LIV Hub"
+
+
+@pytest.mark.parametrize("name", ["LIV Hub", "Thermacell LIV Hub", "Protected", "Pool"])
+@pytest.mark.parametrize("owner", ["node", "device", "auth-user-id", "serial"])
+async def test_diagnostics_labels_do_not_mangle_support(diagnostic_entry, name, owner):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    data = coordinator.data.pop("account-node")
+    node_id = name if owner == "node" else "account-node"
+    coordinator.data[node_id] = data
+    device = data["devices"].pop("LIV Hub")
+    data["devices"][name if owner == "device" else "LIV Hub"] = device
+    device["system_status"] = "Protected"
+    if owner == "auth-user-id":
+        diagnostic_entry.runtime_data["client"] = SimpleNamespace(
+            _auth_handler=SimpleNamespace(user_id=name), api=SimpleNamespace(local_transports={})
+        )
+    elif owner == "serial":
+        diagnostic_entry.data = {"serial_number": name}
+    coordinator.features.history = {node_id: {"description": f"firmware for {name} hub", "opaque": name}}
+    before = deepcopy((coordinator.data, coordinator.features.history))
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    node = result["nodes"]["node_1"]
+    assert node["model"] == "Thermacell LIV Hub"
+    assert node["devices"]["device_1"]["system_status"] == "Protected"
+    assert node["maintenance"] == {"description": f"firmware for {name} hub", "opaque": "**REDACTED**"}
+    assert (coordinator.data, coordinator.features.history) == before
+
+
+@pytest.mark.parametrize("field,secret", [("model", "Thermacell LIV Hub"), ("system_status", "Protected")])
+async def test_diagnostics_credentials_override_standard_literals(diagnostic_entry, field, secret):
+    diagnostic_entry.data = {"password": secret}
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    coordinator.data["account-node"]["devices"]["LIV Hub"]["system_status"] = "Protected"
+    result = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    node = result["nodes"]["node_1"]
+    record = node if field == "model" else node["devices"]["device_1"]
+    assert record[field] == "**REDACTED**"
+    assert secret not in json.dumps(result)
+
+
+async def test_diagnostics_preserves_colliding_scrubbed_keys(diagnostic_entry):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    token, pop = "SYNTHETIC-TOKEN-A", "SYNTHETIC-POP-B"
+    diagnostic_entry.data = {"access_token": token, "pop": pop}
+    details = {
+        f"detail:{token}": {"result": "failed"},
+        f"detail:{pop}": {"result": "confirmed"},
+        "detail:**REDACTED**": {"result": "original"},
+        "detail:**REDACTED**_2": {"result": "suffixed"},
+    }
+    coordinator.features.audit["account-node"]["details"] = details
+    before = deepcopy(coordinator.features.audit)
+    first = await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry)
+    assert token not in json.dumps(first) and pop not in json.dumps(first)
+    assert first["nodes"]["node_1"]["last_command"]["details"] == {
+        "detail:**REDACTED**": {"result": "original"},
+        "detail:**REDACTED**_2": {"result": "suffixed"},
+        "detail:**REDACTED**_3": {"result": "confirmed"},
+        "detail:**REDACTED**_4": {"result": "failed"},
+    }
+    assert coordinator.features.audit == before
+    coordinator.features.audit["account-node"]["details"] = dict(reversed(details.items()))
+    assert await async_get_config_entry_diagnostics(MagicMock(), diagnostic_entry) == first

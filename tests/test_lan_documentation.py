@@ -2,7 +2,6 @@
 
 from pathlib import Path
 import re
-import subprocess
 
 import pytest
 
@@ -92,9 +91,7 @@ def test_live_status_anchor_links_resolve():
     target = ROOT / "docs/NATIVE_CONTROLS.md"
     assert re.search(r"^### Live hub status$", target.read_text(), re.MULTILINE)
     links = []
-    sources = subprocess.check_output(["git", "ls-files", "*.md"], cwd=ROOT, text=True).splitlines()
-    for relative in sources:
-        source = ROOT / relative
+    for source in [ROOT / "README.md", *(ROOT / "docs").rglob("*.md")]:
         for link in re.findall(r"\]\(([^)\s]*#live-hub-status[^)\s]*)\)", source.read_text()):
             path, anchor = link.rsplit("#", 1)
             destination = source.parent / path if path else source
@@ -102,3 +99,18 @@ def test_live_status_anchor_links_resolve():
             assert anchor == "live-hub-status", (source, link)
             links.append((source, link))
     assert links
+
+
+def test_live_status_anchor_scan_does_not_require_git(tmp_path, monkeypatch):
+    monkeypatch.setattr(f"{__name__}.ROOT", tmp_path)
+    (tmp_path / "docs/nested").mkdir(parents=True)
+    (tmp_path / "README.md").write_text("[live](docs/NATIVE_CONTROLS.md#live-hub-status)")
+    (tmp_path / "docs/NATIVE_CONTROLS.md").write_text("### Live hub status\n")
+    monkeypatch.setenv("PATH", "")
+    test_live_status_anchor_links_resolve()
+    extra = tmp_path / "docs/nested/new.md"
+    extra.write_text("[live](../NATIVE_CONTROLS.md#live-hub-status-2026-10-18)")
+    with pytest.raises(AssertionError):
+        test_live_status_anchor_links_resolve()
+    extra.write_text("[live](../NATIVE_CONTROLS.md#live-hub-status)")
+    test_live_status_anchor_links_resolve()
