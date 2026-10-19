@@ -462,7 +462,7 @@ async def test_diagnostics_anonymizes_after_scrubbing_support_records(diagnostic
     assert node["model"] == "Thermacell LIV Hub"
 
 
-@pytest.mark.parametrize("name", ["LIV Hub", "Thermacell LIV Hub", "Protected", "Pool"])
+@pytest.mark.parametrize("name", ["LIV Hub", "Thermacell LIV Hub", "Protected", "Pool", "power"])
 @pytest.mark.parametrize("owner", ["node", "device", "auth-user-id", "serial"])
 async def test_diagnostics_labels_do_not_mangle_support(diagnostic_entry, name, owner):
     coordinator = diagnostic_entry.runtime_data["coordinator"]
@@ -484,6 +484,7 @@ async def test_diagnostics_labels_do_not_mangle_support(diagnostic_entry, name, 
     node = result["nodes"]["node_1"]
     assert node["model"] == "Thermacell LIV Hub"
     assert node["devices"]["device_1"]["system_status"] == "Protected"
+    assert node["devices"]["device_1"]["power"] is False
     assert node["maintenance"] == {"description": f"firmware for {name} hub", "opaque": "**REDACTED**"}
     assert (coordinator.data, coordinator.features.history) == before
 

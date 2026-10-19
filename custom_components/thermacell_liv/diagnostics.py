@@ -122,27 +122,29 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
         node["model"] = _json_data(node_data.get("model"), credentials, labels - {"Thermacell LIV Hub"})
         node["devices"] = {
             f"device_{device_index}": {
-                **_json_data(
-                    {
-                        **_measurements(
-                            device_data,
-                            (
-                                "power",
-                                "led_power",
-                                "led_brightness",
-                                "led_brightness_pct",
-                                "refill_life",
-                                "cartridge_present",
-                                "system_status_code",
-                                "error_code",
-                                "last_updated",
+                **{
+                    key: _json_data(value, credentials, labels)
+                    for key, value in async_redact_data(
+                        {
+                            **_measurements(
+                                device_data,
+                                (
+                                    "power",
+                                    "led_power",
+                                    "led_brightness",
+                                    "led_brightness_pct",
+                                    "refill_life",
+                                    "cartridge_present",
+                                    "system_status_code",
+                                    "error_code",
+                                    "last_updated",
+                                ),
                             ),
-                        ),
-                        "led_color": device_data.get("led_color"),
-                    },
-                    credentials,
-                    labels,
-                ),
+                            "led_color": device_data.get("led_color"),
+                        },
+                        TO_REDACT,
+                    ).items()
+                },
                 "system_status": _json_data(
                     device_data.get("system_status"),
                     credentials,
