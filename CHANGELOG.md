@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0-beta.4] - 2026-10-19
+
+### Changed
+- Require pythermacell 0.3.0b4 for explicit operational Off confirmation.
+
 ### Fixed
 - Reconcile native timer expiry even after the hub disables its schedule. Keep
   the deadline until operational Off is confirmed, try one bounded off command,
