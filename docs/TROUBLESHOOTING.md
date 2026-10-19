@@ -43,7 +43,7 @@ summary, see the [README](../README.md#troubleshooting).
   cannot use this path; see
   [live hub status](NATIVE_CONTROLS.md#live-hub-status)
   for the measured capability limits. The diagnostic command is available from
-  pythermacell PR #73 / the next pythermacell release, not in the pinned 0.3.0b3.
+  pythermacell PR #73 / a future pythermacell release, not in the pinned 0.3.0b4.
 - Check `_esp_local_ctrl._tcp.local.` mDNS visibility **from Home Assistant's
   network/interface**. A short negative browse is inconclusive. Across VLANs,
   verify multicast reflection as well as routed TCP access to the advertised port;

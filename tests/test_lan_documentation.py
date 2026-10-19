@@ -1,5 +1,6 @@
 """Published guidance must preserve the boundary between LAN and cloud."""
 
+import json
 from pathlib import Path
 import re
 
@@ -47,10 +48,14 @@ def test_troubleshooting_distinguishes_discovery_from_success():
 
 @pytest.mark.parametrize("path", ["docs/NATIVE_CONTROLS.md", "docs/TROUBLESHOOTING.md"])
 def test_diagnostic_availability_matches_pinned_library(path):
-    text = " ".join((ROOT / path).read_text().lower().split())
-    assert "pythermacell pr #73 / the next pythermacell release" in text
-    assert "0.3.0b3" in text
-    assert "not included" in text or "not in" in text
+    requirements = json.loads((ROOT / "custom_components/thermacell_liv/manifest.json").read_text())["requirements"]
+    (requirement,) = [item for item in requirements if item.startswith("pythermacell==")]
+    version = requirement.removeprefix("pythermacell==")
+    assert version
+    text = " ".join((ROOT / path).read_text().lower().replace("**", "").split())
+    documented_versions = re.findall(r"(?:not included in|not in) the pinned (\S+)", text)
+    assert {value.rstrip(".,;") for value in documented_versions} == {version}
+    assert "pythermacell pr #73 / a future pythermacell release" in text
 
 
 def test_live_evidence_does_not_assume_hub_vlan():
