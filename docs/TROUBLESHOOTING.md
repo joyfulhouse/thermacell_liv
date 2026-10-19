@@ -40,7 +40,9 @@ summary, see the [README](../README.md#troubleshooting).
 
 - Confirm local preference is enabled and the hub advertises local-control
   capability in authenticated account metadata. Firmware without that service
-  cannot use this path; physical-hub LAN validation remains outstanding.
+  cannot use this path; see
+  [live hub status (2026-10-18)](NATIVE_CONTROLS.md#live-hub-status-2026-10-18)
+  for the measured capability limits and diagnostic command.
 - Check `_esp_local_ctrl._tcp.local.` mDNS visibility **from Home Assistant's
   network/interface**. A short negative browse is inconclusive. Across VLANs,
   verify multicast reflection as well as routed TCP access to the advertised port;

@@ -2,8 +2,9 @@
 
 Available in **2.1.0-beta.1**, with `pythermacell==0.3.0b1`. Contracts were
 researched in Thermacell LIV Android 4.0.5 (versionCode 202). This beta has
-automated HTTP/protocol and Home Assistant tests; physical hub validation is
-still outstanding. Firmware capabilities determine which controls appear.
+automated HTTP/protocol and Home Assistant tests; see
+[live hub status (2026-10-18)](#live-hub-status-2026-10-18) for measured capability
+limits. Firmware capabilities determine which controls appear.
 
 | Capability | Home Assistant control |
 |---|---|
@@ -97,8 +98,8 @@ but a previous route hint can remain until another operation updates it.
   discovered, local-control-advertising hubs with cached account metadata and a
   reachable authenticated endpoint. Cached-node fallback supports connection
   failures and some server errors; HTTP 401/403 do not qualify. It is not a
-  guarantee for every cloud error or firmware. Physical-hub validation remains
-  outstanding.
+  guarantee for every cloud error or firmware. See
+  [live hub status (2026-10-18)](#live-hub-status-2026-10-18).
 - **Offline restart: UNSUPPORTED.** Startup/reload authenticates and refreshes
   through cloud before discovery, even for previously used hubs. No local
   bootstrap credentials/catalog are persisted by this integration.
@@ -112,6 +113,26 @@ credential revocation/rotation and membership reconciliation on cloud recovery;
 and restart tests denying cloud while rejecting spoofed/unpaired nodes. HA
 Store/config-entry persistence alone is not encryption. This design is deferred,
 not an offline-startup feature in this phase.
+
+### Live hub status (2026-10-18)
+
+Checked 2026-10-18 UTC with the
+[pythermacell LAN diagnostic](https://github.com/joyfulhouse/pythermacell/pull/73)
+against two LIV hubs on firmware **5.4.7**. Neither hub advertised
+`esp.service.local_control` in its account metadata: no security scheme, PoP, or
+local username was provisioned. No `_esp_local_ctrl._tcp.local.` service was seen
+from a host on the hub LAN that did observe other mDNS services.
+
+No local handshake, local read, or local LED write was performed. On these hubs
+the integration operates over cloud and the transport sensor will not show
+`local`. A process-scoped cloud-denial run confirmed cloud connections were
+blocked, but could not demonstrate LAN operation because there was no endpoint.
+
+LAN control remains implemented and simulator-tested, but is unverified on
+physical hubs; it requires firmware/provisioning that advertises local control.
+If the sensor never shows `local`, first check whether the hub advertises local
+control with `python -m pythermacell.diagnostics` (see the linked diagnostic),
+before investigating mDNS/VLAN.
 
 ## Refill State and Shutdown Evidence
 

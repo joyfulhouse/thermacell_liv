@@ -13,7 +13,14 @@ def test_operation_boundaries_are_explicit(path):
     assert "no local api" not in text
     assert "offline restart" in text and "unsupported" in text
     assert "cloud-only" in text
-    assert "physical-hub" in text and "outstanding" in text
+    if path == "docs/CONFIGURATION.md":
+        assert "physical-hub" in text and "outstanding" in text
+    else:
+        assert "#live-hub-status-2026-10-18" in text
+        if path == "docs/NATIVE_CONTROLS.md":
+            assert "### live hub status (2026-10-18)" in text
+            assert "5.4.7" in text and "https://github.com/joyfulhouse/pythermacell/pull/73" in text
+            assert "unverified on physical hubs" in " ".join(text.split())
 
 
 @pytest.mark.parametrize(
