@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from ipaddress import ip_address
+import logging
 from typing import TYPE_CHECKING, Any
 
 from pythermacell.local import SERVICE_TYPE, LocalEndpoint, LocalTransport
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 MAX_SERVICES = 128
 MAX_ADDRESSES = 8
 MAX_RESOLVE_ATTEMPTS = 3
+_LOGGER = logging.getLogger(__name__)
 
 
 def _addresses(info: AsyncServiceInfo) -> list[str]:
@@ -149,36 +151,39 @@ class LocalDiscovery:
                 self._schedule(name)
 
     def _rebuild(self) -> None:
-        endpoints: dict[str, list[LocalEndpoint]] = {}
-        for service in self._services.values():
-            info = service.info
-            if info is None or not info.port or not (raw_node := info.properties.get(b"node_id")):
-                continue
-            node_id = raw_node.decode(errors="replace")
-            device = self.coordinator.get_device(node_id)
-            if device is None:
-                continue
-            for address in _addresses(info):
-                endpoint = device.services.local_endpoint(address, info.port)
-                if endpoint:
-                    candidates = endpoints.setdefault(node_id, [])
-                    if endpoint not in candidates and len(candidates) < MAX_ADDRESSES:
-                        candidates.append(endpoint)
-        api = self.coordinator.client.api
-        for node_id in set(api.local_transports) - endpoints.keys():
-            api.local_transports.pop(node_id, None)
-            api.last_transport.pop(node_id, None)
-        for node_id, candidates in endpoints.items():
-            if candidates == self._endpoints.get(node_id) and node_id in api.local_transports:
-                continue
-            transports = []
-            for endpoint in candidates:
-                api.configure_local(endpoint)
-                if len(candidates) > 1:
-                    transports.append(api.local_transports[node_id])
-            if len(transports) > 1:
-                api.local_transports[node_id] = ReadFailoverTransport(transports)
-        self._endpoints = endpoints
+        try:
+            endpoints: dict[str, list[LocalEndpoint]] = {}
+            for service in self._services.values():
+                info = service.info
+                if info is None or not info.port or not (raw_node := info.properties.get(b"node_id")):
+                    continue
+                node_id = raw_node.decode(errors="replace")
+                device = self.coordinator.get_device(node_id)
+                if device is None:
+                    continue
+                for address in _addresses(info):
+                    endpoint = device.services.local_endpoint(address, info.port)
+                    if endpoint:
+                        candidates = endpoints.setdefault(node_id, [])
+                        if endpoint not in candidates and len(candidates) < MAX_ADDRESSES:
+                            candidates.append(endpoint)
+            api = self.coordinator.client.api
+            for node_id in set(api.local_transports) - endpoints.keys():
+                api.local_transports.pop(node_id, None)
+                api.last_transport.pop(node_id, None)
+            for node_id, candidates in endpoints.items():
+                if candidates == self._endpoints.get(node_id) and node_id in api.local_transports:
+                    continue
+                transports = []
+                for endpoint in candidates:
+                    api.configure_local(endpoint)
+                    if len(candidates) > 1:
+                        transports.append(api.local_transports[node_id])
+                if len(transports) > 1:
+                    api.local_transports[node_id] = ReadFailoverTransport(transports)
+            self._endpoints = endpoints
+        except Exception as err:
+            _LOGGER.debug("Local discovery reconciliation failed (%s)", type(err).__name__)
 
     async def async_stop(self) -> None:
         """Stop discovery and clear ephemeral transport credentials."""

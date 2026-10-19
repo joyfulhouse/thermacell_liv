@@ -44,17 +44,22 @@ TO_REDACT = {
 
 
 def _json_data(value: Any, secrets: set[str]) -> Any:
-    """Normalize support records before HA's mapping/list key redaction."""
+    """Redact original keys before normalizing containers and scrubbing strings."""
     if isinstance(value, Mapping):
         return {
-            REDACTED if key in secrets else key: _json_data(item, secrets)
-            for key, item in value.items()
+            _json_data(key, secrets): _json_data(item, secrets)
+            for key, item in async_redact_data(value, TO_REDACT).items()
             if isinstance(key, str)
         }
     if isinstance(value, (list, tuple, set, frozenset)):
         return [_json_data(item, secrets) for item in value]
     if isinstance(value, str):
-        return REDACTED if value in secrets else value
+        if value in secrets:
+            return REDACTED
+        for secret in sorted(secrets, key=len, reverse=True):
+            if len(secret) >= 4:
+                value = value.replace(secret, REDACTED)
+        return value
     return value if type(value) in (bool, int, float) or value is None else None
 
 
@@ -94,43 +99,41 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                 "refill_drain": coordinator.features.anomalies.get(node_id),
             }
         )
+        node = _json_data(node, secrets)
         node["devices"] = {
-            f"device_{device_index}": {
-                **_measurements(
-                    device_data,
-                    (
-                        "power",
-                        "led_power",
-                        "led_brightness",
-                        "led_brightness_pct",
-                        "refill_life",
-                        "cartridge_present",
-                        "system_status_code",
-                        "error_code",
-                        "last_updated",
+            f"device_{device_index}": _json_data(
+                {
+                    **_measurements(
+                        device_data,
+                        (
+                            "power",
+                            "led_power",
+                            "led_brightness",
+                            "led_brightness_pct",
+                            "refill_life",
+                            "cartridge_present",
+                            "system_status_code",
+                            "error_code",
+                            "last_updated",
+                        ),
                     ),
-                ),
-                "led_color": device_data.get("led_color"),
-                "system_status": device_data.get("system_status"),
-            }
+                    "led_color": device_data.get("led_color"),
+                    "system_status": device_data.get("system_status"),
+                },
+                secrets,
+            )
             for device_index, (_, device_data) in enumerate(sorted(node_data.get("devices", {}).items()), 1)
         }
         nodes[f"node_{index}"] = node
-    return async_redact_data(
-        _json_data(
-            {
-                "entry": {"domain": DOMAIN, "version": entry.version},
-                "coordinator": {
-                    "last_update_success": coordinator.last_update_success,
-                    "last_update_success_time": (
-                        str(coordinator.last_update_success_time) if coordinator.last_update_success_time else None
-                    ),
-                    "update_interval": str(coordinator.update_interval),
-                    "node_count": len(nodes),
-                },
-                "nodes": nodes,
-            },
-            secrets,
-        ),
-        TO_REDACT,
-    )
+    return {
+        "entry": {"domain": DOMAIN, "version": entry.version},
+        "coordinator": {
+            "last_update_success": coordinator.last_update_success,
+            "last_update_success_time": (
+                str(coordinator.last_update_success_time) if coordinator.last_update_success_time else None
+            ),
+            "update_interval": str(coordinator.update_interval),
+            "node_count": len(nodes),
+        },
+        "nodes": nodes,
+    }

@@ -45,7 +45,7 @@ instance manages every hub on your Thermacell account.
   and every restart. Offline restart is **UNSUPPORTED**.
 - Optional LAN control requires an already-paired account hub advertising local
   control, reachable addresses, and mDNS visibility from Home Assistant.
-  See [live hub status (2026-10-18)](docs/NATIVE_CONTROLS.md#live-hub-status-2026-10-18)
+  See [live hub status](docs/NATIVE_CONTROLS.md#live-hub-status)
   for the measured capability limits.
 
 ## Installation
@@ -215,4 +215,4 @@ unofficial integration and is not affiliated with or endorsed by Thermacell.
 
 ## Native Controls Beta
 
-Version 2.1.0-beta.1 adds native shutdown timers, app schedule switches, firmware updates, reboot, timezone, account groups, local network control, and persistent refill/shutdown diagnostics. See the [control guide](docs/NATIVE_CONTROLS.md). New protocol paths are covered by simulators and automated tests; see [live hub status (2026-10-18)](docs/NATIVE_CONTROLS.md#live-hub-status-2026-10-18) for measured capability limits.
+Version 2.1.0-beta.1 adds native shutdown timers, app schedule switches, firmware updates, reboot, timezone, account groups, local network control, and persistent refill/shutdown diagnostics. See the [control guide](docs/NATIVE_CONTROLS.md). New protocol paths are covered by simulators and automated tests; see [live hub status](docs/NATIVE_CONTROLS.md#live-hub-status) for measured capability limits.

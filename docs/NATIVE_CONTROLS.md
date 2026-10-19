@@ -3,7 +3,7 @@
 Available in **2.1.0-beta.1**, with `pythermacell==0.3.0b1`. Contracts were
 researched in Thermacell LIV Android 4.0.5 (versionCode 202). This beta has
 automated HTTP/protocol and Home Assistant tests; see
-[live hub status (2026-10-18)](#live-hub-status-2026-10-18) for measured capability
+[live hub status](#live-hub-status) for measured capability
 limits. Firmware capabilities determine which controls appear.
 
 | Capability | Home Assistant control |
@@ -99,7 +99,7 @@ and pruning its transport also clears the previous route hint.
   reachable authenticated endpoint. Cached-node fallback supports connection
   failures and some server errors; HTTP 401/403 do not qualify. It is not a
   guarantee for every cloud error or firmware. See
-  [live hub status (2026-10-18)](#live-hub-status-2026-10-18).
+  [live hub status](#live-hub-status).
 - **Offline restart: UNSUPPORTED.** Startup/reload authenticates and refreshes
   through cloud before discovery, even for previously used hubs. No local
   bootstrap credentials/catalog are persisted by this integration.
@@ -114,7 +114,7 @@ and restart tests denying cloud while rejecting spoofed/unpaired nodes. HA
 Store/config-entry persistence alone is not encryption. This design is deferred,
 not an offline-startup feature in this phase.
 
-### Live hub status (2026-10-18)
+### Live hub status
 
 Checked 2026-10-18 UTC with the
 [pythermacell LAN diagnostic](https://github.com/joyfulhouse/pythermacell/pull/73)

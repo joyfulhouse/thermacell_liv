@@ -7,6 +7,7 @@ import pytest
 from pythermacell import ThermacellClient, ThermacellDevice
 
 from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.local import LocalDiscovery
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -118,16 +119,18 @@ async def test_refresh_reconciles_local_account_membership(coordinator, mock_cli
 
 
 async def test_discovery_failure_does_not_fail_cloud_refresh(coordinator, mock_client, sample_devices, caplog):
-    coordinator.local_discovery = MagicMock()
-    coordinator.local_discovery.reconcile.side_effect = RuntimeError("SYNTHETIC-SECRET")
+    coordinator.local_discovery = LocalDiscovery(coordinator)
+    info = MagicMock(port=8080, properties={b"node_id": b"node1"})
+    coordinator.local_discovery._services["service"] = MagicMock(info=info)
+    coordinator.get_device = MagicMock(side_effect=RuntimeError("SYNTHETIC-SECRET"))
     coordinator.features.async_refresh = AsyncMock()
     mock_client.get_devices.return_value = sample_devices
-    with caplog.at_level("DEBUG", logger="custom_components.thermacell_liv.coordinator"):
+    with caplog.at_level("DEBUG", logger="custom_components.thermacell_liv.local"):
         result = await coordinator._async_update_data()
     assert set(result) == {"node1", "node2"}
     assert coordinator.nodes == result
     assert coordinator.last_update_success_time is not None
-    coordinator.local_discovery.reconcile.assert_called_once()
+    coordinator.get_device.assert_called_once_with("node1")
     coordinator.features.async_refresh.assert_awaited_once()
     assert "Local discovery reconciliation failed (RuntimeError)" in caplog.text
     assert "SYNTHETIC-SECRET" not in caplog.text

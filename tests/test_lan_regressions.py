@@ -139,6 +139,27 @@ async def test_eager_cached_resolution_does_not_retain_completed_task(lan):
     info.async_request.assert_awaited_once()
 
 
+@pytest.mark.parametrize("path", ["removed", "resolved"])
+async def test_discovery_errors_are_isolated_for_browser_paths(lan, caplog, path):
+    coordinator, discovery, info, _ = lan
+    if path == "removed":
+        await announce(discovery, info, "first")
+        await announce(discovery, info, "remaining")
+    coordinator.get_device.side_effect = RuntimeError("SYNTHETIC-SECRET")
+    with caplog.at_level("DEBUG", logger="custom_components.thermacell_liv.local"):
+        if path == "removed":
+            discovery._changed(MagicMock(), "service-type", "first", ServiceStateChange.Removed)
+            assert "first" not in discovery._services
+        else:
+            with patch("custom_components.thermacell_liv.local.AsyncServiceInfo", return_value=info):
+                discovery._changed(MagicMock(), "service-type", "new", ServiceStateChange.Added)
+                task = discovery._tasks["new"]
+                await task
+            assert task.exception() is None
+    assert "Local discovery reconciliation failed (RuntimeError)" in caplog.text
+    assert "SYNTHETIC-SECRET" not in caplog.text
+
+
 async def test_address_update_and_node_remap(lan):
     coordinator, discovery, info, device = lan
     await announce(discovery, info)

@@ -41,7 +41,7 @@ summary, see the [README](../README.md#troubleshooting).
 - Confirm local preference is enabled and the hub advertises local-control
   capability in authenticated account metadata. Firmware without that service
   cannot use this path; see
-  [live hub status (2026-10-18)](NATIVE_CONTROLS.md#live-hub-status-2026-10-18)
+  [live hub status](NATIVE_CONTROLS.md#live-hub-status)
   for the measured capability limits. The diagnostic command is available from
   pythermacell PR #73 / the next pythermacell release, not in the pinned 0.3.0b3.
 - Check `_esp_local_ctrl._tcp.local.` mDNS visibility **from Home Assistant's

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+import subprocess
 
 import pytest
 
@@ -85,3 +86,19 @@ def test_live_status_checks_allow_new_observation_dates(monkeypatch):
 def test_unreleased_records_lan_and_privacy_changes():
     text = (ROOT / "CHANGELOG.md").read_text().lower().split("## [unreleased]", 1)[1].split("\n## [", 1)[0]
     assert all(term in text for term in ("unknown", "diagnostics", "anonymous", "reads", "writes", "announcements"))
+
+
+def test_live_status_anchor_links_resolve():
+    target = ROOT / "docs/NATIVE_CONTROLS.md"
+    assert re.search(r"^### Live hub status$", target.read_text(), re.MULTILINE)
+    links = []
+    sources = subprocess.check_output(["git", "ls-files", "*.md"], cwd=ROOT, text=True).splitlines()
+    for relative in sources:
+        source = ROOT / relative
+        for link in re.findall(r"\]\(([^)\s]*#live-hub-status[^)\s]*)\)", source.read_text()):
+            path, anchor = link.rsplit("#", 1)
+            destination = source.parent / path if path else source
+            assert destination.resolve() == target
+            assert anchor == "live-hub-status", (source, link)
+            links.append((source, link))
+    assert links
