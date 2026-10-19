@@ -23,6 +23,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prune removed account nodes, and release eagerly completed resolution tasks.
 - Keep optional discovery failures from invalidating successful cloud refreshes.
 
+## [2.1.0-beta.4] - 2026-10-19
+
+### Changed
+- Require pythermacell 0.3.0b4 for explicit operational Off confirmation.
+
+### Fixed
+- Reconcile native timer expiry even after the hub disables its schedule. Keep
+  the deadline until operational Off is confirmed, try one bounded off command,
+  and persist a repair and start lockout if shutdown remains unconfirmed (#30).
+- Keep the power-mismatch diagnostic active for an unconfirmed timed shutdown.
+  This mitigates a monitoring gap; the intermittent firmware/cloud failure is
+  unresolved. No automatic reboot or final release promotion is included.
+
 ## [2.1.0-beta.3] - 2026-10-18
 
 ### Changed

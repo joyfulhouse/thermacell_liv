@@ -8,9 +8,11 @@ from datetime import datetime, timedelta
 import logging
 from typing import TYPE_CHECKING, Any
 
+from pythermacell.parsers import get_power_parameter_name
 from pythermacell.services import TIMER_ID, TIMER_NAME, FirmwareUpdate
 
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -167,6 +169,7 @@ class HubFeatures:
     async def async_refresh(self) -> None:
         """Poll groups every 15 minutes, firmware offers every six hours."""
         now = dt_util.utcnow()
+        await asyncio.gather(*(self._reconcile_shutdown(node_id) for node_id in self.coordinator.nodes))
         if self._history_dirty:
             await self.async_save()
             self._history_dirty = False
@@ -224,6 +227,8 @@ class HubFeatures:
         device = self.device(node_id)
         services = device.services
         if command in ("run_for", "schedule_shutdown"):
+            if self.shutdown_pending(node_id):
+                raise HomeAssistantError("Previous timed shutdown is unconfirmed; turn off and refresh the hub first")
             seconds = int(value)
             await services.set_shutdown_timer(seconds)
             self.history.setdefault(node_id, {})["shutdown_at"] = (
@@ -233,6 +238,10 @@ class HubFeatures:
             if command == "run_for" and not await self.coordinator.async_set_device_power(node_id, device.name, True):
                 raise HomeAssistantError("Timer installed but hub did not confirm power on")
         elif command == "cancel_timer":
+            if self.shutdown_pending(node_id):
+                raise HomeAssistantError(
+                    "Cannot remove an expired shutdown safeguard until operational Off is confirmed"
+                )
             if not await device.refresh(skip_config=True):
                 raise HomeAssistantError("Cannot refresh timer state")
             await services.cancel_shutdown_timer()
@@ -259,12 +268,84 @@ class HubFeatures:
             raise HomeAssistantError("Unknown Thermacell command")
 
     def shutdown_at(self, node_id: str) -> datetime | None:
-        """Expose a remembered deadline only while the native timer is enabled."""
+        """Keep overdue deadlines visible until operational shutdown is confirmed."""
+        value = self.history.get(node_id, {}).get("shutdown_at")
+        deadline = dt_util.parse_datetime(value) if value else None
+        if deadline and deadline <= dt_util.utcnow():
+            return deadline
         device = self.coordinator.get_device(node_id)
         if device and any(s.id == TIMER_ID and s.name == TIMER_NAME and s.enabled for s in device.services.schedules):
-            value = self.history.get(node_id, {}).get("shutdown_at")
-            return dt_util.parse_datetime(value) if value else None
+            return deadline
         return None
+
+    def shutdown_pending(self, node_id: str) -> bool:
+        """An expired deadline remains a stop request, even after the timer disables itself."""
+        value = self.history.get(node_id, {}).get("shutdown_at")
+        deadline = dt_util.parse_datetime(value) if value else None
+        return deadline is not None and deadline <= dt_util.utcnow()
+
+    async def _reported_off(self, node_id: str) -> bool:
+        device = self.device(node_id)
+        if not device.is_online:
+            return False
+        status, params = await self.coordinator.client.api.get_node_params(node_id)
+        if status != 200 or not isinstance(params, dict):
+            return False
+        # Read both operational fields: the writable flag alone is not shutdown evidence.
+        hub = params.get("LIV Hub", {})
+        config_status, config = await self.coordinator.client.api.get_node_config(node_id)
+        if config_status != 200 or not isinstance(config, dict):
+            return False
+        states = [hub[key] for key in ("System State", "System Status") if key in hub]
+        return (
+            hub.get(get_power_parameter_name(config)) is False
+            and bool(states)
+            and all(type(state) is int and state == 1 for state in states)
+        )
+
+    async def _reconcile_shutdown(self, node_id: str) -> None:
+        """Try one bounded verified off, then retain an actionable failure across restarts."""
+        async with self._locks.setdefault(node_id, asyncio.Lock()):
+            if not self.shutdown_pending(node_id):
+                return
+            metadata = self.history[node_id]
+            confirmed = False
+            try:
+                confirmed = await self._reported_off(node_id)
+                device = self.device(node_id)
+                if not confirmed and device.is_online and not metadata.get("shutdown_retry_attempted"):
+                    # Persist before sending: a restart must not produce an endless retry loop.
+                    metadata["shutdown_retry_attempted"] = True
+                    await self.async_save()
+                    async with asyncio.timeout(30):
+                        await device.set_power(False, verify=True)
+                        confirmed = await self._reported_off(node_id)
+            except Exception as err:
+                _LOGGER.warning("Cannot confirm timed shutdown for %s: %s", node_id, type(err).__name__)
+            if confirmed:
+                metadata.pop("shutdown_at", None)
+                metadata.pop("shutdown_retry_attempted", None)
+                metadata.pop("shutdown_failed", None)
+                ir.async_delete_issue(self.coordinator.hass, DOMAIN, f"shutdown_unconfirmed_{node_id}")
+                await self.record(node_id, "timed_shutdown", "confirmed", False)
+            else:
+                metadata["shutdown_failed"] = True
+                ir.async_create_issue(
+                    self.coordinator.hass,
+                    DOMAIN,
+                    f"shutdown_unconfirmed_{node_id}",
+                    is_fixable=False,
+                    severity=ir.IssueSeverity.ERROR,
+                    translation_key="shutdown_unconfirmed",
+                    translation_placeholders={"device_name": self.device(node_id).name},
+                )
+                if (
+                    self.audit.get(node_id, {}).get("command") != "timed_shutdown"
+                    or self.audit[node_id]["result"] != "failed"
+                ):
+                    await self.record(node_id, "timed_shutdown", "failed", False)
+                else:
+                    await self.async_save()
 
     async def group_power(self, group_id: str, power: bool) -> None:
         """Coordinate members and report partial failures without rollback."""

@@ -37,13 +37,37 @@ If power verification fails, the programmed shutdown safeguard is retained.
 `schedule_shutdown` takes `at`, a date/time. A value without a UTC offset uses
 Home Assistant's local timezone. This action does not turn the hub on.
 The deadline is converted to a native countdown, independent of the hub's
-timezone. The hub executes it even if HA subsequently stops.
+timezone. Execution is delegated to the hub even if HA subsequently stops;
+firmware execution and operational shutdown still need confirmation.
 
 The integration uses one timer per hub, ID `HA01`. Setting another duration
 replaces that timer. Cancellation removes only that timer, leaving app schedules
-and current power intact. A timer's scheduled-shutdown sensor is shown only when
-the hub reports the matching timer enabled. The stored deadline is an estimate
+and current power intact before its deadline. A timer's scheduled-shutdown sensor
+is shown while enabled and remains visible after expiry until Off is confirmed.
+The stored deadline is an estimate
 from command acceptance; an app edit can change the hub's execution time.
+
+At the first normal poll after an integration-owned deadline, HA checks fresh
+parameters even if the native timer has disabled itself. Off requires a false
+writable flag and explicit operational codes of 1, with no contradictory code.
+If necessary, HA makes one verified off attempt with a 30-second timeout. The
+attempt is remembered across reloads/restarts; it is not repeated each poll.
+If shutdown remains unconfirmed, a persistent repair and the power-mismatch
+diagnostic alert, and starts, replacement timers, and timer cancellation are
+blocked until a fresh report confirms Off. The timer is retained. Explicit off
+remains available. After manual recovery, refresh the integration to clear the
+failure. Use HA's cancel action before the deadline to cancel the stop request;
+disabling its schedule externally does not cancel HA's remembered deadline.
+
+This is a mitigation for [issue #30](https://github.com/joyfulhouse/thermacell_liv/issues/30),
+not a firmware fix. Firmware 5.4.7 on ADU has reported the enable flag false while
+both operational codes remained Warming after native expiry and direct off.
+Later identical tests passed without code or writable-settings changes. Cloud
+reports cannot distinguish stale firmware/cloud reporting from physical heater
+operation. The monitor requires HA and cloud connectivity and can run up to one
+configured polling interval late; it cannot guarantee shutdown during an outage.
+No automatic reboot, power-on recovery cycle, or refill reset is performed.
+Both packages remain beta while the intermittent failure is unresolved.
 
 Existing app schedules can be inspected and enabled/disabled. Schedule creation,
 editing of recurring triggers, provisioning, sharing, and account management
@@ -154,7 +178,8 @@ it is not included in the pinned **0.3.0b3**. See the linked diagnostic for usag
   `accepted` on other commands means an API acknowledgement. Failed/cancelled
   commands do not prove the device remained unchanged.
 - Requested-versus-reported power is a diagnostic comparison. App changes can
-  legitimately make it differ; the integration does not enforce an old request.
+  legitimately make it differ. An unconfirmed timed shutdown also sets this
+  diagnostic, independently of the last requested on command.
 - Refill drain while off requires continuous online reports of Off plus a false
   writable power flag. After a two-minute settling period, a drop of at least
   two percentage points must persist across two samples, with at least ten
