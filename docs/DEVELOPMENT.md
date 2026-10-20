@@ -39,7 +39,7 @@ test run.
 
 This integration is built on the
 [pythermacell](https://github.com/joyfulhouse/pythermacell) library, which
-handles all Thermacell cloud API communication. See
+handles Thermacell cloud API and authenticated local-control protocol communication. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the component breakdown and
 [QUALITY_SCALE.md](QUALITY_SCALE.md) for quality-scale compliance.
 

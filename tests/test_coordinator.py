@@ -7,6 +7,7 @@ import pytest
 from pythermacell import ThermacellClient, ThermacellDevice
 
 from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
+from custom_components.thermacell_liv.local import LocalDiscovery
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -98,6 +99,41 @@ def sample_devices():
             led_brightness=50,
         ),
     ]
+
+
+@pytest.mark.parametrize("remaining", [0, 1])
+async def test_refresh_reconciles_local_account_membership(coordinator, mock_client, sample_devices, remaining):
+    """Discovery sees the current cache even when the final account node is removed."""
+    coordinator._devices = {device.node_id: device for device in sample_devices}
+    observed = []
+    coordinator.local_discovery = MagicMock()
+    coordinator.local_discovery.reconcile.side_effect = lambda: observed.append(set(coordinator._devices))
+    coordinator.features.async_refresh = AsyncMock()
+    mock_client.get_devices.return_value = sample_devices[:remaining]
+    if remaining:
+        await coordinator._async_update_data()
+    else:
+        with pytest.raises(UpdateFailed, match="No devices found"):
+            await coordinator._async_update_data()
+    assert observed == [{device.node_id for device in sample_devices[:remaining]}]
+
+
+async def test_discovery_failure_does_not_fail_cloud_refresh(coordinator, mock_client, sample_devices, caplog):
+    coordinator.local_discovery = LocalDiscovery(coordinator)
+    info = MagicMock(port=8080, properties={b"node_id": b"node1"})
+    coordinator.local_discovery._services["service"] = MagicMock(info=info)
+    coordinator.get_device = MagicMock(side_effect=RuntimeError("SYNTHETIC-SECRET"))
+    coordinator.features.async_refresh = AsyncMock()
+    mock_client.get_devices.return_value = sample_devices
+    with caplog.at_level("DEBUG", logger="custom_components.thermacell_liv.local"):
+        result = await coordinator._async_update_data()
+    assert set(result) == {"node1", "node2"}
+    assert coordinator.nodes == result
+    assert coordinator.last_update_success_time is not None
+    coordinator.get_device.assert_called_once_with("node1")
+    coordinator.features.async_refresh.assert_awaited_once()
+    assert "Local discovery reconciliation failed (RuntimeError)" in caplog.text
+    assert "SYNTHETIC-SECRET" not in caplog.text
 
 
 class TestThermacellLivCoordinator:

@@ -2,8 +2,9 @@
 
 Available in **2.1.0-beta.1**, with `pythermacell==0.3.0b1`. Contracts were
 researched in Thermacell LIV Android 4.0.5 (versionCode 202). This beta has
-automated HTTP/protocol and Home Assistant tests; physical hub validation is
-still outstanding. Firmware capabilities determine which controls appear.
+automated HTTP/protocol and Home Assistant tests; see
+[live hub status](#live-hub-status) for measured capability
+limits. Firmware capabilities determine which controls appear.
 
 | Capability | Home Assistant control |
 |---|---|
@@ -95,11 +96,78 @@ advertise the service and are reachable through mDNS can use it.
 Read failures can fall back to cloud. An attempted local write is not replayed
 through cloud after a timeout, because it might already have reached the hub.
 Refresh state before retrying. Power, LED, refill, native schedules, reboot and
-timezone can use LAN; OTA and group discovery remain cloud operations. Initial
-setup/authentication still requires the cloud. Already-discovered local hubs can
-continue during subsequent cloud outages. The connection-transport sensor shows
-the most recently successful route. Disable the local preference and reload to
-use cloud-only control if your network does not support the protocol.
+timezone can use LAN; OTA and groups remain cloud operations. Read address
+selection prefers usable IPv4, then non-link-local IPv6, then scoped link-local
+IPv6. A failed local read can try other advertised addresses (at most eight);
+a write uses exactly one endpoint, without address retry or cloud replay.
+
+The connection-transport sensor is a **library route hint**, not proof of a
+successful operation or a wholly local refresh. The library can mark `cloud`
+before fallback succeeds, and a refresh may combine local params with cloud
+config/status. Writes share the hint; it has no success timestamp. Before any
+hint exists the sensor is unknown. Attributes explicitly say `proves_success:
+false` and `per_refresh: false`; `local_endpoint_configured` means configuration,
+not successful pairing/handshake. Per-operation successful read/write telemetry
+requires a coordinated library follow-up.
+
+Disable local preference and reload for cloud-only control; re-enabling also
+reloads and requires cloud authentication. Discovery removal clears an endpoint,
+and pruning its transport also clears the previous route hint.
+
+### Operation boundaries
+
+- **Setup:** cloud required for authentication, account enrollment, and trusted
+  local security/credential metadata. mDNS never enrolls a foreign account node.
+- **Runtime cloud outage:** conditional LAN operation for already-paired,
+  discovered, local-control-advertising hubs with cached account metadata and a
+  reachable authenticated endpoint. Cached-node fallback supports connection
+  failures and some server errors. A 401/403 triggers reauthentication; if
+  reauthentication raises, cached membership can still be used with existing
+  local transports. A returned 401/403 after successful reauthentication does
+  not qualify. This is not a guarantee for every cloud error or firmware. See
+  [live hub status](#live-hub-status).
+- **Offline restart: UNSUPPORTED.** Startup/reload authenticates and refreshes
+  through cloud before discovery, even for previously used hubs. No local
+  bootstrap credentials/catalog are persisted by this integration.
+- **Cloud-only features:** OTA offers/status/install, groups and their current
+  membership, account membership/enrollment and credential provisioning/rotation.
+
+Follow-up: [secure offline bootstrap](https://github.com/joyfulhouse/pythermacell/issues/76)
+coordinates the library and HA: a versioned,
+account-scoped catalog of previously paired nodes; protected PoP/local-username
+storage and backup policy; identity/security verification after rediscovery;
+credential revocation/rotation and membership reconciliation on cloud recovery;
+and restart tests denying cloud while rejecting spoofed/unpaired nodes. HA
+Store/config-entry persistence alone is not encryption. This design is deferred,
+not an offline-startup feature in this phase.
+
+### Live hub status
+
+Checked 2026-10-18 UTC with the
+[pythermacell LAN diagnostic](https://github.com/joyfulhouse/pythermacell/pull/73)
+against two LIV hubs on firmware **5.4.7**. Neither hub advertised
+`esp.service.local_control` in its account metadata: no security scheme, PoP, or
+local username was provisioned. No `_esp_local_ctrl._tcp.local.` service was seen
+from a homelab host (server0) that had mDNS multicast visibility of other LAN
+services; hub VLAN co-location was not independently established.
+
+No local handshake, local read, or local LED write was performed. On these hubs
+the integration operates over cloud and the transport sensor will not show
+`local`. A process-scoped cloud-denial run confirmed cloud connections were
+blocked, but could not demonstrate LAN operation because there was no endpoint.
+
+LAN control remains implemented and simulator-tested, but is unverified on
+physical hubs; it requires firmware/provisioning that advertises local control.
+If the sensor never shows `local`, first check whether the hub advertises local
+control before investigating mDNS/VLAN. The `python -m pythermacell.diagnostics`
+command is included in the pinned **0.3.0b5**. See the linked diagnostic for usage.
+
+A subsequent UniFi investigation and direct-segment probes found eleven unnamed
+Espressif candidates answering ping and refusing TCP 80/443/8080, with no local
+RainMaker mDNS advertisements. Neither ADU nor Pool was conclusively mapped to
+a client. This was not an exhaustive port scan or verified exhaustive candidate
+set; no local connectivity was achieved, but per-hub port availability remains
+inconclusive. No LED restoration is claimed because no live writes occurred.
 
 ## Refill State and Shutdown Evidence
 

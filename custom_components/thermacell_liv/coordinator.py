@@ -40,6 +40,7 @@ from .const import (
     STATUS_WARMING_UP,
 )
 from .features import HubFeatures
+from .local import LocalDiscovery
 from .thermacell_types import DeviceParams, NodeData, RGBColor
 
 _LOGGER = logging.getLogger(__name__)
@@ -138,12 +139,34 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.client = client
+        self.local_discovery: LocalDiscovery | None = None
         self.features = HubFeatures(self)
         self.refill_types: dict[str, int] = {}
         self.nodes: dict[str, dict[str, Any]] = {}
         self.last_update_success_time: datetime | None = None
         self._node_online_states: dict[str, bool] = {}  # Track online/offline transitions
         self._devices: dict[str, ThermacellDevice] = {}  # Cache ThermacellDevice objects
+        self._removed_nodes: set[str] = set()
+        get_nodes = client.api.get_nodes
+
+        async def account_nodes() -> tuple[int, dict[str, Any] | None]:
+            status, membership = await get_nodes()
+            if (
+                status == 200
+                and isinstance(membership, dict)
+                and isinstance(node_ids := membership.get("nodes"), list)
+                and all(isinstance(node_id, str) for node_id in node_ids)
+            ):
+                self._removed_nodes.update(self._devices.keys() - set(node_ids))
+                self._removed_nodes.difference_update(node_ids)
+                for node_id in self._removed_nodes:
+                    self._devices.pop(node_id, None)
+                    client.api.local_transports.pop(node_id, None)
+                    client.api.last_transport.pop(node_id, None)
+            return status, membership
+
+        # Observe the actual fetch: get_devices() hides cached membership fallback.
+        vars(client.api)["get_nodes"] = account_nodes
 
     def _device_to_node_data(self, device: ThermacellDevice) -> NodeData:
         """Convert a ThermacellDevice to our NodeData format.
@@ -252,6 +275,10 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
             # Get all devices from pythermacell client
             devices = await self.client.get_devices()
 
+            devices = [device for device in devices if device.node_id not in self._removed_nodes]
+            self._devices = {device.node_id: device for device in devices}
+            if self.local_discovery:
+                self.local_discovery.reconcile()
             if not devices:
                 raise UpdateFailed("No devices found")
 
@@ -270,8 +297,6 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                         node_id,
                     )
 
-                # Cache the device object for later control operations
-                self._devices[node_id] = device
                 self.features.observe(device)
 
                 # Convert to our internal format
@@ -282,7 +307,6 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
                 self._handle_node_state_change(node_id, device.name, device.is_online)
 
             self.nodes = updated_data
-            self._devices = {node_id: self._devices[node_id] for node_id in updated_data}
             await self.features.async_refresh()
             self.last_update_success_time = dt_util.utcnow()
             _LOGGER.debug("Successfully updated data for %d device(s)", len(updated_data))

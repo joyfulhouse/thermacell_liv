@@ -36,6 +36,43 @@ summary, see the [README](../README.md#troubleshooting).
 - Test control from the mobile app to rule out a hardware issue.
 - Ensure brightness is greater than 0 — the LED is off at brightness 0.
 
+### LAN unavailable or cloud fallback
+
+- Confirm local preference is enabled and the hub advertises local-control
+  capability in authenticated account metadata. Firmware without that service
+  cannot use this path; see
+  [live hub status](NATIVE_CONTROLS.md#live-hub-status)
+  for the measured capability limits. The diagnostic command is included in the pinned 0.3.0b5.
+- Check `_esp_local_ctrl._tcp.local.` mDNS visibility **from Home Assistant's
+  network/interface**. A short negative browse is inconclusive. Across VLANs,
+  verify multicast reflection as well as routed TCP access to the advertised port;
+  discovery visibility does not establish endpoint reachability.
+- Check all advertised address families/routes. The integration prefers IPv4,
+  then non-link-local IPv6, then link-local addresses (IPv6 needs a scope).
+  Read failures try bounded alternatives then cloud. Writes do not retry across
+  addresses or replay through cloud; refresh before manually retrying an uncertain
+  command.
+- A discovered endpoint is not proof of authenticated pairing or a successful
+  read. Security/PoP/username come from cloud account metadata, never TXT records.
+  Do not weaken security or publish those values while diagnosing handshakes.
+- Late account/capability metadata is re-evaluated after coordinator refreshes.
+  Timed-out announcements get at most three resolution attempts per announcement;
+  a later mDNS update resets that budget. Removed aliases keep a transport only
+  while another valid alias owns it; account removal prunes local control.
+- The transport sensor is a library route hint, not a success or per-refresh
+  measurement. `cloud` can describe an attempted fallback; `local` can coexist
+  with cloud config/status. See [operation boundaries](NATIVE_CONTROLS.md#operation-boundaries).
+- Setup and restart require cloud login. During a runtime outage only previously
+  paired, discovered, local-capable hubs with cached metadata may continue;
+  401/403 responses trigger reauthentication. If that raises (including an
+  authentication error), the library can use cached membership with existing
+  local transports; a returned 401/403 after successful login is excluded.
+  For compromised credentials, change the cloud password and disable local
+  preference/reload the integration. Cloud password changes do not revoke local
+  proof-of-possession credentials.
+  Offline restart is **UNSUPPORTED**. OTA, groups, and account membership remain
+  cloud-only. Avoid reload during an outage: it discards ephemeral local state.
+
 ### Slow response times
 
 - Check internet speed and latency; increase the scan interval if the API is
@@ -67,6 +104,33 @@ transitions, service-call outcomes, and optimistic-update operations.
 1. **Settings → Devices & Services → Thermacell LIV**.
 2. **⋮ → Download Diagnostics**.
 3. Attach the file when reporting an issue (sensitive data is auto-redacted).
+
+Diagnostics use anonymous node/device labels and allowlisted support fields,
+including firmware/model, LED state, maintenance history, command audit, reported
+power, and refill-drain evidence. Account titles/IDs and local credentials are
+omitted or redacted by key, including sensitive fields nested in support data.
+Free-form message fields are redacted because they can embed credentials.
+Known credentials and machine identifiers (including node/account IDs, serials,
+and OTA job IDs) are scrubbed from strings and keys; a match shorter than four
+characters redacts the whole string. User-chosen device names use exact matching
+only, preserving standard model/status support text.
+Review debug logs separately before sharing them; diagnostics redaction does not
+sanitize log files.
+
+### If you shared a secret
+
+Inspect exports and logs before posting. If a secret was uploaded, promptly
+remove the upload; deleting it does not revoke copies already obtained. Change
+the Thermacell cloud password and reauthenticate the integration. Existing cloud
+sessions/tokens may remain valid for their remaining lifetime; do not assume
+immediate revocation.
+
+PoP and local username are vendor-provisioned and not user-rotatable. A cloud
+password change does **not** rotate PoP. Disable local preference and reload the
+integration, and treat the network segment as exposed until it is isolated or
+the vendor reprovisions local credentials. The integration does not persist PoP.
+There is no automated leak detection or credential revocation, and no measured
+revocation time is provided.
 
 ## Getting Help
 

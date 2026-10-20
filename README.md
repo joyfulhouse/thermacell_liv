@@ -16,7 +16,8 @@ Local-account control and monitoring of Thermacell LIV mosquito repellers in Hom
 
 Thermacell LIV is a Home Assistant integration for controlling and monitoring
 [Thermacell LIV](https://www.thermacell.com/) smart mosquito repeller hubs
-through the Thermacell cloud (ESP RainMaker) API. It exposes each hub as a
+through the Thermacell cloud (ESP RainMaker) API and conditional, local-preferred
+RainMaker LAN control on supported firmware. It exposes each hub as a
 switch, an RGB LED light, refill-life and status sensors, and maintenance
 buttons, with optimistic updates for instant UI feedback. A single integration
 instance manages every hub on your Thermacell account.
@@ -40,8 +41,12 @@ instance manages every hub on your Thermacell account.
 - Home Assistant 2025.11.0 or newer.
 - A Thermacell account with at least one registered LIV hub (set up via the
   Thermacell mobile app, connected to 2.4 GHz Wi-Fi).
-- Outbound internet access from Home Assistant (the integration is cloud-based;
-  no local API exists).
+- Outbound internet access from Home Assistant for initial setup, authentication,
+  and every restart. Offline restart is **UNSUPPORTED**.
+- Optional LAN control requires an already-paired account hub advertising local
+  control, reachable addresses, and mDNS visibility from Home Assistant.
+  See [live hub status](docs/NATIVE_CONTROLS.md#live-hub-status)
+  for the measured capability limits.
 
 ## Installation
 
@@ -72,7 +77,7 @@ reconfiguration, device removal behavior, and polling internals — see
 | Item | Detail |
 |---|---|
 | Device | Thermacell LIV Hub (model `thermacell-hub`) |
-| Connectivity | Cloud (ESP RainMaker), 2.4 GHz Wi-Fi |
+| Connectivity | Cloud (ESP RainMaker), conditional RainMaker LAN; 2.4 GHz Wi-Fi |
 | Firmware | ESP RainMaker API v1 (tested 5.3.2+) |
 | Not supported | Patio Shield, E-Series, Radius (different protocols) |
 
@@ -127,6 +132,11 @@ Most issues fall into a few buckets:
   2.4 GHz Wi-Fi; reload the integration.
 - **Connection timeouts** — check Home Assistant's internet access and the
   Thermacell API status.
+- **Cloud fallback instead of LAN** — check firmware local-control capability,
+  mDNS/VLAN visibility, address reachability, and security metadata. Discovery
+  alone is not a successful local read. Runtime cloud outages may permit cached
+  LAN operation, but setup/restart still needs cloud; OTA, groups, and account
+  membership remain cloud-only. See the full troubleshooting guide.
 
 Enable debug logging:
 
@@ -205,4 +215,4 @@ unofficial integration and is not affiliated with or endorsed by Thermacell.
 
 ## Native Controls Beta
 
-Version 2.1.0-beta.1 adds native shutdown timers, app schedule switches, firmware updates, reboot, timezone, account groups, local network control, and persistent refill/shutdown diagnostics. See the [control guide](docs/NATIVE_CONTROLS.md). New protocol paths are covered by simulators and automated tests; live hub validation remains outstanding.
+Version 2.1.0-beta.1 adds native shutdown timers, app schedule switches, firmware updates, reboot, timezone, account groups, local network control, and persistent refill/shutdown diagnostics. See the [control guide](docs/NATIVE_CONTROLS.md). New protocol paths are covered by simulators and automated tests; see [live hub status](docs/NATIVE_CONTROLS.md#live-hub-status) for measured capability limits.
