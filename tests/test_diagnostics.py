@@ -54,6 +54,23 @@ def diagnostic_entry():
     return MagicMock(version=1, data={}, runtime_data={"coordinator": coordinator})
 
 
+@pytest.mark.parametrize("key", ["pop", "token", "password", "refresh_token"])
+async def test_historical_credentials_scrub_copies_across_export(diagnostic_entry, key):
+    coordinator = diagnostic_entry.runtime_data["coordinator"]
+    secret = "SYNTHETIC-RETIRED-CREDENTIAL"
+    coordinator.features.history["account-node"]["metadata"] = [{key: secret}]
+    coordinator.features.audit["account-node"][f"description:{secret}"] = (
+        f"previous={secret}",
+        [secret],
+    )
+    coordinator.data["account-node"]["fw_version"] = f"version:{secret}"
+    before = deepcopy((coordinator.data, coordinator.features.history, coordinator.features.audit))
+    result = await async_get_config_entry_diagnostics(None, diagnostic_entry)
+    assert secret not in json.dumps(result)
+    assert result["nodes"]["node_1"]["last_command"]["result"] == "failed"
+    assert (coordinator.data, coordinator.features.history, coordinator.features.audit) == before
+
+
 @pytest.mark.parametrize(
     "field,expected",
     [

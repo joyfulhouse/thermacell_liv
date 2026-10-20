@@ -44,17 +44,17 @@ _IDENTIFIER_KEYS = {
 TO_REDACT = _CREDENTIAL_KEYS | _IDENTIFIER_KEYS | {"name", "message"}
 
 
-def _identifier_values(value: Any) -> set[str]:
-    """Collect machine identifiers before key-based redaction discards them."""
+def _identifier_values(value: Any, keys: set[str] = _IDENTIFIER_KEYS) -> set[str]:
+    """Collect sensitive values before key-based redaction discards them."""
     identifiers = set()
     if isinstance(value, Mapping):
         for key, item in value.items():
-            if key in _IDENTIFIER_KEYS and isinstance(item, str) and item:
+            if key in keys and isinstance(item, str) and item:
                 identifiers.add(item)
-            identifiers.update(_identifier_values(item))
+            identifiers.update(_identifier_values(item, keys))
     elif isinstance(value, (list, tuple, set, frozenset)):
         for item in value:
-            identifiers.update(_identifier_values(item))
+            identifiers.update(_identifier_values(item, keys))
     return identifiers
 
 
@@ -133,6 +133,19 @@ async def async_get_config_entry_diagnostics(_hass: HomeAssistant, entry: Config
                 for key in ("pop", "username")
             )
     credentials = {value for value in known if isinstance(value, str) and value}
+    credentials.update(
+        _identifier_values(
+            (
+                entry.data,
+                coordinator.data,
+                coordinator.features.history,
+                coordinator.features.audit,
+                coordinator.features.reported,
+                coordinator.features.anomalies,
+            ),
+            _CREDENTIAL_KEYS,
+        )
+    )
     sensitive = credentials | identifiers
     nodes = {}
     for index, (node_id, node_data) in enumerate(sorted((coordinator.data or {}).items()), 1):

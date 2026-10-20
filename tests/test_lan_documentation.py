@@ -53,9 +53,9 @@ def test_diagnostic_availability_matches_pinned_library(path):
     version = requirement.removeprefix("pythermacell==")
     assert version
     text = " ".join((ROOT / path).read_text().lower().replace("**", "").split())
-    documented_versions = re.findall(r"(?:not included in|not in) the pinned (\S+)", text)
+    documented_versions = re.findall(r"included in the pinned (\S+)", text)
     assert {value.rstrip(".,;") for value in documented_versions} == {version}
-    assert "pythermacell pr #73 / a future pythermacell release" in text
+    assert "future pythermacell release" not in text
 
 
 def test_live_evidence_does_not_assume_hub_vlan():
@@ -94,8 +94,8 @@ def test_live_status_checks_allow_new_observation_dates(monkeypatch):
         test_operation_boundaries_are_explicit(path)
 
 
-def test_unreleased_records_lan_and_privacy_changes():
-    text = (ROOT / "CHANGELOG.md").read_text().lower().split("## [unreleased]", 1)[1].split("\n## [", 1)[0]
+def test_release_records_lan_and_privacy_changes():
+    text = (ROOT / "CHANGELOG.md").read_text().lower().split("## [2.1.0-beta.5]", 1)[1].split("\n## [", 1)[0]
     assert all(term in text for term in ("unknown", "diagnostics", "anonymous", "reads", "writes", "announcements"))
 
 

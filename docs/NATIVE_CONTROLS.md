@@ -121,8 +121,10 @@ and pruning its transport also clears the previous route hint.
 - **Runtime cloud outage:** conditional LAN operation for already-paired,
   discovered, local-control-advertising hubs with cached account metadata and a
   reachable authenticated endpoint. Cached-node fallback supports connection
-  failures and some server errors; HTTP 401/403 do not qualify. It is not a
-  guarantee for every cloud error or firmware. See
+  failures and some server errors. A 401/403 triggers reauthentication; if
+  reauthentication raises, cached membership can still be used with existing
+  local transports. A returned 401/403 after successful reauthentication does
+  not qualify. This is not a guarantee for every cloud error or firmware. See
   [live hub status](#live-hub-status).
 - **Offline restart: UNSUPPORTED.** Startup/reload authenticates and refreshes
   through cloud before discovery, even for previously used hubs. No local
@@ -130,7 +132,8 @@ and pruning its transport also clears the previous route hint.
 - **Cloud-only features:** OTA offers/status/install, groups and their current
   membership, account membership/enrollment and credential provisioning/rotation.
 
-Follow-up: coordinate secure offline bootstrap with pythermacell: a versioned,
+Follow-up: [secure offline bootstrap](https://github.com/joyfulhouse/pythermacell/issues/76)
+coordinates the library and HA: a versioned,
 account-scoped catalog of previously paired nodes; protected PoP/local-username
 storage and backup policy; identity/security verification after rediscovery;
 credential revocation/rotation and membership reconciliation on cloud recovery;
@@ -157,8 +160,14 @@ LAN control remains implemented and simulator-tested, but is unverified on
 physical hubs; it requires firmware/provisioning that advertises local control.
 If the sensor never shows `local`, first check whether the hub advertises local
 control before investigating mDNS/VLAN. The `python -m pythermacell.diagnostics`
-command is available from pythermacell PR #73 / a future pythermacell release;
-it is not included in the pinned **0.3.0b4**. See the linked diagnostic for usage.
+command is included in the pinned **0.3.0b5**. See the linked diagnostic for usage.
+
+A subsequent UniFi investigation and direct-segment probes found eleven unnamed
+Espressif candidates answering ping and refusing TCP 80/443/8080, with no local
+RainMaker mDNS advertisements. Neither ADU nor Pool was conclusively mapped to
+a client. This was not an exhaustive port scan or verified exhaustive candidate
+set; no local connectivity was achieved, but per-hub port availability remains
+inconclusive. No LED restoration is claimed because no live writes occurred.
 
 ## Refill State and Shutdown Evidence
 

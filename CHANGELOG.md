@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0-beta.5] - 2026-10-20
+
 ### Changed
 - Qualify the transport sensor as a route hint, unknown before route evidence
   exists and after its local transport is pruned, not proof of LAN success.
@@ -17,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   firmware 5.4.7 capability limits, diagnostic availability, and leak response.
 
 ### Fixed
+- Scrub historical credentials copied into arbitrary diagnostic fields and keys.
+- Correct cached-membership behavior after failed cloud reauthentication.
 - Prefer usable IPv4/local address candidates and fail over reads across bounded
   advertised addresses without retrying writes or replaying them through cloud.
 - Re-evaluate late announcements after refresh, preserve live discovery aliases,
