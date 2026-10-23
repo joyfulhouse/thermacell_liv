@@ -53,6 +53,39 @@ class TestAsyncSetupEntry:
             hass.config_entries.async_forward_entry_setups.assert_called_once()
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(("options", "starts_discovery"), [({}, False), ({"prefer_local": True}, True)])
+    async def test_local_discovery_is_opt_in(self, options, starts_discovery):
+        """LAN control is experimental, so discovery runs only when explicitly enabled."""
+        hass = MagicMock()
+        entry = MagicMock()
+        entry.data = {"username": "test@example.com", "password": "password123"}
+        entry.options = options
+        entry.add_update_listener = MagicMock(return_value=MagicMock())
+        entry.async_on_unload = MagicMock()
+
+        with (
+            patch("custom_components.thermacell_liv.async_get_clientsession"),
+            patch("custom_components.thermacell_liv.ThermacellClient") as mock_client_class,
+            patch("custom_components.thermacell_liv.ThermacellLivCoordinator") as mock_coordinator_class,
+            patch("custom_components.thermacell_liv.LocalDiscovery") as mock_discovery_class,
+        ):
+            mock_client = AsyncMock(spec=ThermacellClient)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_class.return_value = mock_client
+            mock_coordinator = MagicMock()
+            mock_coordinator.data = {"node1": {}}
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.features.async_load = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+            mock_discovery_class.return_value.async_start = AsyncMock()
+            hass.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
+
+            assert await init_module.async_setup_entry(hass, entry) is True
+
+        assert mock_discovery_class.called is starts_discovery
+        assert ("local_discovery" in entry.runtime_data) is starts_discovery
+
+    @pytest.mark.asyncio
     async def test_async_setup_entry_auth_failure(self):
         """Test setup with authentication failure."""
         from homeassistant.exceptions import ConfigEntryAuthFailed

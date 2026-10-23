@@ -4,11 +4,12 @@ from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pythermacell import ThermacellClient, ThermacellDevice
+from pythermacell import AuthenticationError, ThermacellClient, ThermacellDevice
 
 from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
 from custom_components.thermacell_liv.local import LocalDiscovery
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 
@@ -189,6 +190,14 @@ class TestThermacellLivCoordinator:
         coordinator.client.get_devices.return_value = []
 
         with pytest.raises(UpdateFailed, match="No devices found"):
+            await coordinator._async_update_data()
+
+    @pytest.mark.asyncio
+    async def test_async_update_data_auth_error_starts_reauth(self, coordinator):
+        """Rejected credentials at runtime must start the reauth flow."""
+        coordinator.client.get_devices.side_effect = AuthenticationError("password changed")
+
+        with pytest.raises(ConfigEntryAuthFailed, match="Authentication failed"):
             await coordinator._async_update_data()
 
     @pytest.mark.asyncio

@@ -21,6 +21,8 @@ CONNECTIVITY_DISCONNECTED = "Disconnected"
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 30
 MAX_SCAN_INTERVAL = 300
+# LAN control is experimental (unverified on physical hubs), so it is opt-in.
+DEFAULT_PREFER_LOCAL = False
 
 # Values sent to the existing pythermacell reset_refill API.
 REFILL_TYPES = {"40 Hour - Yellow Cap": 0, "100 Hour - Blue Cap": 1, "180 Hour - Gray Cap": 2}

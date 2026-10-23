@@ -38,11 +38,11 @@ summary, see the [README](../README.md#troubleshooting).
 
 ### LAN unavailable or cloud fallback
 
-- Confirm local preference is enabled and the hub advertises local-control
+- Confirm the experimental local preference is enabled (off by default) and the hub advertises local-control
   capability in authenticated account metadata. Firmware without that service
   cannot use this path; see
   [live hub status](NATIVE_CONTROLS.md#live-hub-status)
-  for the measured capability limits. The diagnostic command is included in the pinned 0.3.0b5.
+  for the measured capability limits. The diagnostic command is included in the pinned 0.3.1.
 - Check `_esp_local_ctrl._tcp.local.` mDNS visibility **from Home Assistant's
   network/interface**. A short negative browse is inconclusive. Across VLANs,
   verify multicast reflection as well as routed TCP access to the advertised port;
@@ -64,9 +64,9 @@ summary, see the [README](../README.md#troubleshooting).
   with cloud config/status. See [operation boundaries](NATIVE_CONTROLS.md#operation-boundaries).
 - Setup and restart require cloud login. During a runtime outage only previously
   paired, discovered, local-capable hubs with cached metadata may continue;
-  401/403 responses trigger reauthentication. If that raises (including an
-  authentication error), the library can use cached membership with existing
-  local transports; a returned 401/403 after successful login is excluded.
+  401/403 responses trigger reauthentication. A rejected reauthentication
+  surfaces as an authentication failure (reauth repair) and never falls back to
+  cached membership; a returned 401/403 after successful login is excluded too.
   For compromised credentials, change the cloud password and disable local
   preference/reload the integration. Cloud password changes do not revoke local
   proof-of-possession credentials.

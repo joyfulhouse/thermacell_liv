@@ -22,7 +22,7 @@ from pythermacell import (
 from pythermacell.const import BENIGN_ERROR_BITS
 
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -314,7 +314,8 @@ class ThermacellLivCoordinator(DataUpdateCoordinator[dict[str, NodeData]]):
 
         except AuthenticationError as err:
             _LOGGER.error("Authentication failed with Thermacell API: %s", err)
-            raise UpdateFailed(f"Authentication failed: {err}") from err
+            # Starts Home Assistant's reauth flow instead of leaving entities unavailable.
+            raise ConfigEntryAuthFailed(f"Authentication failed: {err}") from err
         except ThermacellConnectionError as err:
             _LOGGER.error("Connection error with Thermacell API: %s", err)
             raise UpdateFailed(f"Connection error: {err}") from err

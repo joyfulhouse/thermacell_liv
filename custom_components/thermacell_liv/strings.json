@@ -144,10 +144,11 @@
         "description": "Configure integration settings",
         "data": {
           "scan_interval": "Update interval (seconds)",
-          "prefer_local": "Prefer local network control when supported"
+          "prefer_local": "Prefer local network control when supported (experimental)"
         },
         "data_description": {
-          "scan_interval": "How often to poll the Thermacell API for device status (30-300 seconds)"
+          "scan_interval": "How often to poll the Thermacell API for device status (30-300 seconds)",
+          "prefer_local": "Off by default. Uses RainMaker LAN control only for hubs that advertise it; unverified on physical hubs."
         }
       }
     }
