@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_PREFER_LOCAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import ThermacellLivCoordinator
 from .local import LocalDiscovery
 
@@ -73,7 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Store coordinator and client in runtime_data (HA 2024.x+ best practice)
     entry.runtime_data = {"coordinator": coordinator, "client": client}
-    if entry.options.get("prefer_local", True) is True:
+    if entry.options.get("prefer_local", DEFAULT_PREFER_LOCAL) is True:
         discovery = LocalDiscovery(coordinator)
         try:
             await discovery.async_start()

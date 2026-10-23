@@ -72,11 +72,11 @@ You can also trigger it manually:
 
 ## Data Updates and Polling
 
-The integration uses **local-preferred polling with cloud fallback** and optimistic updates:
+The integration uses **cloud polling** (with experimental, opt-in local-preferred polling) and optimistic updates:
 
 1. **Initial connection** — on startup it fetches all device data from the API.
 2. **Periodic polling** — device status refreshes every scan interval
-   (default 60 s). With local preference enabled (the default), account-scoped
+   (default 60 s). With the experimental local preference enabled (off by default), account-scoped
    mDNS discovery configures supported LAN endpoints after the initial refresh.
    A failed local read may try another advertised address, then cloud. Local
    writes are never replayed across addresses or through cloud on failure.

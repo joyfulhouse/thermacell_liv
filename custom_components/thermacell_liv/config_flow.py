@@ -17,6 +17,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import (
     CONF_PASSWORD,
     CONF_USERNAME,
+    DEFAULT_PREFER_LOCAL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MAX_SCAN_INTERVAL,
@@ -229,7 +230,9 @@ class ThermacellLivOptionsFlow(config_entries.OptionsFlow):
                         "scan_interval",
                         default=options["scan_interval"],
                     ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)),
-                    vol.Optional("prefer_local", default=self.config_entry.options.get("prefer_local", True)): bool,
+                    vol.Optional(
+                        "prefer_local", default=self.config_entry.options.get("prefer_local", DEFAULT_PREFER_LOCAL)
+                    ): bool,
                 }
             ),
         )

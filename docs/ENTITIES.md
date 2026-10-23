@@ -129,4 +129,4 @@ check the physical hub before assuming it has stopped.
 
 ## Native Controls and Diagnostics
 
-Version 2.1.0-beta.1 adds timers, schedule switches, firmware updates, timezone, reboot, group switches, and refill/shutdown diagnostics. See [Native Controls](NATIVE_CONTROLS.md) for availability, service examples, and limitations.
+Version 2.1.0 adds timers, schedule switches, firmware updates, timezone, reboot, group switches, and refill/shutdown diagnostics. See [Native Controls](NATIVE_CONTROLS.md) for availability, service examples, and limitations.

@@ -12,6 +12,7 @@ from zeroconf import ServiceStateChange
 from custom_components.thermacell_liv.coordinator import ThermacellLivCoordinator
 from custom_components.thermacell_liv.local import LocalDiscovery
 from custom_components.thermacell_liv.sensor import ThermacellFeatureSensor
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 
@@ -262,7 +263,7 @@ async def test_confirmed_account_removal_survives_cached_client_fallback(lan, ou
         membership = (200, {"nodes": ["remaining"]})
         if state_error:
             state.side_effect = AuthenticationError("synthetic state-read failure")
-            with pytest.raises(UpdateFailed, match="Authentication failed"):
+            with pytest.raises(ConfigEntryAuthFailed, match="Authentication failed"):
                 await coordinator._async_update_data()
             state.side_effect = None
         else:

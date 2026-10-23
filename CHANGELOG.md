@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-23
+
+First stable release of native controls. Consolidates 2.0.7-beta.1 and
+2.1.0-beta.1 through beta.5: native shutdown timers and `run_for` /
+`schedule_shutdown` actions, schedule and group switches, firmware updates,
+reboot, timezone, verified power control, timed-shutdown reconciliation with
+repairs, and refill/shutdown diagnostics.
+
+### Changed
+- Require pythermacell 0.3.1 (stable).
+- LAN control is **experimental and opt-in**: "Prefer local network control"
+  now defaults off because no tested firmware advertises local control and the
+  path is simulator-validated only. Entries that explicitly enabled it keep it.
+
+### Fixed
+- Rejected credentials during a runtime refresh now start Home Assistant's
+  reauthentication flow instead of only marking entities unavailable, and are
+  never masked by cached membership when local transports exist.
+
+### Validated
+- Native 20-second timer expiry, verified timed run, and verified off passed
+  3/3 repetitions on each of two live hubs (firmware 5.4.7) on 2026-10-23.
+
+### Known Limitations
+- Firmware 5.4.7 has intermittently reported Warming after native timer expiry
+  while the enable flag is false (#30). HA detects this, makes one bounded
+  verified-off attempt, then raises a repair and blocks new starts until Off is
+  confirmed. Cloud reports cannot prove physical heater state.
+- Offline restart is unsupported; setup and restart require the cloud.
+
 ## [2.1.0-beta.5] - 2026-10-20
 
 ### Changed

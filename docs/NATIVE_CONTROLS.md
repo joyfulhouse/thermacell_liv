@@ -1,8 +1,9 @@
 # Native Controls and Refill Diagnostics
 
-Available in **2.1.0-beta.1**, with `pythermacell==0.3.0b1`. Contracts were
-researched in Thermacell LIV Android 4.0.5 (versionCode 202). This beta has
-automated HTTP/protocol and Home Assistant tests; see
+Available since **2.1.0**, with `pythermacell==0.3.1`. Contracts were
+researched in Thermacell LIV Android 4.0.5 (versionCode 202). Timers and
+verified power control are validated on live hubs; all paths have automated
+HTTP/protocol and Home Assistant tests; see
 [live hub status](#live-hub-status) for measured capability
 limits. Firmware capabilities determine which controls appear.
 
@@ -17,7 +18,7 @@ limits. Firmware capabilities determine which controls appear.
 | Maintenance | Reboot button when advertised by the hub |
 | Hub timezone | IANA timezone text entity when writable |
 | App groups | One power switch per Thermacell account group |
-| LAN control | Automatic RainMaker mDNS discovery when supported; option to disable |
+| LAN control (experimental) | Opt-in RainMaker mDNS discovery when supported; off by default |
 
 ## Timers and Schedules
 
@@ -67,7 +68,11 @@ reports cannot distinguish stale firmware/cloud reporting from physical heater
 operation. The monitor requires HA and cloud connectivity and can run up to one
 configured polling interval late; it cannot guarantee shutdown during an outage.
 No automatic reboot, power-on recovery cycle, or refill reset is performed.
-Both packages remain beta while the intermittent failure is unresolved.
+On 2026-10-23 the native 20-second expiry regression passed 3/3 repetitions on
+each of two firmware 5.4.7 hubs with pythermacell 0.3.1, so the failure is
+intermittent; it remains a documented known limitation. Per-repeller status and
+temperature reports can also stay frozen at their last heating values until
+the next activity, so treat them as last-reported values rather than live state.
 
 Existing app schedules can be inspected and enabled/disabled. Schedule creation,
 editing of recurring triggers, provisioning, sharing, and account management
@@ -86,7 +91,8 @@ member concurrently and report failed/offline members. Successful members keep
 their resulting state when another member fails. Group switches are scoped to
 the account entry, so names/IDs from multiple accounts do not collide.
 
-The **Prefer local network control when supported** option defaults on. Discovery
+The **Prefer local network control when supported (experimental)** option
+defaults off; enable it in the integration options. Discovery
 uses `_esp_local_ctrl._tcp.local.` and matches the advertised node ID to your
 authenticated account. Credentials come from the hub's local-control service.
 The transport supports the advertised Espressif security scheme without trying
@@ -121,10 +127,10 @@ and pruning its transport also clears the previous route hint.
 - **Runtime cloud outage:** conditional LAN operation for already-paired,
   discovered, local-control-advertising hubs with cached account metadata and a
   reachable authenticated endpoint. Cached-node fallback supports connection
-  failures and some server errors. A 401/403 triggers reauthentication; if
-  reauthentication raises, cached membership can still be used with existing
-  local transports. A returned 401/403 after successful reauthentication does
-  not qualify. This is not a guarantee for every cloud error or firmware. See
+  failures and some server errors. A 401/403 triggers reauthentication; a
+  rejected reauthentication always surfaces as an authentication failure and
+  never falls back to cached membership. A returned 401/403 after successful
+  reauthentication does not qualify either. This is not a guarantee for every cloud error or firmware. See
   [live hub status](#live-hub-status).
 - **Offline restart: UNSUPPORTED.** Startup/reload authenticates and refreshes
   through cloud before discovery, even for previously used hubs. No local
@@ -160,7 +166,7 @@ LAN control remains implemented and simulator-tested, but is unverified on
 physical hubs; it requires firmware/provisioning that advertises local control.
 If the sensor never shows `local`, first check whether the hub advertises local
 control before investigating mDNS/VLAN. The `python -m pythermacell.diagnostics`
-command is included in the pinned **0.3.0b5**. See the linked diagnostic for usage.
+command is included in the pinned **0.3.1**. See the linked diagnostic for usage.
 
 A subsequent UniFi investigation and direct-segment probes found eleven unnamed
 Espressif candidates answering ping and refusing TCP 80/443/8080, with no local
